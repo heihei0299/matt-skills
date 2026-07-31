@@ -1,0 +1,25 @@
+{
+  "name": "@heihei0299/matt-skills",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "matt-skills": "bin/cli.js"
+  },
+  "files": [
+    "skills/",
+    "bin/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "prompts": "^2.4.2"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
