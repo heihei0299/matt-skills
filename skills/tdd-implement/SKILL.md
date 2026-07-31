@@ -1,11 +1,11 @@
 ---
 name: tdd-implement
-description: "Implement work from spec/ticket using strict TDD (red-green) workflow, then typecheck, code review, and commit."
+description: "Implement from spec/ticket via strict TDD red-green loop, then typecheck, review, and commit."
 ---
 
 # TDD Implement
 
-整合 **implement** + **tdd** 两个技能的完整实现流程。
+整合 **implement** + **tdd** 的完整实现流程：每个 seam 一个红-绿循环，直到 commit。
 
 ## 流程速览
 
@@ -13,7 +13,7 @@ description: "Implement work from spec/ticket using strict TDD (red-green) workf
 ① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit
 ```
 
-各阶段详细定义见 [`stages.md`](stages.md)。
+每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。
 
 ## 路由规则
 
@@ -32,20 +32,11 @@ description: "Implement work from spec/ticket using strict TDD (red-green) workf
 
 | 当前阶段 | 回退条件 | 回退目标 |
 |----------|----------|----------|
-| ③ TDD 开发 | typecheck 失败 | 回退到 ③，修复类型错误 |
-| ④ 完整测试套件 | 测试失败 | 回退到 ③，修复失败测试 |
-| ⑤ Code Review | 审查发现问题（实现错误） | 回退到 ③，修复实现 |
-| ⑤ Code Review | 审查发现问题（seams 遗漏） | 回退到 ②，补充 seams |
-| ⑤ Code Review | 审查发现问题（需求偏差） | 回退到 ①，澄清需求 |
-
-## 禁止行为
-
-- 不得在 seams 确认前写任何测试
-- 不得水平切片（一次性写完所有测试）
-- 不得在绿阶段超前实现未被测试覆盖的功能
-- 不得在 TDD 循环阶段做重构（重构属于 code review）
-- 不得跳过 typecheck
-- 不得在 code review 之前 commit
+| ③ TDD 开发 | typecheck 失败 | → ③ 修复类型错误 |
+| ④ 完整测试套件 | 测试失败 | → ③ 修复失败测试 |
+| ⑤ Code Review | 实现错误 | → ③ 修复实现 |
+| ⑤ Code Review | seams 遗漏 | → ② 补充 seams |
+| ⑤ Code Review | 需求偏差 | → ① 澄清需求 |
 
 ## 引用
 
