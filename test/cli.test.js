@@ -52,6 +52,18 @@ function runCli(args, cwd = REPO_ROOT) {
   return spawnSync(process.execPath, [CLI, ...args], { cwd, encoding: 'utf8' });
 }
 
+function installedDirs(dir) {
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort();
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 test('`list` exits 0 and prints all 24 skills with their names', () => {
   const { status, stdout, stderr } = runCli(['list']);
   assert.equal(status, 0, stderr);
@@ -107,4 +119,80 @@ test('`--help` prints help and exits 0', () => {
   assert.equal(status, 0, stderr);
   assert.match(stdout, /Usage:/);
   assert.match(stdout, /list/);
+});
+
+test('`install --all --dest` copies every skill (incl. attached files) and prints a summary', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-dest-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--dest', dest]);
+    assert.equal(status, 0, stderr);
+    assert.deepEqual(installedDirs(dest), [...SKILL_NAMES].sort());
+    assert.ok(fs.existsSync(path.join(dest, 'triage', 'AGENT-BRIEF.md')), 'triage/AGENT-BRIEF.md missing');
+    assert.ok(fs.existsSync(path.join(dest, 'tdd', 'tests.md')), 'tdd/tests.md missing');
+    assert.match(stdout, /已装 24、跳过 0/);
+    assert.match(stdout, new RegExp(`目标路径：${escapeRegExp(dest)}`));
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('`install --all` without --dest installs into `.agents/skills/` under the working directory', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all'], cwd);
+    assert.equal(status, 0, stderr);
+    const target = path.join(cwd, '.agents', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, /已装 24、跳过 0/);
+    assert.match(stdout, new RegExp(`目标路径：${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('`install --all` rerun without --force skips existing skills and does not overwrite local edits', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-dest-'));
+  try {
+    const first = runCli(['install', '--all', '--dest', dest]);
+    assert.equal(first.status, 0, first.stderr);
+    fs.writeFileSync(path.join(dest, 'tdd', 'tests.md'), 'LOCAL EDIT');
+    const { status, stdout, stderr } = runCli(['install', '--all', '--dest', dest]);
+    assert.equal(status, 0, stderr);
+    assert.match(stdout, /已装 0、跳过 24/);
+    assert.equal(fs.readFileSync(path.join(dest, 'tdd', 'tests.md'), 'utf8'), 'LOCAL EDIT');
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('`install --all --force` overwrites existing skills and restores package content', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-dest-'));
+  try {
+    const first = runCli(['install', '--all', '--dest', dest]);
+    assert.equal(first.status, 0, first.stderr);
+    fs.writeFileSync(path.join(dest, 'tdd', 'tests.md'), 'LOCAL EDIT');
+    const { status, stdout, stderr } = runCli(['install', '--all', '--force', '--dest', dest]);
+    assert.equal(status, 0, stderr);
+    assert.match(stdout, /已装 24、跳过 0/);
+    const source = fs.readFileSync(path.join(REPO_ROOT, 'skills', 'tdd', 'tests.md'), 'utf8');
+    assert.equal(
+      fs.readFileSync(path.join(dest, 'tdd', 'tests.md'), 'utf8'),
+      source,
+      'tdd/tests.md should be restored from package content by --force',
+    );
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('`install --dest` without a value fails with a non-zero exit', () => {
+  const { status, stderr } = runCli(['install', '--all', '--dest']);
+  assert.notEqual(status, 0);
+  assert.match(stderr, /--dest/);
+});
+
+test('`install` without --all in a non-interactive shell prints a hint and exits non-zero', () => {
+  const { status, stdout } = runCli(['install']);
+  assert.notEqual(status, 0);
+  assert.match(stdout, /非交互环境/);
 });
