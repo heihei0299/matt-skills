@@ -1,19 +1,60 @@
 ---
 name: tdd-implement
-description: "Implement from spec/ticket via strict TDD red-green loop, then typecheck, review, and commit."
+description: "Implement from spec/ticket via strict TDD red-green loop, then typecheck, review, commit, update the issue status, and write an implementation summary."
 ---
 
 # TDD Implement
 
 整合 **implement** + **tdd** 的完整实现流程：每个 seam 一个红-绿循环，直到 commit。
 
+本技能是**长程任务**（Long-Horizon Skill）：多阶段串行执行，自带**回合连续性**（Turn Continuity）与**任务分解**（Chunking）规则（见下文与 [stages.md](stages.md) 阶段③ 3e/3f）。术语定义见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
+
 ## 流程速览
 
 ```
-① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit
+① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit → ⑦ 收尾（issue 状态 + 实施总结）
 ```
 
 每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。
+
+## 回合连续性规则
+
+每个逻辑单元（一次红-绿循环、一次 typecheck、一次测试失败修复）必须**在一个回合内连续执行完毕后才输出**：测试 → 分析失败 → 修正 → 重跑 → 全绿 整条链一气呵成，中间不停顿、不等用户说“继续”。
+
+输出只允许发生在以下三种情况：
+- **合规交互点**：技能要求的用户确认（如阶段② seams 清单确认）——此时提问并等待
+- **外部阻塞**：权限拒绝、缺失授权、依赖不可用——此时明确说明需要什么授权或替代路径，不静默停止
+- **阶段完成**：整个阶段的出口条件满足（如某 seam 全绿、typecheck 通过、commit 完成）
+
+预告下一步后立即执行该步骤，禁止把“分析/预告”当作回合终点。
+
+## 任务拆分与 Todo 规定
+
+### 拆分层级
+Goal/Ticket → Seams（阶段②）→ Todo（每 seam 一个红-绿 cycle）
+
+### Todo 清单格式
+阶段② seams 确认后立即生成 todo 清单，每个 seam 一个 todo：
+- 编号：`T1`、`T2`、`T3`…
+- 描述：seam 名称 + 输入 + 预期输出
+- 状态：`pending` / `in-progress` / `done` / `blocked`
+- 完成标准（DoD）：该 seam 测试全绿 + typecheck 通过 + 既有测试不受影响
+
+### Todo 状态机
+```
+pending → in-progress → done
+                ↘ blocked（外部阻塞）→（授权/替代路径）→ in-progress
+```
+
+### 粒度与回合归属
+- 一个 todo = 一个 seam 的红-绿 cycle + typecheck，不可再拆
+- 一个 todo 必须在一个回合内完成（红→绿→typecheck→全绿）
+- 每完成一个 todo 立即更新其状态，再进入下一个
+- 全部 todo 为 done 才进入阶段④
+
+### 阻塞处理
+- 外部阻塞（权限拒绝、缺失授权、依赖不可用）→ 标记 `blocked`，记录所需授权或替代路径
+- 不静默停止；恢复后回到 `in-progress` 继续
 
 ## 路由规则
 
@@ -26,7 +67,8 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 | ③ TDD 开发 | 所有 seams 红-绿完成，typecheck 通过 | → ④ 完整测试套件 |
 | ④ 完整测试套件 | 全部测试通过 | → ⑤ Code Review |
 | ⑤ Code Review | 审查通过 | → ⑥ Commit |
-| ⑥ Commit | commit 完成 | ✅ 结束 |
+| ⑥ Commit | commit 完成 | → ⑦ 收尾 |
+| ⑦ 收尾 | issue 状态已更新 + 实施总结已写 | ✅ 结束 |
 
 ### 回退路由
 
@@ -43,3 +85,4 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 - TDD 核心规则：[tdd 技能](../tdd/SKILL.md)
 - 测试标准：[tdd/tests.md](../tdd/tests.md)
 - Mock 指南：[tdd/mocking.md](../tdd/mocking.md)
+- Issue tracker 约定：[issue-tracker.md](../../docs/agents/issue-tracker.md)
