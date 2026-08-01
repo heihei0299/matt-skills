@@ -1,18 +1,30 @@
 #!/usr/bin/env node
 import { readdir, readFile, cp, stat } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prompts from 'prompts';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills');
 
+// Tool → install directory mapping (relative to cwd for project, to $HOME for global).
+const TOOL_TARGETS = {
+  codex: { project: '.agents/skills', global: '.codex/skills' },
+  pi: { project: '.pi/skills', global: '.pi/agent/skills' },
+  opencode: { project: '.opencode/skills', global: '.config/opencode/skills' },
+  claude: { project: '.claude/skills', global: '.claude/skills' },
+};
+
 const HELP = `matt-skills — install and manage this skill collection
 
 Usage:
   matt-skills list [--json]     List available skills and their descriptions
-  matt-skills install           Interactively pick skills, then install them
+  matt-skills install           Pick tools and skills, then install them
+      --tools <a,b>             Install for specific tools without prompting
       --all                     Install every skill without prompting
-      --dest <path>             Install into an arbitrary directory
+      --global                  Install into each tool's global skills directory
+      --project                 Install into the current project (default)
+      --dest <path>             Install into an arbitrary directory (overrides tools)
       --force                   Overwrite skills that already exist
   matt-skills --help            Show this help
 `;
@@ -55,6 +67,10 @@ function parseInstallArgs(args) {
   let destSeen = false;
   let force = false;
   let all = false;
+  let global = false;
+  let project = false;
+  let tools;
+  let toolsSeen = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--dest') {
@@ -65,11 +81,37 @@ function parseInstallArgs(args) {
       dest = arg.slice('--dest='.length);
     } else if (arg === '--force') force = true;
     else if (arg === '--all') all = true;
+    else if (arg === '--global') global = true;
+    else if (arg === '--project') project = true;
+    else if (arg === '--tools') {
+      toolsSeen = true;
+      tools = args[++i];
+    } else if (arg.startsWith('--tools=')) {
+      toolsSeen = true;
+      tools = arg.slice('--tools='.length);
+    }
   }
   if (destSeen && (dest === undefined || dest === '' || dest.startsWith('--'))) {
     throw new Error('--dest 需要路径参数');
   }
-  return { dest, force, all };
+  let toolsList = tools ? tools.split(',').map((t) => t.trim()).filter(Boolean) : [];
+  if (toolsSeen && (tools === undefined || tools === '' || tools.startsWith('--') || toolsList.length === 0)) {
+    throw new Error('--tools 需要工具列表，如 codex,claude');
+  }
+  toolsList = [...new Set(toolsList)];
+  if (global && project) {
+    throw new Error('--global 与 --project 不能同时使用');
+  }
+  if (dest && global) {
+    throw new Error('--dest 与 --global 不能同时使用');
+  }
+  return {
+    dest,
+    force,
+    all,
+    global,
+    tools: toolsList,
+  };
 }
 
 async function pathExists(p) {
@@ -96,9 +138,58 @@ async function pickSkills(skills) {
   return selection;
 }
 
-async function installCommand({ dest, force, all }) {
+async function pickTools() {
+  const { selection } = await prompts({
+    type: 'multiselect',
+    name: 'selection',
+    message: '选择要安装到的工具（空格勾选，回车确认）',
+    choices: Object.keys(TOOL_TARGETS).map((tool) => ({ title: tool, value: tool })),
+    instructions: false,
+  });
+  return selection;
+}
+
+function resolveTargets({ dest, tools, global }) {
+  if (dest) {
+    return [{ label: null, dir: path.resolve(process.cwd(), dest) }];
+  }
+  const selectedTools = tools.slice();
+  for (const tool of selectedTools) {
+    if (!TOOL_TARGETS[tool]) {
+      throw new Error(`未知工具：${tool}（可选：${Object.keys(TOOL_TARGETS).join(', ')}）`);
+    }
+  }
+  const base = global ? os.homedir() : process.cwd();
+  return selectedTools.map((tool) => ({
+    label: tool,
+    dir: path.join(base, global ? TOOL_TARGETS[tool].global : TOOL_TARGETS[tool].project),
+  }));
+}
+
+async function installCommand({ dest, force, all, tools, global }) {
   const skills = await listSkills();
-  const dir = dest ? path.resolve(process.cwd(), dest) : path.resolve(process.cwd(), '.agents', 'skills');
+  let selectedTools = tools;
+  if (!dest && selectedTools.length === 0) {
+    if (!process.stdin.isTTY) {
+      process.stdout.write('非交互环境，请用 --tools 指定工具（如 codex,claude）或用 --dest 指定目录\n');
+      process.exitCode = 1;
+      return;
+    }
+    selectedTools = await pickTools();
+    if (selectedTools === undefined) {
+      process.stdout.write('已取消，未安装任何技能\n');
+      return;
+    }
+    if (selectedTools.length === 0) {
+      process.stdout.write('未选择任何工具，未安装\n');
+      return;
+    }
+  }
+  const targets = resolveTargets({ dest, tools: selectedTools, global });
+  if (targets.length === 0) {
+    process.stdout.write('未选择任何工具，未安装\n');
+    return;
+  }
   let selected = skills.map((s) => s.name);
   if (!all) {
     selected = await pickSkills(skills);
@@ -116,20 +207,26 @@ async function installCommand({ dest, force, all }) {
     }
   }
   const wanted = new Set(selected);
-  let installed = 0;
-  let skipped = 0;
-  for (const skill of skills) {
-    if (!wanted.has(skill.name)) continue;
-    const dst = path.join(dir, skill.name);
-    if (!force && (await pathExists(dst))) {
-      skipped++;
-      continue;
+  for (const target of targets) {
+    let installed = 0;
+    let skipped = 0;
+    for (const skill of skills) {
+      if (!wanted.has(skill.name)) continue;
+      const dst = path.join(target.dir, skill.name);
+      if (!force && (await pathExists(dst))) {
+        skipped++;
+        continue;
+      }
+      await cp(path.join(SKILLS_DIR, skill.name), dst, { recursive: true });
+      installed++;
     }
-    await cp(path.join(SKILLS_DIR, skill.name), dst, { recursive: true });
-    installed++;
+    if (target.label) {
+      process.stdout.write(`${target.label}: 已装 ${installed}、跳过 ${skipped} → ${target.dir}\n`);
+    } else {
+      process.stdout.write(`已装 ${installed}、跳过 ${skipped}\n`);
+      process.stdout.write(`目标路径：${target.dir}\n`);
+    }
   }
-  process.stdout.write(`已装 ${installed}、跳过 ${skipped}\n`);
-  process.stdout.write(`目标路径：${dir}\n`);
 }
 
 async function main() {

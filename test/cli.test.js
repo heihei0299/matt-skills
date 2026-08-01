@@ -48,8 +48,8 @@ const SAMPLE_LINES = [
 const TDD_DESCRIPTION =
   'Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.';
 
-function runCli(args, cwd = REPO_ROOT) {
-  return spawnSync(process.execPath, [CLI, ...args], { cwd, encoding: 'utf8' });
+function runCli(args, cwd = REPO_ROOT, env = process.env) {
+  return spawnSync(process.execPath, [CLI, ...args], { cwd, encoding: 'utf8', env });
 }
 
 function installedDirs(dir) {
@@ -136,15 +136,139 @@ test('`install --all --dest` copies every skill (incl. attached files) and print
   }
 });
 
-test('`install --all` without --dest installs into `.agents/skills/` under the working directory', () => {
+test('`install --all --tools codex` installs into `.agents/skills/` and prints a per-tool summary', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
   try {
-    const { status, stdout, stderr } = runCli(['install', '--all'], cwd);
+    const { status, stdout, stderr } = runCli(['install', '--all', '--tools', 'codex'], cwd);
     assert.equal(status, 0, stderr);
     const target = path.join(cwd, '.agents', 'skills');
     assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
-    assert.match(stdout, /已装 24、跳过 0/);
-    assert.match(stdout, new RegExp(`目标路径：${escapeRegExp(target)}`));
+    assert.match(stdout, new RegExp(`codex: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+test('`install --all --tools pi` installs into `.pi/skills/`', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--tools', 'pi'], cwd);
+    assert.equal(status, 0, stderr);
+    const target = path.join(cwd, '.pi', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`pi: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('`install --all --tools opencode` installs into `.opencode/skills/`', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--tools', 'opencode'], cwd);
+    assert.equal(status, 0, stderr);
+    const target = path.join(cwd, '.opencode', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`opencode: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('`install --all --tools claude` installs into `.claude/skills/`', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--tools', 'claude'], cwd);
+    assert.equal(status, 0, stderr);
+    const target = path.join(cwd, '.claude', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`claude: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+test('`install --all --tools codex,claude` installs into both tool dirs with per-tool summaries', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--tools', 'codex,claude'], cwd);
+    assert.equal(status, 0, stderr);
+    const codexTarget = path.join(cwd, '.agents', 'skills');
+    const claudeTarget = path.join(cwd, '.claude', 'skills');
+    assert.deepEqual(installedDirs(codexTarget), [...SKILL_NAMES].sort());
+    assert.deepEqual(installedDirs(claudeTarget), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`codex: 已装 24、跳过 0 → ${escapeRegExp(codexTarget)}`));
+    assert.match(stdout, new RegExp(`claude: 已装 24、跳过 0 → ${escapeRegExp(claudeTarget)}`));
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('`--global --tools codex` installs into $HOME/.codex/skills/', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-home-'));
+  const env = { ...process.env, HOME: home };
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--global', '--tools', 'codex'], REPO_ROOT, env);
+    assert.equal(status, 0, stderr);
+    const target = path.join(home, '.codex', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`codex: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('`--global --tools pi` installs into $HOME/.pi/agent/skills/', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-home-'));
+  const env = { ...process.env, HOME: home };
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--global', '--tools', 'pi'], REPO_ROOT, env);
+    assert.equal(status, 0, stderr);
+    const target = path.join(home, '.pi', 'agent', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`pi: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('`--global --tools opencode` installs into $HOME/.config/opencode/skills/', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-home-'));
+  const env = { ...process.env, HOME: home };
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--global', '--tools', 'opencode'], REPO_ROOT, env);
+    assert.equal(status, 0, stderr);
+    const target = path.join(home, '.config', 'opencode', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`opencode: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('`--global --tools claude` installs into $HOME/.claude/skills/', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-home-'));
+  const env = { ...process.env, HOME: home };
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--global', '--tools', 'claude'], REPO_ROOT, env);
+    assert.equal(status, 0, stderr);
+    const target = path.join(home, '.claude', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`claude: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('rerunning multi-tool install without --force skips existing skills for every tool', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const first = runCli(['install', '--all', '--tools', 'codex,claude'], cwd);
+    assert.equal(first.status, 0, first.stderr);
+    fs.writeFileSync(path.join(cwd, '.agents', 'skills', 'tdd', 'tests.md'), 'LOCAL EDIT');
+    const { status, stdout, stderr } = runCli(['install', '--all', '--tools', 'codex,claude'], cwd);
+    assert.equal(status, 0, stderr);
+    assert.match(stdout, /codex: 已装 0、跳过 24/);
+    assert.match(stdout, /claude: 已装 0、跳过 24/);
+    assert.equal(fs.readFileSync(path.join(cwd, '.agents', 'skills', 'tdd', 'tests.md'), 'utf8'), 'LOCAL EDIT');
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }
@@ -189,6 +313,88 @@ test('`install --dest` without a value fails with a non-zero exit', () => {
   const { status, stderr } = runCli(['install', '--all', '--dest']);
   assert.notEqual(status, 0);
   assert.match(stderr, /--dest/);
+});
+
+test('`install --all --dest` overrides tool mapping and ignores --tools', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-dest-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--dest', dest, '--tools', 'claude'], cwd);
+    assert.equal(status, 0, stderr);
+    assert.deepEqual(installedDirs(dest), [...SKILL_NAMES].sort());
+    assert.ok(!fs.existsSync(path.join(cwd, '.claude')), '.claude should not be created when --dest is used');
+    assert.match(stdout, new RegExp(`已装 24、跳过 0`));
+    assert.match(stdout, new RegExp(`目标路径：${escapeRegExp(dest)}`));
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('`install --tools` with an unknown tool fails with a non-zero exit', () => {
+  const { status, stderr } = runCli(['install', '--all', '--tools', 'bogus']);
+  assert.notEqual(status, 0);
+  assert.match(stderr, /未知工具：bogus/);
+});
+
+test('`install --tools` without a value fails with a non-zero exit', () => {
+  const { status, stderr } = runCli(['install', '--all', '--tools']);
+  assert.notEqual(status, 0);
+  assert.match(stderr, /--tools/);
+});
+
+test('`install --global --project` together fails with a non-zero exit', () => {
+  const { status, stderr } = runCli(['install', '--all', '--global', '--project', '--tools', 'codex']);
+  assert.notEqual(status, 0);
+  assert.match(stderr, /--global/);
+  assert.match(stderr, /--project/);
+});
+test('`install --tools ","` (empty tool list) fails with a non-zero exit', () => {
+  const { status, stderr } = runCli(['install', '--all', '--tools', ',']);
+  assert.notEqual(status, 0);
+  assert.match(stderr, /--tools/);
+});
+
+test('`install --tools codex,codex` deduplicates tools and installs once', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--tools', 'codex,codex'], cwd);
+    assert.equal(status, 0, stderr);
+    assert.deepEqual(installedDirs(path.join(cwd, '.agents', 'skills')), [...SKILL_NAMES].sort());
+    const codexLines = stdout.split('\n').filter((l) => l.startsWith('codex:'));
+    assert.equal(codexLines.length, 1);
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('`install --dest --global` together fails with a non-zero exit', () => {
+  const { status, stderr } = runCli(['install', '--all', '--dest', '/tmp/any', '--global']);
+  assert.notEqual(status, 0);
+  assert.match(stderr, /--dest/);
+  assert.match(stderr, /--global/);
+});
+
+test('`install --project` installs into project-level tool directories', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--all', '--project', '--tools', 'codex'], cwd);
+    assert.equal(status, 0, stderr);
+    const target = path.join(cwd, '.agents', 'skills');
+    assert.deepEqual(installedDirs(target), [...SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`codex: 已装 24、跳过 0 → ${escapeRegExp(target)}`));
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('`--help` documents --tools, --global, --project and --dest', () => {
+  const { status, stdout, stderr } = runCli(['--help']);
+  assert.equal(status, 0, stderr);
+  assert.match(stdout, /--tools/);
+  assert.match(stdout, /--global/);
+  assert.match(stdout, /--project/);
+  assert.match(stdout, /--dest/);
 });
 
 test('`install` without --all in a non-interactive shell prints a hint and exits non-zero', () => {
