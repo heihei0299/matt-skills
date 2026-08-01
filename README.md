@@ -1,73 +1,33 @@
-# @heihei0299/matt-skills
+# matt-skills
 
-Matt Pocock 的工程技能集，打包为 npm 包，可一键安装到 Codex / Pi / OpenCode / Claude Code。技能内容随包版本发布，用户重跑 install 即可升级。
+Matt Pocock 工程技能模板仓库：工作区内容镜像为 `template/` 模板快照，将快照整个复制到目标仓库根目录即完成初始化。
 
-## 用法
+## 模板结构
 
-列出包内全部技能及其描述：
-
-```sh
-npx @heihei0299/matt-skills list
-# 机器可读输出
-npx @heihei0299/matt-skills list --json
+```
+template/
+├── .agents/skills/   24 个技能
+├── AGENTS.md         项目级全局配置（行为路由 + 分文件指针）
+├── CONTEXT.md        术语表
+└── docs/agents/      5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
 ```
 
-交互式安装（先勾选工具，再勾选技能）：
+## 初始化
+
+将 `template/` 整个文件夹复制到目标仓库根目录：
 
 ```sh
-npx @heihei0299/matt-skills install
+cp -r template/. /path/to/target/
 ```
 
-免交互安装（CI / 脚本）：
+目标仓库会话即自动加载技能与项目级全局配置（行为路由表、分文件约定）。
 
-```sh
-npx @heihei0299/matt-skills install --tools codex,claude --all
-```
+## 维护约定
 
-重复安装默认跳过已存在的同名技能，本地修改不会被覆盖；升级时加 `--force` 覆盖。
-
-## 工具目录对照
-
-| 工具 | 项目级（默认） | 全局（--global） |
-|------|----------------|------------------|
-| codex | `.agents/skills/` | `~/.codex/skills/` |
-| pi | `.pi/skills/` | `~/.pi/agent/skills/` |
-| opencode | `.opencode/skills/` | `~/.config/opencode/skills/` |
-| claude | `.claude/skills/` | `~/.claude/skills/` |
-
-## Flags
-
-| flag | 说明 |
-|------|------|
-| `--tools <a,b>` | 指定工具，跳过工具勾选（CI） |
-| `--all` | 安装全部技能，跳过技能勾选 |
-| `--global` | 装到各工具的全局技能目录（基于 `$HOME`） |
-| `--project` | 装到当前项目目录（默认） |
-| `--dest <path>` | 装到任意单目录；覆盖工具映射并忽略 `--tools` |
-| `--force` | 覆盖已存在的同名技能 |
-| `--json` | `list` 输出 JSON |
-| `--help` | 显示帮助 |
-
-## 安装后生效
-
-- Claude Code：`/reload`
-- Pi：`/reload`
-- OpenCode：下一轮会话生效
-- Codex：下一轮会话生效
+改动 8 项内容的工作区（仓库根目录的 `.agents/skills/`、`AGENTS.md`、`CONTEXT.md`、`docs/agents/`）后，必须同步到 `template/` 对应路径；同步方向单向：工作区 → 模板快照。`test/template-sync.test.js` 守护同步，漏同步测试即红。
 
 ## 开发
 
 ```sh
-node --test
-npm pack --dry-run
-```
-
-## 发布
-
-技能改动必须发布新版本，用户才能获取更新。
-
-```sh
-npm login
-npm version patch
-npm publish --access public
+npm test
 ```
