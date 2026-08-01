@@ -1,1 +1,4 @@
 node_modules/
+.codegraph/
+.cortexkit/
+pi-session-*.html
