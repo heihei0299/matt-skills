@@ -13,6 +13,11 @@ const root = (p) => path.join(dir, p);
 
 const DOC_AGENTS = ['domain.md', 'issue-tracker.md', 'runtime-discipline.md', 'skill-design.md', 'triage-labels.md'];
 
+// Config-repo positioning: template/ ships config + proprietary skills only.
+// The 22 upstream skills (engineering/productivity) are fetched manually into
+// target repos per README, so they must NOT be copied into template/.
+const PROPRIETARY_SKILLS = ['tdd-implement', 'grill-to-spec'];
+
 function readDirRecursive(dirPath) {
   const out = [];
   for (const entry of readdirSync(dirPath)) {
@@ -23,19 +28,35 @@ function readDirRecursive(dirPath) {
   return out.sort();
 }
 
-test('template/.agents/skills mirrors the workspace skills directory', () => {
-  const wsFiles = readDirRecursive(root('.agents/skills'));
-  const tmplFiles = readDirRecursive(root('template/.agents/skills'));
-  assert.deepEqual(
-    tmplFiles.map((f) => path.relative(root('template/.agents/skills'), f)),
-    wsFiles.map((f) => path.relative(root('.agents/skills'), f)),
-  );
-  for (const f of wsFiles) {
-    const rel = path.relative(root('.agents/skills'), f);
-    assert.equal(
-      readFileSync(root(path.join('template/.agents/skills', rel)), 'utf8'),
-      readFileSync(f, 'utf8'),
-      `template/.agents/skills/${rel} out of sync`,
+test('template/.agents/skills mirrors the proprietary skills only', () => {
+  for (const skill of PROPRIETARY_SKILLS) {
+    const wsFiles = readDirRecursive(root(path.join('.agents/skills', skill)));
+    const tmplFiles = readDirRecursive(root(path.join('template/.agents/skills', skill)));
+    assert.deepEqual(
+      tmplFiles.map((f) => path.relative(root(path.join('template/.agents/skills', skill)), f)),
+      wsFiles.map((f) => path.relative(root(path.join('.agents/skills', skill)), f)),
+      `${skill} file listing out of sync`,
+    );
+    for (const f of wsFiles) {
+      const rel = path.relative(root(path.join('.agents/skills', skill)), f);
+      assert.equal(
+        readFileSync(root(path.join('template/.agents/skills', skill, rel)), 'utf8'),
+        readFileSync(f, 'utf8'),
+        `template/.agents/skills/${skill}/${rel} out of sync`,
+      );
+    }
+  }
+});
+
+test('template/.agents/skills carries no upstream skills', () => {
+  const wsSkills = readdirSync(root('.agents/skills')).sort();
+  const tmplSkills = readdirSync(root('template/.agents/skills')).sort();
+  assert.deepEqual(tmplSkills, [...PROPRIETARY_SKILLS].sort());
+  for (const skill of wsSkills) {
+    if (PROPRIETARY_SKILLS.includes(skill)) continue;
+    assert.ok(
+      !tmplSkills.includes(skill),
+      `upstream skill ${skill} must not be copied into template/ (fetch it per README instead)`,
     );
   }
 });

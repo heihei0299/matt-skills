@@ -5,7 +5,16 @@ The domain vocabulary for this repo — two sections: how this repository is pos
 ## Repository
 
 **Template Repository** (模板仓库):
-This repository's identity. It distributes a full set of engineering skills and project-level config to other repositories: the workspace content is mirrored into `template/` as a Template Snapshot, and initializing a Target Repository is a one-time copy of that snapshot. The workspace copy also serves this repo's own sessions.
+This repository's identity. It is the config repo for mattpocock/skills: it distributes project-level config (AGENTS.md behavior routing, docs/agents discipline files, CONTEXT.md glossary) plus only the Proprietary Skills, not the upstream skill copies. The workspace content is mirrored into `template/` as a Template Snapshot, and initializing a Target Repository is a one-time copy of that snapshot. The workspace copy also serves this repo's own sessions.
+_Avoid_: skill distribution repo
+
+**Upstream Repository** (上游仓库):
+mattpocock/skills — the source of the 22 skill bodies (skills/engineering, 17 skills; skills/productivity, 5 skills) that target repos fetch manually per the README. This repo never copies upstream skills into `template/`.
+_Avoid_: source repo, skill origin
+
+**Proprietary Skill** (独有技能):
+A skill that does not exist upstream and lives only in this repo (currently tdd-implement and grill-to-spec). Before adding a new skill, check the Upstream Repository first; only skills absent there qualify as proprietary.
+_Avoid_: private skill, local skill
 
 **Workspace** (工作区):
 The root-level working copies of the template content — `.agents/skills/`, `AGENTS.md`, `CONTEXT.md`, `docs/agents/`. Where this repo's own sessions load, modify, and test the content.
@@ -16,11 +25,11 @@ The eight items under `template/` — the mirror of the workspace content, gener
 _Avoid_: release snapshot, published snapshot
 
 **Target Repository** (目标仓库):
-A repository initialized by copying `template/` into its root. It then loads the skills and project-level global config from its own `.agents/skills/` and `AGENTS.md`.
+A repository initialized by copying `template/` into its root and then fetching the upstream skills per the README. It then loads the skills and project-level global config from its own `.agents/skills/` and `AGENTS.md`.
 _Avoid_: inheriting repo, child repo
 
 **Initialize** (初始化):
-The one-time action of copying `template/` into a Target Repository's root (`cp -r template/. <target>/`). Copying, not inheriting — no runtime relationship survives the copy.
+The one-time action of setting up a Target Repository: copying `template/` into its root (`cp -r template/. <target>/`), then fetching the 22 upstream skills from the Upstream Repository. Copying, not inheriting — no runtime relationship survives the copy.
 _Avoid_: inherit, bootstrap
 
 ## Skill Design
