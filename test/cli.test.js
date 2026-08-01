@@ -120,6 +120,19 @@ test('`--help` prints help and exits 0', () => {
   assert.match(stdout, /Usage:/);
   assert.match(stdout, /list/);
 });
+test('`install --help` prints help and exits 0', () => {
+  const { status, stdout, stderr } = runCli(['install', '--help']);
+  assert.equal(status, 0, stderr);
+  assert.match(stdout, /Usage:/);
+  assert.match(stdout, /--tools/);
+});
+
+test('`list --help` prints help and exits 0', () => {
+  const { status, stdout, stderr } = runCli(['list', '--help']);
+  assert.equal(status, 0, stderr);
+  assert.match(stdout, /Usage:/);
+  assert.match(stdout, /--tools/);
+});
 
 test('`install --all --dest` copies every skill (incl. attached files) and prints a summary', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-dest-'));

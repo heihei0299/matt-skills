@@ -232,7 +232,7 @@ async function installCommand({ dest, force, all, tools, global }) {
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
+  if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
     process.stdout.write(HELP);
     return;
   }
