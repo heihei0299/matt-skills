@@ -40,9 +40,9 @@ disable-model-invocation: true
 
 | 产出物 | 位置 | 格式来源 |
 |--------|------|----------|
-| Glossary | `CONTEXT.md`（多上下文：`CONTEXT-MAP.md` + 各上下文 `CONTEXT.md`） | [CONTEXT-FORMAT.md](../domain-modeling/CONTEXT-FORMAT.md) |
-| ADR | `docs/adr/NNNN-slug.md`（多上下文：系统级在根，上下文级在 `src/<ctx>/docs/adr/`） | [ADR-FORMAT.md](../domain-modeling/ADR-FORMAT.md) |
-| Spec | 发布到 issue tracker：`.scratch/<feature-slug>/spec.md` | [to-spec 七节模板](../to-spec/SKILL.md) |
+| Glossary | `CONTEXT.md`（多上下文：`CONTEXT-MAP.md` + 各上下文 `CONTEXT.md`） | [CONTEXT-FORMAT.md](.agents/skills/domain-modeling/CONTEXT-FORMAT.md) |
+| ADR | `docs/adr/NNNN-slug.md`（多上下文：系统级在根，上下文级在 `src/<ctx>/docs/adr/`） | [ADR-FORMAT.md](.agents/skills/domain-modeling/ADR-FORMAT.md) |
+| Spec | 发布到 issue tracker：`.scratch/<feature-slug>/spec.md` | [to-spec 七节模板](.agents/skills/to-spec/SKILL.md) |
 
 ### Glossary 守则
 - 懒创建：首个术语解析时才建 `CONTEXT.md`；多上下文时先确认归属，归属不清则询问
@@ -90,7 +90,7 @@ disable-model-invocation: true
 
 ## 引用
 
-- [grill-with-docs](../grill-with-docs/SKILL.md)
-- [grilling](../grilling/SKILL.md)
-- [domain-modeling](../domain-modeling/SKILL.md)
-- [to-spec](../to-spec/SKILL.md)
+- [grill-with-docs](.agents/skills/grill-with-docs/SKILL.md)
+- [grilling](.agents/skills/grilling/SKILL.md)
+- [domain-modeling](.agents/skills/domain-modeling/SKILL.md)
+- [to-spec](.agents/skills/to-spec/SKILL.md)

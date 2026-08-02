@@ -5,7 +5,7 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 
 # TDD Implement
 
-整合 **implement** + **tdd** 的完整实现流程：每个 seam 一个红-绿循环，直到 commit。TDD 语义（红-绿循环、seam 定义、好测试标准）以 [tdd 技能](../tdd/SKILL.md) 为唯一事实源——测试标准详见 [tdd/tests.md](../tdd/tests.md)，Mock 边界见 [tdd/mocking.md](../tdd/mocking.md)；本技能只编排阶段与运行时规则。
+整合 **implement** + **tdd** 的完整实现流程：每个 seam 一个红-绿循环，直到 commit。TDD 语义（红-绿循环、seam 定义、好测试标准）以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源——测试标准详见 [tdd/tests.md](.agents/skills/tdd/tests.md)，Mock 边界见 [tdd/mocking.md](.agents/skills/tdd/mocking.md)；本技能只编排阶段与运行时规则。
 
 本技能是**长程任务**（Long-Horizon Skill）：多阶段串行执行，自带**回合连续性**（Turn Continuity）与**任务分解**（Chunking）规则（见 [stages.md](stages.md) 阶段③ 3e/3f）。术语定义见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
 
@@ -15,7 +15,7 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 ① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit → ⑦ 收尾（issue 状态 + 实施总结）
 ```
 
-每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](../tdd/SKILL.md)，不在本文件重写。
+每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](.agents/skills/tdd/SKILL.md)，不在本文件重写。
 
 ## 回合连续性规则
 
@@ -89,7 +89,7 @@ pending → in-progress → done
 
 ## 引用
 
-- TDD 核心规则：[tdd 技能](../tdd/SKILL.md)
-- 测试标准：[tdd/tests.md](../tdd/tests.md)
-- Mock 指南：[tdd/mocking.md](../tdd/mocking.md)
+- TDD 核心规则：[tdd 技能](.agents/skills/tdd/SKILL.md)
+- 测试标准：[tdd/tests.md](.agents/skills/tdd/tests.md)
+- Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
 - Issue tracker 约定：[issue-tracker.md](../../docs/agents/issue-tracker.md)

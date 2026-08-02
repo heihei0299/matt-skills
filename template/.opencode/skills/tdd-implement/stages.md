@@ -7,7 +7,7 @@
 
 ### 操作
 1. 完整读取 spec/ticket 内容
-2. 若存在 `CONTEXT.md` 和 `docs/adr/`，先阅读，确保术语和 ADR 决策不被违背
+2. 若存在 `.opencode/CONTEXT.md` 和 `docs/adr/`，先阅读，确保术语和 ADR 决策不被违背
 3. 如有歧义，先向用户澄清再继续
 
 ### 出口条件
@@ -37,7 +37,7 @@
 ### 边界
 - 一个 seam 对应一个公共接口上的一个待测行为（输入 + 预期输出）：一个 seam = 一个测试 + 一个最小实现 cycle；同一接口的多个行为拆分为多个 seam，而非内部函数
 
-> Seams 定义参考：[tdd 技能](../tdd/SKILL.md#seams--where-tests-go)
+> Seams 定义参考：[tdd 技能](.agents/skills/tdd/SKILL.md#seams--where-tests-go)
 
 ---
 
@@ -48,11 +48,11 @@
 
 ### 操作
 
-**红-绿循环前与循环中都查阅 tdd 技能各节**（Every section applies on every cycle）：TDD 语义与测试规则以 [tdd 技能](../tdd/SKILL.md) 为唯一事实源，不再在此重写——好测试标准见 [tdd/tests.md](../tdd/tests.md)，Mock 指南见 [tdd/mocking.md](../tdd/mocking.md)。
+**红-绿循环前与循环中都查阅 tdd 技能各节**（Every section applies on every cycle）：TDD 语义与测试规则以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不再在此重写——好测试标准见 [tdd/tests.md](.agents/skills/tdd/tests.md)，Mock 指南见 [tdd/mocking.md](.agents/skills/tdd/mocking.md)。
 本阶段只执行编排：按阶段②生成的 todo 清单逐条推进（大小任务层次与 Subtodo 格式见 [SKILL.md「任务拆分与 Todo 规定」](SKILL.md#任务拆分与-todo-规定)），每完成一个 todo（红-绿 cycle + typecheck）立即更新其状态为 `done`，再进入下一个 todo。
 
 #### 3a/3b. 红-绿（Red-Green）
-红-绿循环的执行规则（Red before green、One slice at a time、Anti-patterns、垂直切片）以 tdd 技能为准，见 [tdd/SKILL.md](../tdd/SKILL.md) 与 [tdd/tests.md](../tdd/tests.md)。
+红-绿循环的执行规则（Red before green、One slice at a time、Anti-patterns、垂直切片）以 tdd 技能为准，见 [tdd/SKILL.md](.agents/skills/tdd/SKILL.md) 与 [tdd/tests.md](.agents/skills/tdd/tests.md)。
 
 #### 3c. 切换 seam
 每完成一个 seam 立即进入下一个 seam，同一回合内串行推进，不等用户“继续”。
@@ -80,8 +80,8 @@
 - 全部 todo 为 done 才进入阶段④
 - 测试质量规则（公共接口验证、独立断言、mock 边界、重构归属 review）见 tdd 技能，不在本阶段重写
 
-> Mock 指南：[tdd/mocking.md](../tdd/mocking.md)
-> 好测试标准：[tdd/tests.md](../tdd/tests.md)
+> Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
+> 好测试标准：[tdd/tests.md](.agents/skills/tdd/tests.md)
 
 ---
 

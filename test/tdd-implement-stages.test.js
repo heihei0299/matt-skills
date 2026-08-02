@@ -72,7 +72,7 @@ test('SKILL.md reference section keeps the tests.md and mocking.md links', () =>
 });
 
 test('stage ③ defers TDD semantics to the tdd skill (single source of truth)', () => {
-  assert.match(stages, /以 \[tdd 技能\]\(\.\.\/tdd\/SKILL\.md\) 为唯一事实源/);
+  assert.match(stages, /以 \[tdd 技能\]\(\.agents\/skills\/tdd\/SKILL\.md\) 为唯一事实源/);
   assert.match(stages, /不再在此重写/);
   assert.match(stages, /循环前与循环中都查阅/);
   assert.match(stages, /tdd\/tests\.md/);
@@ -81,7 +81,7 @@ test('stage ③ defers TDD semantics to the tdd skill (single source of truth)',
 
 test('SKILL.md points TDD descriptions at the tdd skill', () => {
   assert.match(skill, /唯一事实源/);
-  assert.match(skill, /\.\.\/tdd\/SKILL\.md/);
+  assert.match(skill, /\.agents\/skills\/tdd\/SKILL\.md/);
   assert.match(skill, /③ TDD 开发循环的红-绿规则见/);
 });
 

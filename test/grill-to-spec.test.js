@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { MAP_SKILL, normalize } from './mirror-utils.js';
 
 // Regression tests for the "ADR written without explicit user confirmation"
 // hazard. Root cause: the upstream domain-modeling skill only says "offer to
@@ -38,8 +39,8 @@ test('stage ① carries the draft → confirm → write sub-flow', () => {
   assert.match(skill, /未确认前不得创建或写入/);
 });
 
-test('template mirror stays in sync with the workspace copy', () => {
-  assert.equal(readFileSync(tmplPath, 'utf8'), skill);
+test('template mirror stays in sync with the workspace copy (path-mapped)', () => {
+  assert.equal(normalize(readFileSync(tmplPath, 'utf8'), MAP_SKILL), skill);
 });
 
 test('产出物表 lists exactly the three deliverables with their format sources', () => {

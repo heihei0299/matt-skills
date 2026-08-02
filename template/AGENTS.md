@@ -13,7 +13,7 @@
 
 ## 快速上手
 
-1. 读 CONTEXT.md（术语）——没有则跳过
+1. 读 `.opencode/CONTEXT.md`（术语）——没有则跳过
 2. 按行为路由表行动；未命中用 ask-matt 或直接澄清
 3. 探索代码库：派 explore 子代理，内部优先 codegraph_explore
 
@@ -44,7 +44,7 @@
 
 ## 分文件
 
-- 运行时纪律与执行/文档维护细则 → docs/agents/runtime-discipline.md
-- 技能设计规范 → docs/agents/skill-design.md
-- Issue tracker → docs/agents/issue-tracker.md；Triage labels → docs/agents/triage-labels.md；Domain docs → docs/agents/domain.md
-- 术语表 → CONTEXT.md
+- 运行时纪律与执行/文档维护细则 → `.opencode/docs/agents/runtime-discipline.md`
+- 技能设计规范 → `.opencode/docs/agents/skill-design.md`
+- Issue tracker → `.opencode/docs/agents/issue-tracker.md`；Triage labels → `.opencode/docs/agents/triage-labels.md`；Domain docs → `.opencode/docs/agents/domain.md`
+- 术语表 → `.opencode/CONTEXT.md`

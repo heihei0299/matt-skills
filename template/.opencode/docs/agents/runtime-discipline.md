@@ -1,6 +1,6 @@
 # Runtime Discipline
 
-本仓库会话的运行时纪律，执行口径源自 `docs/agents/skill-design.md` 的三条规则（规范正文）。术语定义见 `CONTEXT.md`。
+本仓库会话的运行时纪律，执行口径源自 `.opencode/docs/agents/skill-design.md` 的三条规则（规范正文）。术语定义见 `.opencode/CONTEXT.md`。
 
 ## 回合连续性规则
 
@@ -11,7 +11,7 @@
 - 外部阻塞：权限拒绝、缺失授权、依赖不可用——明确说明所需授权或替代路径，不静默停止
 - 阶段完成：整个阶段的出口条件满足（如 seam 全绿、typecheck 通过、commit 完成）
 
-预告下一步后立即执行该步骤，禁止把"分析/预告"当作回合终点。随包示例见 `.agents/skills/tdd-implement/SKILL.md` 与 `stages.md` 阶段③ 3e。
+预告下一步后立即执行该步骤，禁止把"分析/预告"当作回合终点。随包示例见 `.opencode/skills/tdd-implement/SKILL.md` 与 `stages.md` 阶段③ 3e。
 
 ## 运行纪律（长程任务）
 

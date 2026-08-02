@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { MAP_SKILL, MAP_DOCS, MAP_AGENTS, normalize } from './mirror-utils.js';
 
 // Guard the template snapshot: template/ is what init copies into target
-// repos, so every one of the 8 template items must stay in sync with the
-// workspace copies at the repo root. Edit the workspace, then re-sync.
+// repos. The workspace mirrors into template/ with a path mapping (skills,
+// discipline docs and glossary land under .opencode/, AGENTS.md at the top
+// level), so the mirror checks normalize the template copies back to
+// workspace paths before comparing. Edit the workspace, then re-sync.
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (p) => path.join(dir, p);
@@ -32,7 +35,7 @@ function readDirRecursive(dirPath) {
   return out.sort();
 }
 
-test('template/.opencode/skills mirrors the proprietary skills', () => {
+test('template/.opencode/skills mirrors the proprietary skills (path-mapped)', () => {
   for (const skill of PROPRIETARY_SKILLS) {
     const wsFiles = readDirRecursive(root(path.join('.agents/skills', skill)));
     const tmplFiles = readDirRecursive(root(path.join('template/.opencode/skills', skill)));
@@ -44,7 +47,7 @@ test('template/.opencode/skills mirrors the proprietary skills', () => {
     for (const f of wsFiles) {
       const rel = path.relative(root(path.join('.agents/skills', skill)), f);
       assert.equal(
-        readFileSync(root(path.join('template/.opencode/skills', skill, rel)), 'utf8'),
+        normalize(readFileSync(root(path.join('template/.opencode/skills', skill, rel)), 'utf8'), MAP_SKILL),
         readFileSync(f, 'utf8'),
         `template/.opencode/skills/${skill}/${rel} out of sync`,
       );
@@ -69,25 +72,54 @@ test('template/.opencode/skills/issue-audit exists standalone', () => {
   assert.ok(statSync(root('template/.opencode/skills/issue-audit/SKILL.md')).isFile());
 });
 
-test('template/AGENTS.md mirrors the root AGENTS.md', () => {
-  assert.equal(readFileSync(root('template/AGENTS.md'), 'utf8'), readFileSync(root('AGENTS.md'), 'utf8'));
+test('template/AGENTS.md mirrors the root AGENTS.md (path-mapped)', () => {
+  assert.equal(
+    normalize(readFileSync(root('template/AGENTS.md'), 'utf8'), MAP_AGENTS),
+    readFileSync(root('AGENTS.md'), 'utf8'),
+  );
 });
 
-test('template/CONTEXT.md mirrors the root CONTEXT.md', () => {
-  assert.equal(readFileSync(root('template/CONTEXT.md'), 'utf8'), readFileSync(root('CONTEXT.md'), 'utf8'));
+test('template/.opencode/CONTEXT.md mirrors the root CONTEXT.md', () => {
+  assert.equal(
+    readFileSync(root('template/.opencode/CONTEXT.md'), 'utf8'),
+    readFileSync(root('CONTEXT.md'), 'utf8'),
+  );
 });
 
-test('template/docs/agents mirrors the root docs/agents', () => {
+test('template/.opencode/docs/agents mirrors the root docs/agents (path-mapped)', () => {
   for (const f of DOC_AGENTS) {
     assert.equal(
-      readFileSync(root(path.join('template/docs/agents', f)), 'utf8'),
+      normalize(readFileSync(root(path.join('template/.opencode/docs/agents', f)), 'utf8'), MAP_DOCS),
       readFileSync(root(path.join('docs/agents', f)), 'utf8'),
-      `template/docs/agents/${f} out of sync`,
+      `template/.opencode/docs/agents/${f} out of sync`,
     );
   }
 });
 
 test('template/ carries exactly the inheritable items, nothing else', () => {
   const entries = readdirSync(root('template')).sort();
-  assert.deepEqual(entries, ['.opencode', 'AGENTS.md', 'CONTEXT.md', 'docs']);
+  assert.deepEqual(entries, ['.opencode', 'AGENTS.md']);
+});
+
+test('template/ internal markdown links resolve (except upstream skill refs)', () => {
+  const mdFiles = [];
+  const walk = (p) => {
+    for (const entry of readdirSync(p)) {
+      const full = path.join(p, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (entry.endsWith('.md')) mdFiles.push(full);
+    }
+  };
+  walk(root('template'));
+  const linkRe = /\[[^\]]*\]\(([^)\s]+)\)/g;
+  for (const f of mdFiles) {
+    const content = readFileSync(f, 'utf8');
+    for (const m of content.matchAll(linkRe)) {
+      const href = m[1];
+      if (/^(https?:|mailto:|#)/.test(href)) continue;
+      if (href.startsWith('.agents/')) continue; // hardcoded upstream skill ref, fetched at init
+      const target = path.resolve(path.dirname(f), decodeURIComponent(href.split('#')[0]));
+      assert.ok(statSync(target).isFile(), `broken link in ${path.relative(dir, f)}: ${href}`);
+    }
+  }
 });

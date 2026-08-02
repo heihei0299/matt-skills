@@ -19,7 +19,7 @@ description: 审计一个 feature 的 issue 完成情况——逐票核对验收
   - `.scratch/<feature-slug>/spec.md`（Implementation Decisions、Testing Decisions、Out of Scope）
   - `.scratch/<feature-slug>/issues/*.md`（每票的验收标准、Blocked by 依赖）
   - `docs/adr/*.md`（架构决策，审计对象）
-  - `CONTEXT.md`（术语表，违反术语视为 spec 遵守问题）
+  - `.opencode/CONTEXT.md`（术语表，违反术语视为 spec 遵守问题）
   - 当前工作树代码 + 只读 git 历史（提交哈希作为"确实做过"的证据）
 
 ## 四维审计
@@ -53,7 +53,7 @@ description: 审计一个 feature 的 issue 完成情况——逐票核对验收
 ## 执行步骤
 
 1. 解析输入：确认 `.scratch/<feature-slug>/` 存在，列出 spec 与全部 issue。
-2. 收集约定：读 spec.md、全部 issues、`docs/adr/`、CONTEXT.md。
+2. 收集约定：读 spec.md、全部 issues、`docs/adr/`、`.opencode/CONTEXT.md`。
 3. 逐票核对（维度 1）：每票验收标准逐条判定，记录证据。
 4. 维度 2/3：以 spec 决策与 ADR 对照当前代码实现。
 5. 维度 4：对照 README 等文档与当前实现。

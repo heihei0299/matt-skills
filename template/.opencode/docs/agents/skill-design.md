@@ -11,7 +11,7 @@ Every **Long-Horizon Skill** must carry a positive **Turn Continuity** rule of i
 - State it **positively** (per the negation principle in `writing-great-skills`): describe the target behaviour, never the banned one.
 - It must be **self-contained** — the skill cannot rely on the harness `/goal` line, because no `/goal` exists when the user does not activate one.
 - Every stage ends on a checkable exit condition; reaching it is the only thing that ends the turn.
-- Canonical example: the 回合连续性 rule in [`.agents/skills/tdd-implement/stages.md`](../../.agents/skills/tdd-implement/stages.md) stage ③.
+- Canonical example: the 回合连续性 rule in [`.opencode/skills/tdd-implement/stages.md`](../../skills/tdd-implement/stages.md) stage ③.
 
 ## Rule 2 — Model Selection
 
