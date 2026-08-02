@@ -35,8 +35,7 @@
 - 用户明确同意了 seams 清单
 
 ### 边界
-- 一个 seam 对应一个公共接口，而非内部函数
-- Seams 覆盖关键路径和复杂逻辑，边缘情况按需覆盖
+- 一个 seam 对应一个公共接口上的一个待测行为（输入 + 预期输出）：一个 seam = 一个测试 + 一个最小实现 cycle；同一接口的多个行为拆分为多个 seam，而非内部函数
 
 > Seams 定义参考：[tdd 技能](../tdd/SKILL.md#seams--where-tests-go)
 
@@ -49,22 +48,14 @@
 
 ### 操作
 
-严格遵循 tdd 技能的全部规定（参见 [tdd/SKILL.md](../tdd/SKILL.md)），按垂直切片方式逐 seam 推进。
-按阶段②生成的 todo 清单逐条推进：每完成一个 todo（红-绿 cycle + typecheck）立即更新其状态为 `done`，再进入下一个 todo。
+**红-绿循环前与循环中都查阅 tdd 技能各节**（Every section applies on every cycle）：TDD 语义与测试规则以 [tdd 技能](../tdd/SKILL.md) 为唯一事实源，不再在此重写——好测试标准见 [tdd/tests.md](../tdd/tests.md)，Mock 指南见 [tdd/mocking.md](../tdd/mocking.md)。
+本阶段只执行编排：按阶段②生成的 todo 清单逐条推进（大小任务层次与 Subtodo 格式见 [SKILL.md「任务拆分与 Todo 规定」](SKILL.md#任务拆分与-todo-规定)），每完成一个 todo（红-绿 cycle + typecheck）立即更新其状态为 `done`，再进入下一个 todo。
 
-#### 3a. 红（Red）
-1. 为当前 seam 写一个会失败的测试
-2. 测试只通过公共接口验证行为
-3. 一次只为一个 seam 写测试——垂直切片逐条推进
-4. 断言值来自独立来源（字面量、手算例子），而非代码同源计算
-
-#### 3b. 绿（Green）
-1. 只写刚好能让当前测试通过的最小代码
-2. 只添加被测试覆盖的功能
+#### 3a/3b. 红-绿（Red-Green）
+红-绿循环的执行规则（Red before green、One slice at a time、Anti-patterns、垂直切片）以 tdd 技能为准，见 [tdd/SKILL.md](../tdd/SKILL.md) 与 [tdd/tests.md](../tdd/tests.md)。
 
 #### 3c. 切换 seam
-1. 每完成一个 seam 立即进入下一个 seam，同一回合内串行推进，不等用户“继续”
-2. 每次只做一个 seam → 一个测试 → 一个实现
+每完成一个 seam 立即进入下一个 seam，同一回合内串行推进，不等用户“继续”。
 
 #### 3d. Typecheck
 - 每个 cycle 结束后运行 typecheck
@@ -72,7 +63,7 @@
 
 #### 3e. 回合连续性
 - 每个红-绿 cycle 及其 typecheck 必须在一个回合内串行完成：测试 → 分析失败 → 修正 → 重跑 → 全绿，中途不输出、不停止、不等用户“继续”
-- 预告下一步后立即执行该步骤，禁止把“分析/预告”当作回合终点
+- 预告下一步后立即执行该步骤，回合终点仅为合规交互点、外部阻塞或阶段出口条件满足
 - 输出只发生在：合规交互点（用户确认）、外部阻塞（明确说明所需授权或替代路径）、阶段出口条件满足时
 - 外部阻塞（如权限拒绝）时明确请求授权或改用不冲突的路径，不静默等待
 
@@ -85,11 +76,9 @@
 - Typecheck 通过
 
 ### 边界
-- 一次一个 seam：测试、实现、验证都聚焦当前 seam
-- 绿阶段只写通过测试所需的最小代码
-- 重构留到 code review 阶段
 - 每个 cycle 后运行 typecheck
 - 全部 todo 为 done 才进入阶段④
+- 测试质量规则（公共接口验证、独立断言、mock 边界、重构归属 review）见 tdd 技能，不在本阶段重写
 
 > Mock 指南：[tdd/mocking.md](../tdd/mocking.md)
 > 好测试标准：[tdd/tests.md](../tdd/tests.md)

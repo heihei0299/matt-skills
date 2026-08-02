@@ -57,3 +57,40 @@ test('SKILL.md no longer mandates the Goal mode (removed)', () => {
   assert.doesNotMatch(skill, /Goal 模式/);
   assert.doesNotMatch(skill, /goal_complete/);
 });
+
+test('stage ③ does not re-rewrite TDD semantics deferred to the tdd skill', () => {
+  assert.doesNotMatch(stages, /只写刚好能让当前测试通过的最小代码/);
+  assert.doesNotMatch(stages, /断言值来自独立来源/);
+  assert.doesNotMatch(stages, /垂直切片逐条推进/);
+  assert.doesNotMatch(stages, /每次只做一个 seam/);
+  assert.doesNotMatch(stages, /重构留到 code review 阶段/);
+});
+
+test('SKILL.md reference section keeps the tests.md and mocking.md links', () => {
+  assert.match(skill, /tdd\/tests\.md/);
+  assert.match(skill, /tdd\/mocking\.md/);
+});
+
+test('stage ③ defers TDD semantics to the tdd skill (single source of truth)', () => {
+  assert.match(stages, /以 \[tdd 技能\]\(\.\.\/tdd\/SKILL\.md\) 为唯一事实源/);
+  assert.match(stages, /不再在此重写/);
+  assert.match(stages, /循环前与循环中都查阅/);
+  assert.match(stages, /tdd\/tests\.md/);
+  assert.match(stages, /tdd\/mocking\.md/);
+});
+
+test('SKILL.md points TDD descriptions at the tdd skill', () => {
+  assert.match(skill, /唯一事实源/);
+  assert.match(skill, /\.\.\/tdd\/SKILL\.md/);
+  assert.match(skill, /③ TDD 开发循环的红-绿规则见/);
+});
+
+test('SKILL.md todo spec has big/small task hierarchy with subtask steps', () => {
+  assert.match(skill, /大小任务层次/);
+  assert.match(skill, /\*\*大任务\*\*/);
+  assert.match(skill, /\*\*中任务\*\*/);
+  assert.match(skill, /\*\*小任务\*\*/);
+  assert.match(skill, /\*\*执行步\*\*/);
+  assert.match(skill, /`T1-R` 红/);
+  assert.match(skill, /Subtodo 不单独设 `blocked`/);
+});

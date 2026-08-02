@@ -5,9 +5,9 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 
 # TDD Implement
 
-整合 **implement** + **tdd** 的完整实现流程：每个 seam 一个红-绿循环，直到 commit。
+整合 **implement** + **tdd** 的完整实现流程：每个 seam 一个红-绿循环，直到 commit。TDD 语义（红-绿循环、seam 定义、好测试标准）以 [tdd 技能](../tdd/SKILL.md) 为唯一事实源——测试标准详见 [tdd/tests.md](../tdd/tests.md)，Mock 边界见 [tdd/mocking.md](../tdd/mocking.md)；本技能只编排阶段与运行时规则。
 
-本技能是**长程任务**（Long-Horizon Skill）：多阶段串行执行，自带**回合连续性**（Turn Continuity）与**任务分解**（Chunking）规则（见下文与 [stages.md](stages.md) 阶段③ 3e/3f）。术语定义见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
+本技能是**长程任务**（Long-Horizon Skill）：多阶段串行执行，自带**回合连续性**（Turn Continuity）与**任务分解**（Chunking）规则（见 [stages.md](stages.md) 阶段③ 3e/3f）。术语定义见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
 
 ## 流程速览
 
@@ -15,7 +15,7 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 ① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit → ⑦ 收尾（issue 状态 + 实施总结）
 ```
 
-每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。
+每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](../tdd/SKILL.md)，不在本文件重写。
 
 ## 回合连续性规则
 
@@ -26,12 +26,16 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 - **外部阻塞**：权限拒绝、缺失授权、依赖不可用——此时明确说明需要什么授权或替代路径，不静默停止
 - **阶段完成**：整个阶段的出口条件满足（如某 seam 全绿、typecheck 通过、commit 完成）
 
-预告下一步后立即执行该步骤，禁止把“分析/预告”当作回合终点。
+预告下一步后立即执行该步骤，回合终点仅为合规交互点、外部阻塞或阶段出口条件满足。
 
 ## 任务拆分与 Todo 规定
 
-### 拆分层级
-Goal/Ticket → Seams（阶段②）→ Todo（每 seam 一个红-绿 cycle）
+### 拆分层级（大小任务层次）
+
+1. **大任务**：Goal/Ticket——整个实现单元，对应一次完整的 tdd-implement 流程
+2. **中任务**：Seam（阶段②确认）——一个红-绿循环单元，每 seam 一个 Todo
+3. **小任务**：Todo——seam 内可独立验证、可勾选的执行单元（T1/T2/T3…）
+4. **执行步**：Subtodo——Todo 内的串行步骤（红 → 绿 → typecheck），回合内逐步勾选推进
 
 ### Todo 清单格式
 阶段② seams 确认后立即生成 todo 清单，每个 seam 一个 todo：
@@ -39,16 +43,19 @@ Goal/Ticket → Seams（阶段②）→ Todo（每 seam 一个红-绿 cycle）
 - 描述：seam 名称 + 输入 + 预期输出
 - 状态：`pending` / `in-progress` / `done` / `blocked`
 - 完成标准（DoD）：该 seam 测试全绿 + typecheck 通过 + 既有测试不受影响
+- 执行步（Subtodo）：`T1-R` 红（写失败测试）→ `T1-G` 绿（最小实现）→ `T1-T` typecheck
 
 ### Todo 状态机
 ```
 pending → in-progress → done
                 ↘ blocked（外部阻塞）→（授权/替代路径）→ in-progress
 ```
+- Subtodo 不单独设 `blocked`——阻塞状态归父 Todo，Subtodo 跟随父状态
 
 ### 粒度与回合归属
 - 一个 todo = 一个 seam 的红-绿 cycle + typecheck，不可再拆
 - 一个 todo 必须在一个回合内完成（红→绿→typecheck→全绿）
+- Subtodo 是 todo 内的执行步：每完成一步立即进入下一步（`T1-R` → `T1-G` → `T1-T`），禁止停在步间预告
 - 每完成一个 todo 立即更新其状态，再进入下一个
 - 全部 todo 为 done 才进入阶段④
 
