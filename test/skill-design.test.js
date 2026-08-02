@@ -16,7 +16,7 @@ const contextPath = path.join(dir, 'CONTEXT.md');
 const adrPath = path.join(dir, 'docs', 'adr', '0001-turn-continuity-rule.md');
 const agentsPath = path.join(dir, 'AGENTS.md');
 const runtimePath = path.join(dir, 'docs', 'agents', 'runtime-discipline.md');
-const diagnosisPath = path.join(dir, 'DIAGNOSIS-tdd-implement-stuck.md');
+const diagnosisPath = path.join(dir, 'pi', 'DIAGNOSIS-tdd-implement-stuck.md');
 
 const spec = readFileSync(specPath, 'utf8');
 const context = readFileSync(contextPath, 'utf8');
