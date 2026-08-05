@@ -12,14 +12,14 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 ## 流程速览
 
 ```
-① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit → ⑦ 收尾（issue 状态 + 实施总结）
+① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit → ⑦ 收尾（文档对齐 + issue 状态 + 实施总结）
 ```
 
 每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](.agents/skills/tdd/SKILL.md)，不在本文件重写。
 
 阶段要点：
 - ⑤ Code Review：审查结果只在对话输出，不生成书面审查报告（不落盘 `review-*.md` 类文件）
-- ⑦ 收尾：有关联 issue 时，其验收标准逐条转写为 checkbox 清单并打勾——全部 `- [x]` 才允许标 `resolved`
+- ⑦ 收尾：先对齐文档——检查 README 与 docs/ 中涉及本次实现的描述与实现是否一致，不一致则更新并 commit；再更新 issue 状态（有关联 issue 时，其验收标准逐条转写为 checkbox 清单并打勾——全部 `- [x]` 才允许标 `resolved`）
 
 ## 回合连续性规则
 

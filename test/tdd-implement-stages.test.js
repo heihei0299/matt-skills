@@ -55,6 +55,15 @@ test('stage ⑦ closes the loop: issue status + implementation summary', () => {
   assert.match(skill, /实施总结/);
 });
 
+test('stage ⑦ carries the doc-alignment step', () => {
+  assert.match(stages, /文档对齐/);
+  assert.match(stages, /README/);
+  assert.match(stages, /单独 commit/);
+  assert.match(stages, /不顺手重构无关文档/);
+  assert.match(skill, /⑦ 收尾（文档对齐/);
+  assert.match(stages, /- 文档对齐：/);
+});
+
 test('SKILL.md no longer mandates the Goal mode (removed)', () => {
   assert.doesNotMatch(skill, /Goal 模式/);
   assert.doesNotMatch(skill, /goal_complete/);
