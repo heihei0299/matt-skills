@@ -79,12 +79,25 @@ test('template skills carry no upstream skills (both harness dirs)', () => {
   }
 });
 
-test('template/.opencode/agents + commands carry issue-audit in sync', () => {
-  for (const f of ['agents/issue-audit.md', 'commands/issue-audit.md']) {
+const COMMANDS_DIR = 'commands';
+
+test('template/.opencode/agents carries issue-audit in sync', () => {
+  assert.equal(
+    normalize(readFileSync(root('template/.opencode/agents/issue-audit.md'), 'utf8'), MAP_AGENTS),
+    readFileSync(root('.opencode/agents/issue-audit.md'), 'utf8'),
+    'template/.opencode/agents/issue-audit.md out of sync',
+  );
+});
+
+test('template/.opencode/commands mirrors all commands in sync', () => {
+  const wsCommands = readdirSync(root('.opencode/commands')).sort();
+  const tmplCommands = readdirSync(root('template/.opencode/commands')).sort();
+  assert.deepEqual(tmplCommands, wsCommands, 'command file listing out of sync');
+  for (const f of wsCommands) {
     assert.equal(
-      normalize(readFileSync(root(path.join('template/.opencode', f)), 'utf8'), MAP_AGENTS),
-      readFileSync(root(path.join('.opencode', f)), 'utf8'),
-      `template/.opencode/${f} out of sync`,
+      normalize(readFileSync(root(path.join('template/.opencode', COMMANDS_DIR, f)), 'utf8'), MAP_AGENTS),
+      readFileSync(root(path.join('.opencode', COMMANDS_DIR, f)), 'utf8'),
+      `template/.opencode/${COMMANDS_DIR}/${f} out of sync`,
     );
   }
 });

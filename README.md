@@ -11,7 +11,7 @@ template/
 └── .opencode/        分发内容（目标仓库的 opencode 项目配置）
     ├── skills/       4 个独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check）
     ├── agents/       issue-audit 子代理定义
-    ├── commands/     issue-audit 命令
+    ├── commands/     issue-audit + 9 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-great-skills）
     ├── docs/agents/  5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
     ├── CONTEXT.md    术语表
     ├── package.json  插件依赖清单
@@ -35,7 +35,7 @@ cp -r /tmp/mattpocock-skills/skills/productivity/. .agents/skills/
 rm -rf /tmp/mattpocock-skills
 ```
 
-上游没有 `tdd-implement`、`grill-to-spec`、`diagnose-fix`、`commit-check`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`；pi 侧独有在 `.pi/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）。
+上游没有 `tdd-implement`、`grill-to-spec`、`diagnose-fix`、`commit-check`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`；pi 侧独有在 `.pi/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；9 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
 
 **pi-agent 用户**：初始化命令完全相同。pi 从 `.pi/skills/` 自动发现独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check），无需任何指向配置；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
 
@@ -47,7 +47,7 @@ rm -rf /tmp/mattpocock-skills
 |--------|------|
 | `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` | `template/.opencode/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` |
 | `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` | `template/.pi/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` |
-| `.opencode/agents/issue-audit.md`、`commands/issue-audit.md`、`.gitignore`、`package.json`、`package-lock.json` | `template/.opencode/` 同名 |
+| `.opencode/agents/issue-audit.md`、`commands/*.md`（issue-audit + 9 个显式技能命令）、`.gitignore`、`package.json`、`package-lock.json` | `template/.opencode/` 同名 |
 | `.pi/prompts/issue-audit.md`（pi 命令：opencode 版适配，去 subagent frontmatter） | `template/.pi/prompts/issue-audit.md` |
 | `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
 | `CONTEXT.md` | `template/.opencode/CONTEXT.md` |
@@ -85,7 +85,7 @@ pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边
 
 ### opencode
 
-- **项目**：`.opencode/skills/`（技能）、`.opencode/agents/`（子代理）、`.opencode/commands/`（命令）、`.opencode/docs/`（文档）
+- **项目**：`.opencode/skills/`（技能）、`.opencode/agents/`（子代理）、`.opencode/commands/`（命令：issue-audit + 9 个显式触发技能，`/命令名` 触发）、`.opencode/docs/`（文档）
 - **全局**：`~/.config/opencode/`（`opencode.json` 配置、`skills/`、`agents/`、`commands/`），按 opencode 官方文档
 
 同一份技能（Agent Skills 标准）与 `AGENTS.md` 行为路由在两种 harness 下均可加载：opencode 从 `.opencode/skills/`、pi 从 `.pi/skills/` 与 `.agents/skills/`。
