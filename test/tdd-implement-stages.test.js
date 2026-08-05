@@ -144,6 +144,16 @@ test('stage ⑦ checks acceptance criteria as a checkbox list before resolving',
   assert.match(skill, /全部 `- \[x\]` 才允许标 `resolved`/);
 });
 
+test('stage ⑦ keeps the directory clean (temp artifacts + git status)', () => {
+  assert.match(stages, /保持目录卫生/);
+  assert.match(stages, /\[DEBUG-\.\.\.\]/);
+  assert.match(stages, /git status/);
+  assert.match(stages, /工作区干净/);
+  assert.match(stages, /无残留未跟踪文件/);
+  assert.match(skill, /保持目录卫生/);
+  assert.match(skill, /git status/);
+});
+
 test('code-review skill forbids written review report files', () => {
   assert.match(codeReview, /只在对话输出/);
   assert.match(codeReview, /不生成任何书面报告文件/);
