@@ -3,3 +3,5 @@ pi
 .codegraph/
 .cortexkit/
 pi-session-*.html
+.claude/
+.mcp.json
