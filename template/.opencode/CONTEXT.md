@@ -35,7 +35,7 @@ _Avoid_: inherit, bootstrap
 ## Skill Design
 
 **Turn Continuity** (回合连续性):
-The rule that a long-horizon skill must carry a positive instruction to keep executing within a turn — red → green → typecheck → next seam serial in one turn until the stage's exit condition is met. It is the skill's own guard against premature turn-end; it must not rely on the harness `/goal` line (which does not exist when no `/goal` is active).
+The rule that a long-horizon skill must carry a positive instruction to keep executing within a turn — red → green → typecheck → next seam serial in one turn until the stage's exit condition is met. The stage exit is reached when all of its seams are complete — one seam going green is not an exit, and progress output does not itself end the turn. It is the skill's own guard against premature turn-end; it must not rely on the harness `/goal` line (which does not exist when no `/goal` is active).
 _Avoid_: keep going, don't stop
 
 **Chunking** (拆小步 / 进度编排):

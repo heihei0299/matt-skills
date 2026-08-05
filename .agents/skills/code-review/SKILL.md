@@ -79,6 +79,11 @@ Present the two reports under `## Standards` and `## Spec` headings, verbatim or
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes — that's the reranking the separation exists to prevent.
 
+### 6. 输出形式
+
+- 审查结论**只在对话输出**，不生成任何书面报告文件（不落盘 `review-spec.md`、`review-standards.md`、`review-*.md` 类文件）
+- 被 tdd-implement 阶段⑤编排时同样适用
+
 ## Why two axes
 
 A change can pass one axis and fail the other:

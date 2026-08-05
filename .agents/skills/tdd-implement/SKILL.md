@@ -17,6 +17,10 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 
 每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](.agents/skills/tdd/SKILL.md)，不在本文件重写。
 
+阶段要点：
+- ⑤ Code Review：审查结果只在对话输出，不生成书面审查报告（不落盘 `review-*.md` 类文件）
+- ⑦ 收尾：有关联 issue 时，其验收标准逐条转写为 checkbox 清单并打勾——全部 `- [x]` 才允许标 `resolved`
+
 ## 回合连续性规则
 
 每个逻辑单元（一次红-绿循环、一次 typecheck、一次测试失败修复）必须**在一个回合内连续执行完毕后才输出**：测试 → 分析失败 → 修正 → 重跑 → 全绿 整条链一气呵成，中间不停顿、不等用户说“继续”。
@@ -24,9 +28,9 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 输出只允许发生在以下三种情况：
 - **合规交互点**：技能要求的用户确认（如阶段② seams 清单确认）——此时提问并等待
 - **外部阻塞**：权限拒绝、缺失授权、依赖不可用——此时明确说明需要什么授权或替代路径，不静默停止
-- **阶段完成**：整个阶段的出口条件满足（如某 seam 全绿、typecheck 通过、commit 完成）
+- **阶段完成**：整个阶段的出口条件满足（如阶段③的所有 seams 红-绿完成 + typecheck 通过、commit 完成）——单个 seam 全绿只是阶段③的内部步骤，不是回合终点
 
-预告下一步后立即执行该步骤，回合终点仅为合规交互点、外部阻塞或阶段出口条件满足。
+预告下一步后立即执行该步骤，回合终点仅为合规交互点、外部阻塞或阶段出口条件满足。输出进度/预告本身不结束回合——输出后继续执行，直到三类终点之一达成。
 
 ## 任务拆分与 Todo 规定
 
@@ -57,6 +61,7 @@ pending → in-progress → done
 - 一个 todo 必须在一个回合内完成（红→绿→typecheck→全绿）
 - Subtodo 是 todo 内的执行步：每完成一步立即进入下一步（`T1-R` → `T1-G` → `T1-T`），禁止停在步间预告
 - 每完成一个 todo 立即更新其状态，再进入下一个
+- todo 状态只按实际推进更新（pending → in-progress → done），不基于旧快照重写整个清单；已完成项（done）永不回退
 - 全部 todo 为 done 才进入阶段④
 
 ### 阻塞处理

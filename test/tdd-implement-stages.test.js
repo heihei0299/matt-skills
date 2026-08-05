@@ -13,9 +13,11 @@ import { fileURLToPath } from 'node:url';
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const stagesPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'stages.md');
 const skillPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'SKILL.md');
+const codeReviewPath = path.join(dir, '.agents', 'skills', 'code-review', 'SKILL.md');
 
 const stages = readFileSync(stagesPath, 'utf8');
 const skill = readFileSync(skillPath, 'utf8');
+const codeReview = readFileSync(codeReviewPath, 'utf8');
 
 test('stage ③ has a turn-continuity rule (fix for premature stop)', () => {
   assert.match(stages, /回合连续性/);
@@ -93,4 +95,48 @@ test('SKILL.md todo spec has big/small task hierarchy with subtask steps', () =>
   assert.match(skill, /\*\*执行步\*\*/);
   assert.match(skill, /`T1-R` 红/);
   assert.match(skill, /Subtodo 不单独设 `blocked`/);
+});
+
+test('stage ③ exit is anchored to ALL seams, not one seam (fix for seam-boundary stops)', () => {
+  assert.match(stages, /所有 seams 红-绿完成 \+ typecheck 通过/);
+  assert.match(stages, /单个 seam 全绿不是回合终点/);
+  assert.match(skill, /单个 seam 全绿只是阶段③的内部步骤，不是回合终点/);
+  assert.doesNotMatch(skill, /如某 seam 全绿、typecheck 通过/);
+});
+
+test('progress output does not end the turn (fix for announce-and-stop)', () => {
+  assert.match(stages, /进度输出并入工具调用序列/);
+  assert.match(stages, /不单独结束回合/);
+  assert.match(skill, /输出进度\/预告本身不结束回合/);
+});
+
+test('todo state updates follow actual progress, no stale-snapshot rewrites', () => {
+  assert.match(skill, /只按实际推进更新/);
+  assert.match(skill, /永不回退/);
+  assert.match(stages, /按实际推进更新对应 todo 状态/);
+  assert.match(stages, /已完成项（done）永不回退/);
+});
+
+test('stage ⑤ reports review results in conversation only, no written review reports', () => {
+  assert.match(stages, /只在对话输出/);
+  assert.match(stages, /不生成书面审查报告/);
+  assert.match(stages, /review-\*\.md/);
+  assert.match(skill, /审查结果只在对话输出/);
+  assert.match(skill, /不生成书面审查报告/);
+});
+
+test('stage ⑦ checks acceptance criteria as a checkbox list before resolving', () => {
+  assert.match(stages, /验收标准/);
+  assert.match(stages, /checkbox 清单/);
+  assert.match(stages, /- \[x\]/);
+  assert.match(stages, /- \[ \]/);
+  assert.match(stages, /全部打勾/);
+  assert.match(skill, /验收标准逐条转写为 checkbox 清单并打勾/);
+  assert.match(skill, /全部 `- \[x\]` 才允许标 `resolved`/);
+});
+
+test('code-review skill forbids written review report files', () => {
+  assert.match(codeReview, /只在对话输出/);
+  assert.match(codeReview, /不生成任何书面报告文件/);
+  assert.match(codeReview, /review-\*\.md/);
 });
