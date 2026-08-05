@@ -89,6 +89,22 @@ test('template/.opencode/agents + commands carry issue-audit in sync', () => {
   }
 });
 
+test('template/.pi/prompts carries the pi issue-audit command in sync', () => {
+  // pi has no subagent mechanism: the opencode command (agent/subtask frontmatter
+  // + subagent wording) is adapted for pi as a prompt template. Guard both the
+  // full equality of the pi copy and the adaptation deltas vs the opencode source.
+  const piPrompt = readFileSync(root('template/.pi/prompts/issue-audit.md'), 'utf8');
+  const wsPrompt = readFileSync(root('.pi/prompts/issue-audit.md'), 'utf8');
+  assert.equal(piPrompt, wsPrompt, 'template/.pi/prompts/issue-audit.md out of sync');
+  const ocCommand = readFileSync(root('.opencode/commands/issue-audit.md'), 'utf8');
+  assert.doesNotMatch(piPrompt, /^agent: /m, 'pi prompt must not carry subagent frontmatter');
+  assert.doesNotMatch(piPrompt, /^subtask: /m, 'pi prompt must not carry subtask frontmatter');
+  assert.match(piPrompt, /^argument-hint: /m, 'pi prompt should advertise its argument');
+  assert.match(piPrompt, /\$ARGUMENTS/, 'pi prompt keeps the argument placeholder');
+  assert.doesNotMatch(piPrompt, /subagent 内不执行/, 'subagent wording is pi-incompatible');
+  assert.match(ocCommand, /^agent: /m, 'opencode source keeps its subagent delegation');
+});
+
 test('template/AGENTS.md mirrors the root AGENTS.md (path-mapped)', () => {
   assert.equal(
     normalize(readFileSync(root('template/AGENTS.md'), 'utf8'), MAP_AGENTS),

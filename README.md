@@ -48,6 +48,7 @@ rm -rf /tmp/mattpocock-skills
 | `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` | `template/.opencode/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` |
 | `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` | `template/.pi/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` |
 | `.opencode/agents/issue-audit.md`、`commands/issue-audit.md`、`.gitignore`、`package.json`、`package-lock.json` | `template/.opencode/` 同名 |
+| `.pi/prompts/issue-audit.md`（pi 命令：opencode 版适配，去 subagent frontmatter） | `template/.pi/prompts/issue-audit.md` |
 | `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
 | `CONTEXT.md` | `template/.opencode/CONTEXT.md` |
 | `docs/agents/*` | `template/.opencode/docs/agents/*`（引用映射为 `.opencode/` 路径） |
@@ -63,7 +64,7 @@ rm -rf /tmp/mattpocock-skills
 
 以下为 opencode 专属能力，**pi 下不可用**（不移植，仅文档注明）：
 
-- `issue-audit`：以 subagent + command 形式分发（`.opencode/agents/`、`.opencode/commands/`），pi 无 subagent 机制
+- `issue-audit`：opencode 以 subagent + command 形式分发（`.opencode/agents/`、`.opencode/commands/`）；pi 无 subagent 机制，以 prompt template 命令分发（`.pi/prompts/issue-audit.md`，去 subagent 委托、保留完整审计流程）
 - codegraph MCP：`opencode.jsonc` 配置的代码图服务，pi 无原生 MCP
 - `explore` 子代理、`firecrawl` 网页抓取：opencode 会话能力
 
@@ -78,6 +79,7 @@ pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边
 - **全局**：`~/.pi/agent/skills/`、`~/.agents/skills/`（用户级技能，自动发现）；配置在 `~/.pi/agent/settings.json`
 - **项目**：
   - `.pi/skills/` — pi 标准结构，目录内技能**自动发现**（本项目独有技能直放此处）
+  - `.pi/prompts/` — pi 命令（prompt template）自动发现，如 `issue-audit.md` → `/issue-audit`
   - `.agents/skills/` — 自动发现（上游技能与 workspace 技能在此）
   - `.pi/settings.json` — `skills` 数组可选，指向额外技能目录（本项目不再使用）
 
