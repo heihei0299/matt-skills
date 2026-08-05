@@ -7,9 +7,9 @@ mattpocock/skills（`skills/engineering` + `skills/productivity`）的配置仓�
 ```
 template/
 ├── AGENTS.md         项目级全局配置（行为路由 + 分文件指针）
-├── .pi/              pi-agent 项目配置（settings.json 的 skills 指向 ../.opencode/skills）
+├── .pi/              pi-agent 项目配置（pi 标准结构：`.pi/skills/` 直放独有技能，自动发现）
 └── .opencode/        分发内容（目标仓库的 opencode 项目配置）
-    ├── skills/       2 个独有技能（tdd-implement、grill-to-spec）
+    ├── skills/       3 个独有技能（tdd-implement、grill-to-spec、diagnose-fix）
     ├── agents/       issue-audit 子代理定义
     ├── commands/     issue-audit 命令
     ├── docs/agents/  5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
@@ -35,9 +35,9 @@ cp -r /tmp/mattpocock-skills/skills/productivity/. .agents/skills/
 rm -rf /tmp/mattpocock-skills
 ```
 
-上游没有 `tdd-implement`、`grill-to-spec`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）。
+上游没有 `tdd-implement`、`grill-to-spec`、`diagnose-fix`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`；pi 侧独有在 `.pi/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）。
 
-**pi-agent 用户**：初始化命令完全相同。pi 通过 `.pi/settings.json` 的 `skills` 数组指向 `.opencode/skills/`，同样能加载独有技能（tdd-implement、grill-to-spec）；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
+**pi-agent 用户**：初始化命令完全相同。pi 从 `.pi/skills/` 自动发现独有技能（tdd-implement、grill-to-spec、diagnose-fix），无需任何指向配置；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
 
 ## 维护约定
 
@@ -45,16 +45,17 @@ rm -rf /tmp/mattpocock-skills
 
 | 工作区 | 模板 |
 |--------|------|
-| `.agents/skills/{tdd-implement,grill-to-spec}/` | `template/.opencode/skills/{tdd-implement,grill-to-spec}/` |
-| `.pi/settings.json` | `template/.pi/settings.json` |
+| `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` | `template/.opencode/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` |
+| `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` | `template/.pi/skills/{tdd-implement,grill-to-spec,diagnose-fix}/` |
 | `.opencode/agents/issue-audit.md`、`commands/issue-audit.md`、`.gitignore`、`package.json`、`package-lock.json` | `template/.opencode/` 同名 |
 | `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
 | `CONTEXT.md` | `template/.opencode/CONTEXT.md` |
 | `docs/agents/*` | `template/.opencode/docs/agents/*`（引用映射为 `.opencode/` 路径） |
 
+独有技能需同步**双份**：`.opencode/skills/`（opencode 分发）与 `.pi/skills/`（pi 标准分发）。
 `test/template-sync.test.js` 守护同步（含路径映射），漏同步测试即红。
 
-新增技能前先查上游 `mattpocock/skills` 是否已存在；仅上游没有的技能才作为独有技能落在本仓库（当前独有：tdd-implement、grill-to-spec），上游技能一律不进 `template/`。
+新增技能前先查上游 `mattpocock/skills` 是否已存在；仅上游没有的技能才作为独有技能落在本仓库（当前独有：tdd-implement、grill-to-spec、diagnose-fix），上游技能一律不进 `template/`。
 
 ## harness 支持
 
@@ -67,6 +68,26 @@ rm -rf /tmp/mattpocock-skills
 - `explore` 子代理、`firecrawl` 网页抓取：opencode 会话能力
 
 pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边界」已按此表述）。
+
+## harness 目录结构
+
+两个 harness 的技能加载目录结构如下（本项目只分发项目级目录，全局目录由用户自备）：
+
+### pi-agent
+
+- **全局**：`~/.pi/agent/skills/`、`~/.agents/skills/`（用户级技能，自动发现）；配置在 `~/.pi/agent/settings.json`
+- **项目**：
+  - `.pi/skills/` — pi 标准结构，目录内技能**自动发现**（本项目独有技能直放此处）
+  - `.agents/skills/` — 自动发现（上游技能与 workspace 技能在此）
+  - `.pi/settings.json` — `skills` 数组可选，指向额外技能目录（本项目不再使用）
+
+### opencode
+
+- **项目**：`.opencode/skills/`（技能）、`.opencode/agents/`（子代理）、`.opencode/commands/`（命令）、`.opencode/docs/`（文档）
+- **全局**：`~/.config/opencode/`（`opencode.json` 配置、`skills/`、`agents/`、`commands/`），按 opencode 官方文档
+
+同一份技能（Agent Skills 标准）与 `AGENTS.md` 行为路由在两种 harness 下均可加载：opencode 从 `.opencode/skills/`、pi 从 `.pi/skills/` 与 `.agents/skills/`。
+
 
 ## 开发
 

@@ -29,4 +29,4 @@ These thresholds are experience defaults; adjust them as practice shows better v
 
 ## Long-horizon skills inventory
 
-Skills currently classified as Long-Horizon, to be evolved against these rules as they are touched: `tdd-implement` (fixed), `diagnosing-bugs`, `improve-codebase-architecture`, `wayfinder`, `grill-to-spec`, `to-spec`. Backfilling existing skill texts is out of scope for now — these rules bind new and edited skills going forward.
+Skills currently classified as Long-Horizon, to be evolved against these rules as they are touched: `tdd-implement` (fixed), `diagnose-fix` (fixed — new orchestration skill for diagnosis + TDD fix, carries its own Turn Continuity rule), `diagnosing-bugs`, `improve-codebase-architecture`, `wayfinder`, `grill-to-spec`, `to-spec`. Backfilling existing skill texts is out of scope for now — these rules bind new and edited skills going forward.
