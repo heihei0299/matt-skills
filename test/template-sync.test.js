@@ -19,10 +19,13 @@ const DOC_AGENTS = ['domain.md', 'issue-tracker.md', 'runtime-discipline.md', 's
 // Config-repo positioning: template/ ships config + proprietary skills only.
 // The 22 upstream skills (engineering/productivity) are fetched manually into
 // target repos per README, so they must NOT be copied into template/.
-// tdd-implement & grill-to-spec mirror from the workspace .agents/skills/;
-// issue-audit ships as a subagent + command (workspace sources under
-// .opencode/), not as a skill directory, so it is absent from template skills.
-const PROPRIETARY_SKILLS = ['tdd-implement', 'grill-to-spec'];
+// tdd-implement, grill-to-spec & diagnose-fix mirror from the workspace
+// .agents/skills/; issue-audit ships as a subagent + command (workspace sources
+// under .opencode/), not as a skill directory, so it is absent from template skills.
+// Each proprietary skill mirrors to BOTH template/.opencode/skills/ (opencode
+// distribution) and template/.pi/skills/ (pi standard distribution, auto-discovered
+// from .pi/skills/).
+const PROPRIETARY_SKILLS = ['tdd-implement', 'grill-to-spec', 'diagnose-fix'];
 
 function readDirRecursive(dirPath) {
   const out = [];
@@ -34,36 +37,45 @@ function readDirRecursive(dirPath) {
   return out.sort();
 }
 
-test('template/.opencode/skills mirrors the proprietary skills (path-mapped)', () => {
+const MIRROR_TARGETS = [
+  { name: 'template/.opencode/skills' },
+  { name: 'template/.pi/skills' },
+];
+
+test('template skills mirror the proprietary skills to both harnesses (path-mapped)', () => {
   for (const skill of PROPRIETARY_SKILLS) {
-    const wsFiles = readDirRecursive(root(path.join('.agents/skills', skill)));
-    const tmplFiles = readDirRecursive(root(path.join('template/.opencode/skills', skill)));
-    assert.deepEqual(
-      tmplFiles.map((f) => path.relative(root(path.join('template/.opencode/skills', skill)), f)),
-      wsFiles.map((f) => path.relative(root(path.join('.agents/skills', skill)), f)),
-      `${skill} file listing out of sync`,
-    );
-    for (const f of wsFiles) {
-      const rel = path.relative(root(path.join('.agents/skills', skill)), f);
-      assert.equal(
-        normalize(readFileSync(root(path.join('template/.opencode/skills', skill, rel)), 'utf8'), MAP_SKILL),
-        readFileSync(f, 'utf8'),
-        `template/.opencode/skills/${skill}/${rel} out of sync`,
+    for (const target of MIRROR_TARGETS) {
+      const wsFiles = readDirRecursive(root(path.join('.agents/skills', skill)));
+      const tmplFiles = readDirRecursive(root(path.join(target.name, skill)));
+      assert.deepEqual(
+        tmplFiles.map((f) => path.relative(root(path.join(target.name, skill)), f)),
+        wsFiles.map((f) => path.relative(root(path.join('.agents/skills', skill)), f)),
+        `${target.name}/${skill} file listing out of sync`,
       );
+      for (const f of wsFiles) {
+        const rel = path.relative(root(path.join('.agents/skills', skill)), f);
+        assert.equal(
+          normalize(readFileSync(root(path.join(target.name, skill, rel)), 'utf8'), MAP_SKILL),
+          readFileSync(f, 'utf8'),
+          `${target.name}/${skill}/${rel} out of sync`,
+        );
+      }
     }
   }
 });
 
-test('template/.opencode/skills carries no upstream skills', () => {
+test('template skills carry no upstream skills (both harness dirs)', () => {
   const wsSkills = readdirSync(root('.agents/skills')).sort();
-  const tmplSkills = readdirSync(root('template/.opencode/skills')).sort();
-  assert.deepEqual(tmplSkills, [...PROPRIETARY_SKILLS].sort());
-  for (const skill of wsSkills) {
-    if (PROPRIETARY_SKILLS.includes(skill)) continue;
-    assert.ok(
-      !tmplSkills.includes(skill),
-      `upstream skill ${skill} must not be copied into template/ (fetch it per README instead)`,
-    );
+  for (const target of MIRROR_TARGETS) {
+    const tmplSkills = readdirSync(root(path.join(target.name))).sort();
+    assert.deepEqual(tmplSkills, [...PROPRIETARY_SKILLS].sort());
+    for (const skill of wsSkills) {
+      if (PROPRIETARY_SKILLS.includes(skill)) continue;
+      assert.ok(
+        !tmplSkills.includes(skill),
+        `upstream skill ${skill} must not be copied into template/ (fetch it per README instead)`,
+      );
+    }
   }
 });
 
@@ -101,12 +113,8 @@ test('template/.opencode/docs/agents mirrors the root docs/agents (path-mapped)'
   }
 });
 
-test('template/.pi/settings.json mirrors the root .pi/settings.json', () => {
-  assert.equal(
-    readFileSync(root('template/.pi/settings.json'), 'utf8'),
-    readFileSync(root('.pi/settings.json'), 'utf8'),
-  );
-});
+// template/.pi follows the pi standard layout (.pi/skills/ auto-discovery) —
+// no settings.json in the snapshot anymore, so no mirror assertion for it.
 
 test('template/ carries exactly the inheritable items, nothing else', () => {
   const entries = readdirSync(root('template')).sort();
