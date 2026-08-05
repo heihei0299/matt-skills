@@ -20,10 +20,9 @@ const DOC_AGENTS = ['domain.md', 'issue-tracker.md', 'runtime-discipline.md', 's
 // The 22 upstream skills (engineering/productivity) are fetched manually into
 // target repos per README, so they must NOT be copied into template/.
 // tdd-implement & grill-to-spec mirror from the workspace .agents/skills/;
-// issue-audit ships standalone (its workspace source is .opencode/agents/issue-audit.md,
-// not a skill directory), so it is presence-checked but not byte-mirrored.
+// issue-audit ships as a subagent + command (workspace sources under
+// .opencode/), not as a skill directory, so it is absent from template skills.
 const PROPRIETARY_SKILLS = ['tdd-implement', 'grill-to-spec'];
-const TEMPLATE_ONLY_SKILLS = ['issue-audit'];
 
 function readDirRecursive(dirPath) {
   const out = [];
@@ -58,7 +57,7 @@ test('template/.opencode/skills mirrors the proprietary skills (path-mapped)', (
 test('template/.opencode/skills carries no upstream skills', () => {
   const wsSkills = readdirSync(root('.agents/skills')).sort();
   const tmplSkills = readdirSync(root('template/.opencode/skills')).sort();
-  assert.deepEqual(tmplSkills, [...PROPRIETARY_SKILLS, ...TEMPLATE_ONLY_SKILLS].sort());
+  assert.deepEqual(tmplSkills, [...PROPRIETARY_SKILLS].sort());
   for (const skill of wsSkills) {
     if (PROPRIETARY_SKILLS.includes(skill)) continue;
     assert.ok(
@@ -68,8 +67,14 @@ test('template/.opencode/skills carries no upstream skills', () => {
   }
 });
 
-test('template/.opencode/skills/issue-audit exists standalone', () => {
-  assert.ok(statSync(root('template/.opencode/skills/issue-audit/SKILL.md')).isFile());
+test('template/.opencode/agents + commands carry issue-audit in sync', () => {
+  for (const f of ['agents/issue-audit.md', 'commands/issue-audit.md']) {
+    assert.equal(
+      normalize(readFileSync(root(path.join('template/.opencode', f)), 'utf8'), MAP_AGENTS),
+      readFileSync(root(path.join('.opencode', f)), 'utf8'),
+      `template/.opencode/${f} out of sync`,
+    );
+  }
 });
 
 test('template/AGENTS.md mirrors the root AGENTS.md (path-mapped)', () => {

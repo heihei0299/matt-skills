@@ -13,7 +13,7 @@ mattpocock/skills — the source of the 22 skill bodies (skills/engineering, 17 
 _Avoid_: source repo, skill origin
 
 **Proprietary Skill** (独有技能):
-A skill that does not exist upstream and lives only in this repo (currently tdd-implement, grill-to-spec and the issue-audit subagent skill). Before adding a new skill, check the Upstream Repository first; only skills absent there qualify as proprietary.
+A skill that does not exist upstream and lives only in this repo (currently tdd-implement and grill-to-spec). Before adding a new skill, check the Upstream Repository first; only skills absent there qualify as proprietary. The issue-audit subagent is NOT a skill: it ships as a subagent + command under `.opencode/` and is distributed through the Template Snapshot without a skill directory.
 _Avoid_: private skill, local skill
 
 **Workspace** (工作区):
