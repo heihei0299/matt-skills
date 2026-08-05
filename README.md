@@ -7,6 +7,7 @@ mattpocock/skills（`skills/engineering` + `skills/productivity`）的配置仓�
 ```
 template/
 ├── AGENTS.md         项目级全局配置（行为路由 + 分文件指针）
+├── .pi/              pi-agent 项目配置（settings.json 的 skills 指向 ../.opencode/skills）
 └── .opencode/        分发内容（目标仓库的 opencode 项目配置）
     ├── skills/       2 个独有技能（tdd-implement、grill-to-spec）
     ├── agents/       issue-audit 子代理定义
@@ -36,6 +37,8 @@ rm -rf /tmp/mattpocock-skills
 
 上游没有 `tdd-implement`、`grill-to-spec`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）。
 
+**pi-agent 用户**：初始化命令完全相同。pi 通过 `.pi/settings.json` 的 `skills` 数组指向 `.opencode/skills/`，同样能加载独有技能（tdd-implement、grill-to-spec）；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
+
 ## 维护约定
 
 改动工作区后，必须同步到 `template/` 对应路径，路径映射如下（同步方向单向：工作区 → 模板快照）：
@@ -43,6 +46,7 @@ rm -rf /tmp/mattpocock-skills
 | 工作区 | 模板 |
 |--------|------|
 | `.agents/skills/{tdd-implement,grill-to-spec}/` | `template/.opencode/skills/{tdd-implement,grill-to-spec}/` |
+| `.pi/settings.json` | `template/.pi/settings.json` |
 | `.opencode/agents/issue-audit.md`、`commands/issue-audit.md`、`.gitignore`、`package.json`、`package-lock.json` | `template/.opencode/` 同名 |
 | `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
 | `CONTEXT.md` | `template/.opencode/CONTEXT.md` |
@@ -51,6 +55,18 @@ rm -rf /tmp/mattpocock-skills
 `test/template-sync.test.js` 守护同步（含路径映射），漏同步测试即红。
 
 新增技能前先查上游 `mattpocock/skills` 是否已存在；仅上游没有的技能才作为独有技能落在本仓库（当前独有：tdd-implement、grill-to-spec），上游技能一律不进 `template/`。
+
+## harness 支持
+
+模板同时面向 opencode 与 pi-agent 两种 harness：技能（Agent Skills 标准）与 `AGENTS.md` 行为路由跨 harness 通用，同一份配置两处均可运行。
+
+以下为 opencode 专属能力，**pi 下不可用**（不移植，仅文档注明）：
+
+- `issue-audit`：以 subagent + command 形式分发（`.opencode/agents/`、`.opencode/commands/`），pi 无 subagent 机制
+- codegraph MCP：`opencode.jsonc` 配置的代码图服务，pi 无原生 MCP
+- `explore` 子代理、`firecrawl` 网页抓取：opencode 会话能力
+
+pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边界」已按此表述）。
 
 ## 开发
 

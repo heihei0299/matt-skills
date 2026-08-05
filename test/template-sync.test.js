@@ -101,9 +101,16 @@ test('template/.opencode/docs/agents mirrors the root docs/agents (path-mapped)'
   }
 });
 
+test('template/.pi/settings.json mirrors the root .pi/settings.json', () => {
+  assert.equal(
+    readFileSync(root('template/.pi/settings.json'), 'utf8'),
+    readFileSync(root('.pi/settings.json'), 'utf8'),
+  );
+});
+
 test('template/ carries exactly the inheritable items, nothing else', () => {
   const entries = readdirSync(root('template')).sort();
-  assert.deepEqual(entries, ['.opencode', 'AGENTS.md']);
+  assert.deepEqual(entries, ['.opencode', '.pi', 'AGENTS.md']);
 });
 
 test('template/ internal markdown links resolve (except upstream skill refs)', () => {

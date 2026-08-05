@@ -9,7 +9,7 @@
 
 ## 能力边界
 
-- 工具：bash / 文件读写 / grep / glob / codegraph MCP / 子代理（explore 等）/ firecrawl；不硬编码不存在的工具；承诺前先检查 git/依赖/端口
+- 工具：以当前 harness 实际提供为准（bash / 文件读写 / grep / glob / 代码图 / 子代理 / 网页抓取等可用子集）；不硬编码不存在的工具；承诺前先检查 git/依赖/端口
 
 ## 快速上手
 
