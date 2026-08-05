@@ -13,11 +13,11 @@ mattpocock/skills — the source of the 22 skill bodies (skills/engineering, 17 
 _Avoid_: source repo, skill origin
 
 **Proprietary Skill** (独有技能):
-A skill that does not exist upstream and lives only in this repo (currently tdd-implement, grill-to-spec and diagnose-fix). Before adding a new skill, check the Upstream Repository first; only skills absent there qualify as proprietary. The issue-audit subagent is NOT a skill: it ships as a subagent + command under `.opencode/` and is distributed through the Template Snapshot without a skill directory.
+A skill that does not exist upstream and lives only in this repo (currently tdd-implement, grill-to-spec, diagnose-fix and commit-check). Before adding a new skill, check the Upstream Repository first; only skills absent there qualify as proprietary. The issue-audit subagent is NOT a skill: it ships as a subagent + command under `.opencode/` and is distributed through the Template Snapshot without a skill directory.
 _Avoid_: private skill, local skill
 
 **Workspace** (工作区):
-The root-level working copies of the template content — `.agents/skills/` (proprietary skill sources), `.opencode/` (issue-audit agent/command, plugin manifests), `.pi/` (pi-agent project config: `.pi/skills/` + `.pi/prompts/` issue-audit command), `AGENTS.md`, `CONTEXT.md`, `docs/`. Where this repo's own sessions load, modify, and test the content. The template paths mirror them with a path mapping: `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix}` → `template/.opencode/skills/` and `template/.pi/skills/` (dual mirror), `.pi/prompts/issue-audit.md` → `template/.pi/prompts/issue-audit.md`, root-level `CONTEXT.md` and `docs/agents/` → `template/.opencode/`.
+The root-level working copies of the template content — `.agents/skills/` (proprietary skill sources), `.opencode/` (issue-audit agent/command, plugin manifests), `.pi/` (pi-agent project config: `.pi/skills/` + `.pi/prompts/` issue-audit command), `AGENTS.md`, `CONTEXT.md`, `docs/`. Where this repo's own sessions load, modify, and test the content. The template paths mirror them with a path mapping: `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}` → `template/.opencode/skills/` and `template/.pi/skills/` (dual mirror), `.pi/prompts/issue-audit.md` → `template/.pi/prompts/issue-audit.md`, root-level `CONTEXT.md` and `docs/agents/` → `template/.opencode/`.
 _Avoid_: working copy, source repo
 
 **Template Snapshot** (模板快照):
