@@ -11,13 +11,13 @@
 - 外部阻塞：权限拒绝、缺失授权、依赖不可用——明确说明所需授权或替代路径，不静默停止
 - 阶段完成：整个阶段的出口条件满足（如 seam 全绿、typecheck 通过、commit 完成）
 
-预告下一步后立即执行该步骤，禁止把"分析/预告"当作回合终点。随包示例见 `.opencode/skills/tdd-implement/SKILL.md` 与 `stages.md` 阶段③ 3e。
+预告下一步后立即执行该步骤，禁止把"分析/预告"当作回合终点。随包示例见 `.opencode/skills/tdd-implement/SKILL.md` 与 `references/stages.md` 阶段③ 3e。
 
 ## 运行纪律（长程任务）
 
 本仓库会话做**长程任务**（Long-Horizon Skill：多阶段/多 seam 串行执行，如 tdd-implement、diagnosing-bugs、improve-codebase-architecture、wayfinder、grill-to-spec、to-spec）时：
 
-- **长程声明**：执行长程技能前，确认技能文本自带长程任务声明与回合连续性规则（Turn Continuity）——阶段内连续动作一回合内完成，不依赖 harness `/goal` 防线。tdd-implement 已内嵌（SKILL.md 声明 + stages.md 阶段③规则）。
+- **长程声明**：执行长程技能前，确认技能文本自带长程任务声明与回合连续性规则（Turn Continuity）——阶段内连续动作一回合内完成，不依赖 harness `/goal` 防线。tdd-implement 已内嵌（SKILL.md 声明 + references/stages.md 阶段③规则）。
 - **模型选择**：flash 级模型长程任务卡住概率显著更高；关键长任务优先强模型或 `/goal` 模式。
 - **任务分解（Chunking）**：巨型操作拆小步执行——单次 `write` 超过 ~150 行先写骨架再分批补全；批量 `replace` 超过 ~5 处分批执行，每批后立即验证。tdd-implement 已内嵌该规则（随包分发）。
 

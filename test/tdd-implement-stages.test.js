@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 // These tests guard against a future refactor silently deleting that rule.
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const stagesPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'stages.md');
+const stagesPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'references', 'stages.md');
 const skillPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'SKILL.md');
 const codeReviewPath = path.join(dir, '.agents', 'skills', 'code-review', 'SKILL.md');
 

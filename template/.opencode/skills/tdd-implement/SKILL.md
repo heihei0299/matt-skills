@@ -7,7 +7,7 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 
 整合 **implement** + **tdd** 的完整实现流程：每个 seam 一个红-绿循环，直到 commit。TDD 语义（红-绿循环、seam 定义、好测试标准）以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源——测试标准详见 [tdd/tests.md](.agents/skills/tdd/tests.md)，Mock 边界见 [tdd/mocking.md](.agents/skills/tdd/mocking.md)；本技能只编排阶段与运行时规则。
 
-本技能是**长程任务**（Long-Horizon Skill）：多阶段串行执行，自带**回合连续性**（Turn Continuity）与**任务分解**（Chunking）规则（见 [stages.md](stages.md) 阶段③ 3e/3f）。术语定义见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
+本技能是**长程任务**（Long-Horizon Skill）：多阶段串行执行，自带**回合连续性**（Turn Continuity）与**任务分解**（Chunking）规则（见 [stages.md](references/stages.md) 阶段③ 3e/3f）。术语定义见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
 
 ## 流程速览
 
@@ -15,7 +15,7 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 ① 理解需求 → ② 确认 Seams → ③ TDD 开发循环 → ④ 完整测试套件 → ⑤ Code Review → ⑥ Commit → ⑦ 收尾（文档对齐 + issue 状态 + 实施总结）
 ```
 
-每阶段的入口条件、操作与边界规则见 [`stages.md`](stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](.agents/skills/tdd/SKILL.md)，不在本文件重写。
+每阶段的入口条件、操作与边界规则见 [`stages.md`](references/stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](.agents/skills/tdd/SKILL.md)，不在本文件重写。
 
 阶段要点：
 - ⑤ Code Review：审查结果只在对话输出，不生成书面审查报告（不落盘 `review-*.md` 类文件）
@@ -38,7 +38,7 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 - 不把重构塞进红-绿循环：重构归阶段⑤ Code Review
 - 不在阶段间停顿：单 seam 全绿、单次 typecheck 通过都不是回合终点（见回合连续性规则）
 - 不生成书面审查报告：阶段⑤审查结果只在对话输出，不落盘 `review-*.md` 类文件
-- 不手写超大改动：单次 `write` 超 ~150 行先写骨架再分批；批量 `replace` 超 ~5 处分批执行（见 [stages.md](stages.md) 3f）
+- 不手写超大改动：单次 `write` 超 ~150 行先写骨架再分批；批量 `replace` 超 ~5 处分批执行（见 [stages.md](references/stages.md) 3f）
 - 不跳步：阶段出口未达成不进入下一阶段（见路由规则）
 
 ## 任务拆分与 Todo 规定

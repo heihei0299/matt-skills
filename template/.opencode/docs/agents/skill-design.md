@@ -12,7 +12,7 @@ Every **Long-Horizon Skill** must carry a positive **Turn Continuity** rule of i
 - It must be **self-contained** — the skill cannot rely on the harness `/goal` line, because no `/goal` exists when the user does not activate one.
 - Every stage ends on a checkable exit condition; reaching it is the only thing that ends the turn.
 - A sub-step going green (e.g. one seam) is not a stage exit — a stage ends only when all of its seams are complete. Progress output does not itself end the turn: output, then keep executing until one of the three endpoints (compliance checkpoint, external blocker, stage exit) is reached.
-- Canonical example: the 回合连续性 rule in [`.agents/skills/tdd-implement/stages.md`](../../skills/tdd-implement/stages.md) stage ③.
+- Canonical example: the 回合连续性 rule in [`.agents/skills/tdd-implement/references/stages.md`](../../skills/tdd-implement/references/stages.md) stage ③.
 
 ## Rule 2 — Model Selection
 

@@ -13,7 +13,9 @@ import { fileURLToPath } from 'node:url';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillPath = path.join(dir, '.agents', 'skills', 'diagnose-fix', 'SKILL.md');
+const antiPath = path.join(dir, '.agents', 'skills', 'diagnose-fix', 'references', 'anti-patterns.md');
 const skill = readFileSync(skillPath, 'utf8');
+const anti = readFileSync(antiPath, 'utf8');
 
 test('frontmatter triggers on diagnose/debug and promises a TDD fix', () => {
   assert.match(skill, /name: diagnose-fix/);
@@ -90,4 +92,14 @@ test('closes with regression verification + cleanup + hypothesis writeup', () =>
   assert.match(skill, /\[DEBUG-/);
   assert.match(skill, /commit \/ PR 消息/);
   assert.match(skill, /验证正确的假设/);
+});
+
+test('anti-patterns live in references/anti-patterns.md, SKILL.md links only', () => {
+  assert.match(skill, /references\/anti-patterns\.md/);
+  assert.match(skill, /细节只在一处存在/);
+  assert.match(anti, /不跳过反馈回路直接猜根因/);
+  assert.match(anti, /不绕过测试直接改代码/);
+  assert.match(anti, /不遗留探针/);
+  assert.match(anti, /不重写 tdd 技能的红-绿语义/);
+  assert.doesNotMatch(anti, /todo 状态机/);
 });

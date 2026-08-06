@@ -39,7 +39,7 @@
 2. 每个 seam 需包含：名称、输入、预期输出
 3. 向用户展示 seams 清单并确认
 4. 用户确认后才写任何测试代码
-5. seams 确认后生成 todo 清单（每 seam 一个 todo，含编号/状态/DoD）——格式与状态机见 [SKILL.md「任务拆分与 Todo 规定」](SKILL.md#任务拆分与-todo-规定)
+5. seams 确认后生成 todo 清单（每 seam 一个 todo，含编号/状态/DoD）——格式与状态机见 [SKILL.md「任务拆分与 Todo 规定」](../SKILL.md#任务拆分与-todo-规定)
 
 ### 出口条件
 - 用户明确同意了 seams 清单
@@ -59,7 +59,7 @@
 ### 操作
 
 **红-绿循环前与循环中都查阅 tdd 技能各节**（Every section applies on every cycle）：TDD 语义与测试规则以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不再在此重写——好测试标准见 [tdd/tests.md](.agents/skills/tdd/tests.md)，Mock 指南见 [tdd/mocking.md](.agents/skills/tdd/mocking.md)。
-本阶段只执行编排：按阶段②生成的 todo 清单逐条推进（大小任务层次与 Subtodo 格式见 [SKILL.md「任务拆分与 Todo 规定」](SKILL.md#任务拆分与-todo-规定)），每完成一个 todo（红-绿 cycle + typecheck）立即更新其状态为 `done`，再进入下一个 todo。
+本阶段只执行编排：按阶段②生成的 todo 清单逐条推进（大小任务层次与 Subtodo 格式见 [SKILL.md「任务拆分与 Todo 规定」](../SKILL.md#任务拆分与-todo-规定)），每完成一个 todo（红-绿 cycle + typecheck）立即更新其状态为 `done`，再进入下一个 todo。
 
 #### 3a/3b. 红-绿（Red-Green）
 红-绿循环的执行规则（Red before green、One slice at a time、Anti-patterns、垂直切片）以 tdd 技能为准，见 [tdd/SKILL.md](.agents/skills/tdd/SKILL.md) 与 [tdd/tests.md](.agents/skills/tdd/tests.md)。
@@ -125,7 +125,7 @@
 
 ### 操作
 1. 调用 `/code-review` skill 审查当前所有改动
-2. 审查发现的问题按 [SKILL.md 回退路由](SKILL.md#回退路由) 处理
+2. 审查发现的问题按 [SKILL.md 回退路由](../SKILL.md#回退路由) 处理
 ### 出口条件
 - Code review 通过
 
