@@ -26,7 +26,7 @@ description: "Run the pre-commit gate: review docs against the implementation, a
 
 - `git status` 确认工作区只含预期改动：无残留未跟踪文件、无临时产物（调试脚本、日志、备份文件、`[DEBUG-...]` 残留）
 - 清理本次改动产生的临时文件（一次性脚本、转储、探针）——删除或移入明确的非提交位置
-- 确认没有敏感信息进入改动（密钥、token、`.env`、私钥）——`git diff` 目检或 grep 扫描
+- 确认没有敏感信息进入改动（密钥、token、`.env`、私钥）——跑 `scripts/scan-sensitive.sh`，不用手写扫描
 - 提交后工作区应为干净状态（`git status` 无输出）
 
 ### ④ 规范 commit message
@@ -35,6 +35,13 @@ description: "Run the pre-commit gate: review docs against the implementation, a
 - subject 描述变更内容而非过程（不说"我做了什么"，说"改成了什么"）
 - 需要时补充 body：动机、影响范围、验收证据（测试结果、同步确认）
 - 一次 commit 只含一个逻辑变更；多主题拆多个 commit
+
+## 不做什么
+
+- 不做全量 code review：审查语义以 [code-review](.agents/skills/code-review/SKILL.md) 为唯一事实源，本技能不重写
+- 不替代实现流程的收尾：`tdd-implement` 阶段⑦已含文档对齐与目录卫生，本技能只管独立 commit 的门禁
+- 不顺手重构：只检查与本次改动直接相关的内容，不扩权到无关文档/目录
+- 不发明扫描规则：敏感信息检测跑 `scripts/scan-sensitive.sh`，不每次重写 grep 模式
 
 ## 执行顺序（回合内串行）
 

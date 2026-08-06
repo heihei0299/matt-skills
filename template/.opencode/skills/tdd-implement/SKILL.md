@@ -32,6 +32,15 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 
 预告下一步后立即执行该步骤，回合终点仅为合规交互点、外部阻塞或阶段出口条件满足。输出进度/预告本身不结束回合——输出后继续执行，直到三类终点之一达成。
 
+## 不做什么
+
+- 不重写 TDD 语义：红-绿循环、seam 定义、好测试标准、mocking 边界一律查 [tdd 技能](.agents/skills/tdd/SKILL.md)，本技能只编排阶段与运行时规则
+- 不把重构塞进红-绿循环：重构归阶段⑤ Code Review
+- 不在阶段间停顿：单 seam 全绿、单次 typecheck 通过都不是回合终点（见回合连续性规则）
+- 不生成书面审查报告：阶段⑤审查结果只在对话输出，不落盘 `review-*.md` 类文件
+- 不手写超大改动：单次 `write` 超 ~150 行先写骨架再分批；批量 `replace` 超 ~5 处分批执行（见 [stages.md](stages.md) 3f）
+- 不跳步：阶段出口未达成不进入下一阶段（见路由规则）
+
 ## 任务拆分与 Todo 规定
 
 ### 拆分层级（大小任务层次）

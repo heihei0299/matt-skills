@@ -10,7 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillPath = path.join(dir, '.agents', 'skills', 'commit-check', 'SKILL.md');
+const scanPath = path.join(dir, '.agents', 'skills', 'commit-check', 'scripts', 'scan-sensitive.sh');
 const skill = readFileSync(skillPath, 'utf8');
+const scan = readFileSync(scanPath, 'utf8');
 
 test('frontmatter triggers on commit and promises a pre-commit gate', () => {
   assert.match(skill, /name: commit-check/);
@@ -31,6 +33,14 @@ test('keeps the directory clean: temp artifacts + git status + secrets', () => {
   assert.match(skill, /\[DEBUG-\.\.\.\]/);
   assert.match(skill, /敏感信息/);
   assert.match(skill, /密钥/);
+});
+
+test('delegates the secret scan to a deterministic script (no freehand grep)', () => {
+  assert.match(skill, /scripts\/scan-sensitive\.sh/);
+  assert.match(skill, /不用手写扫描/);
+  assert.match(scan, /git diff --cached/);
+  assert.match(scan, /--staged-only/);
+  assert.match(scan, /PRIVATE KEY/);
 });
 
 test('writes a conventional commit message', () => {

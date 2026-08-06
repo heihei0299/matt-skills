@@ -17,8 +17,11 @@ import { MAP_SKILL, normalize } from './mirror-utils.js';
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillPath = path.join(dir, '.agents', 'skills', 'grill-to-spec', 'SKILL.md');
 const tmplPath = path.join(dir, 'template', '.opencode', 'skills', 'grill-to-spec', 'SKILL.md');
+const rulesPath = path.join(dir, '.agents', 'skills', 'grill-to-spec', 'references', 'rules.md');
+const tmplRulesPath = path.join(dir, 'template', '.opencode', 'skills', 'grill-to-spec', 'references', 'rules.md');
 
 const skill = readFileSync(skillPath, 'utf8');
+const rules = readFileSync(rulesPath, 'utf8');
 
 test('SKILL.md mandates explicit user confirmation for ADR writes, no exceptions', () => {
   assert.match(skill, /写入 ADR 必须由用户显式确认/);
@@ -50,32 +53,46 @@ test('产出物表 lists exactly the three deliverables with their format source
   assert.match(skill, /\| Spec \|/);
   assert.match(skill, /CONTEXT-FORMAT\.md/);
   assert.match(skill, /ADR-FORMAT\.md/);
-  assert.match(skill, /Problem Statement \/ Solution \/ User Stories \/ Implementation Decisions \/ Testing Decisions \/ Out of Scope \/ Further Notes/);
+  assert.match(skill, /references\/rules\.md/);
 });
 
-test('Glossary 守则 aligns with CONTEXT-FORMAT.md', () => {
-  assert.match(skill, /零实现细节/);
-  assert.match(skill, /WHAT 非 HOW/);
-  assert.match(skill, /通用编程概念不收/);
-  assert.match(skill, /_Avoid_/);
-  assert.match(skill, /懒创建/);
-  assert.match(skill, /inline 更新，不批量/);
+test('SKILL.md keeps the three non-negotiable ADR rules (single source)', () => {
+  assert.match(skill, /写入 ADR 必须由用户显式确认/);
+  assert.match(skill, /无任何例外/);
+  assert.match(skill, /不可撤销/);
+  assert.match(skill, /ADR 与 glossary 不对称/);
+  assert.match(skill, /禁止把 inline 逻辑套用到 ADR/);
 });
 
-test('ADR 守则 aligns with ADR-FORMAT.md', () => {
-  assert.match(skill, /`0001-slug\.md` 顺序递增/);
-  assert.match(skill, /扫描最高号 \+1/);
-  assert.match(skill, /标题 \+ 1-3 句正文/);
-  assert.match(skill, /`docs\/adr\/` 懒创建/);
+test('Glossary 守则 aligns with CONTEXT-FORMAT.md (references/rules.md)', () => {
+  assert.match(rules, /零实现细节/);
+  assert.match(rules, /WHAT 非 HOW/);
+  assert.match(rules, /通用编程概念不收/);
+  assert.match(rules, /_Avoid_/);
+  assert.match(rules, /懒创建/);
+  assert.match(rules, /inline 更新，不批量/);
 });
 
-test('Spec 守则 aligns with to-spec template', () => {
-  assert.match(skill, /`As an <actor>, I want a <feature>, so that <benefit>`/);
-  assert.match(skill, /不含文件路径\/代码片段/);
-  assert.match(skill, /注明来源并裁剪至决策部分/);
-  assert.match(skill, /既有优先于新建、取最高、理想数量 1/);
-  assert.match(skill, /`ready-for-agent`/);
-  assert.match(skill, /`Status:` 行记录/);
+test('ADR 守则 aligns with ADR-FORMAT.md (references/rules.md)', () => {
+  assert.match(rules, /`0001-slug\.md` 顺序递增/);
+  assert.match(rules, /扫描最高号 \+1/);
+  assert.match(rules, /标题 \+ 1-3 句正文/);
+  assert.match(rules, /`docs\/adr\/` 懒创建/);
+});
+
+test('Spec 守则 aligns with to-spec template (references/rules.md)', () => {
+  assert.match(rules, /Problem Statement \/ Solution \/ User Stories \/ Implementation Decisions \/ Testing Decisions \/ Out of Scope \/ Further Notes/);
+  assert.match(rules, /`As an <actor>, I want a <feature>, so that <benefit>`/);
+  assert.match(rules, /不含文件路径\/代码片段/);
+  assert.match(rules, /注明来源并裁剪至决策部分/);
+  assert.match(rules, /既有优先于新建、取最高、理想数量 1/);
+  assert.match(rules, /`ready-for-agent`/);
+  assert.match(rules, /`Status:` 行记录/);
+  assert.match(rules, /反模式/);
+});
+
+test('template mirror keeps rules.md in sync with the workspace copy (path-mapped)', () => {
+  assert.equal(normalize(readFileSync(tmplRulesPath, 'utf8'), MAP_SKILL), rules);
 });
 
 test('stage ② shows the spec draft for user confirmation before publishing', () => {
