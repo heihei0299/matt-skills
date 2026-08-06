@@ -1,6 +1,6 @@
 ---
 name: diagnose-fix
-description: "Diagnose hard bugs and fix them with a TDD red-green loop. Use when the user says diagnose/debug this, or reports something broken/throwing/failing/slow."
+description: "Complete diagnosis→fix→regression channel for bugs: diagnose, then fix via a TDD red-green loop with a hard gate (no fix code before a failing regression test). Use when the user says diagnose/debug/fix this, or reports something broken/throwing/failing/slow — prefer this over diagnosing-bugs when a fix is wanted, not just a diagnosis."
 ---
 
 # Diagnose Fix
@@ -48,6 +48,7 @@ description: "Diagnose hard bugs and fix them with a TDD red-green loop. Use whe
 ## 反模式（不做什么）
 
 完整反模式清单见 [references/anti-patterns.md](references/anti-patterns.md)——正文各阶段规则是正面约束，反模式清单是负向边界；细节只在一处存在，本文件不重复。
+
 ## 回合连续性规则
 
 诊断 → 修复 → 回归**在一个回合内串行完成**，不等用户"继续"：构建回路 → 复现 → 假设 → 探针 → 失败测试 → 修复 → 回归 → 清理整条链一气呵成，中途不停顿。
