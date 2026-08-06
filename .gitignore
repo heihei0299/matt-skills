@@ -5,3 +5,6 @@ pi
 pi-session-*.html
 .claude/
 .mcp.json
+
+# 嵌套独立仓库（pi-session-anylize），非本仓库内容
+spec/
