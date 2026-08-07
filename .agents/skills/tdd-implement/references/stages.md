@@ -124,7 +124,10 @@
 - 完整测试套件通过
 
 ### 操作
-1. 调用 `/code-review` skill 审查当前所有改动
+1. 调用 [code-review 技能](.agents/skills/code-review/SKILL.md) 按**双轴**审查当前所有改动：
+   - **Standards 轴**：改动是否符合仓库文档化的编码标准（含 smell baseline 判断）
+   - **Spec 轴**：改动是否忠实实现来源 spec/issue（逐条对照验收要求）
+   - 两轴独立报告、**互不掩盖**——一轴通过另一轴失败时仍须修复后重审
 2. 审查发现的问题按 [SKILL.md 回退路由](../SKILL.md#回退路由) 处理
 ### 出口条件
 - Code review 通过
@@ -142,14 +145,15 @@
 - Code review 通过
 
 ### 操作
-1. 将工作提交到当前分支
-2. 附带清晰的 commit message
+1. 调用 [commit-check 技能](.agents/skills/commit-check/SKILL.md) 执行提交门禁——四项检查：①审查文档 ②对齐 README ③保持目录卫生 ④规范 commit message
+2. 四项**全部通过才 commit**：将工作提交到当前分支，附清晰的 commit message
+3. 任一项发现问题的：先修复，再重跑该项，全部通过才 commit
 
 ### 出口条件
 - Commit 完成
 
 ### 边界
-- Commit message 描述变更内容而非过程
+- Commit message 格式与内容由 commit-check ④ 把关（描述变更内容而非过程）
 
 ---
 
@@ -159,7 +163,7 @@
 - Commit 完成（阶段⑥出口）
 
 ### 操作
-1. **对齐文档**：检查 README 与 `docs/` 中涉及本次实现的描述（用法、CLI、配置、示例、架构、行为）是否与实现一致；不一致则更新文档，并单独 commit（message 如 `docs: align README with <feature>`）
+1. **对齐文档**：检查 README 与 `docs/` 中涉及本次实现的描述（用法、CLI、配置、示例、架构、行为）是否与实现一致；不一致则更新文档，并单独 commit（message 遵循 commit-check ④ 规范，如 `docs: align README with <feature>`）
 2. 若本次实现有关联 issue/ticket（`.scratch/<feature-slug>/issues/`）：先审查该 issue——从 issue 提取验收标准（无显式验收标准节时以其正文行为要求为准），逐条转写为 checkbox 清单并逐条验证：通过标 `- [x]`，未通过保留 `- [ ]` 并注明缺口（证据：文件:行号 / 测试名）。全部打勾后才允许下一步：
 3. 将 `Status:` 行改为 `resolved`（无该行则追加），不改动 spec 与既有 Comments
 4. 在 issue 文件底部追加实施总结（`## 实施总结` 标题）：

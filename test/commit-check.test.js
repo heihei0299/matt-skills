@@ -17,7 +17,7 @@ const scan = readFileSync(scanPath, 'utf8');
 test('frontmatter triggers on commit and promises a pre-commit gate', () => {
   assert.match(skill, /name: commit-check/);
   assert.match(skill, /pre-commit gate/i);
-  assert.match(skill, /Use before every commit/);
+  assert.match(skill, /about to commit/);
 });
 
 test('carries all four checks', () => {
@@ -67,4 +67,10 @@ test('defers review semantics to the code-review skill (single source of truth)'
   assert.match(skill, /code-review/);
   assert.match(skill, /唯一事实源/);
   assert.match(skill, /不重写/);
+});
+
+test('is orchestrated by tdd-implement as the in-flow commit gate', () => {
+  assert.match(skill, /tdd-implement/);
+  assert.match(skill, /阶段⑥/);
+  assert.match(skill, /commit 门禁/);
 });

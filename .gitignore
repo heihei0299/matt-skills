@@ -6,5 +6,11 @@ pi-session-*.html
 .claude/
 .mcp.json
 
+# 敏感文件与日志（不入库）
+.env
+.env.*
+!.env.example
+*.log
+
 # 嵌套独立仓库（pi-session-anylize），非本仓库内容
 spec/

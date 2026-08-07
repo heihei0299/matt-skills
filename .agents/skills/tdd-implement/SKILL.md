@@ -18,7 +18,8 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 每阶段的入口条件、操作与边界规则见 [`stages.md`](references/stages.md)——进入任一阶段前先读取该阶段的定义。③ TDD 开发循环的红-绿规则见 [tdd 技能](.agents/skills/tdd/SKILL.md)，不在本文件重写。
 
 阶段要点：
-- ⑤ Code Review：审查结果只在对话输出，不生成书面审查报告（不落盘 `review-*.md` 类文件）
+- ⑤ Code Review：按 [code-review](.agents/skills/code-review/SKILL.md) **双轴审查**——Standards 轴（编码标准符合度）与 Spec 轴（spec/issue 实现忠实度），两轴独立报告互不掩盖；审查结果只在对话输出，不生成书面审查报告（不落盘 `review-*.md` 类文件）
+- ⑥ Commit：commit 前运行 [commit-check](.agents/skills/commit-check/SKILL.md) 门禁（①审查文档 ②对齐 README ③目录卫生 ④commit message），四项全过才提交
 - ⑦ 收尾：先对齐文档——检查 README 与 docs/ 中涉及本次实现的描述与实现是否一致，不一致则更新并 commit；再更新 issue 状态（有关联 issue 时，其验收标准逐条转写为 checkbox 清单并打勾——全部 `- [x]` 才允许标 `resolved`）；最后保持目录卫生（清理 `[DEBUG-...]` 调试残留与临时产物，`git status` 确认工作区干净）
 
 ## 回合连续性规则
@@ -106,4 +107,5 @@ pending → in-progress → done
 - TDD 核心规则：[tdd 技能](.agents/skills/tdd/SKILL.md)
 - 测试标准：[tdd/tests.md](.agents/skills/tdd/tests.md)
 - Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
+- Commit 门禁：[commit-check 技能](.agents/skills/commit-check/SKILL.md)
 - Issue tracker 约定：[issue-tracker.md](../../docs/agents/issue-tracker.md)

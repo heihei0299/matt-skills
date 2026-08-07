@@ -159,3 +159,18 @@ test('code-review skill forbids written review report files', () => {
   assert.match(codeReview, /不生成任何书面报告文件/);
   assert.match(codeReview, /review-\*\.md/);
 });
+
+test('stage ⑤ reviews along two axes (Standards + Spec), independent reports', () => {
+  assert.match(stages, /双轴/);
+  assert.match(stages, /Standards/);
+  assert.match(stages, /Spec/);
+  assert.match(stages, /互不掩盖/);
+  assert.match(skill, /双轴/);
+});
+
+test('stage ⑥ embeds the commit-check gate before commit', () => {
+  assert.match(stages, /commit-check/);
+  assert.match(stages, /四项/);
+  assert.match(stages, /全部通过才 commit/);
+  assert.match(skill, /commit-check/);
+});
