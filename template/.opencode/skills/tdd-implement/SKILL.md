@@ -1,6 +1,6 @@
 ---
 name: tdd-implement
-description: "Implement from spec/ticket via strict TDD red-green loop, then typecheck, review, commit, update the issue status, and write an implementation summary."
+description: "Implement from a spec or ticket via strict TDD red-green loop, then typecheck, review, commit, update the issue status, and write an implementation summary. Use this skill whenever the user asks to implement from a spec/ticket/issue, mentions TDD/red-green/test-first, or wants test-first work carried through review, commit and issue close-out in one pass — even if they don't name the process. For implementation without the test-first pipeline use implement; for test technique alone use tdd — this skill is the complete orchestration."
 ---
 
 # TDD Implement
@@ -24,14 +24,14 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 
 ## 回合连续性规则
 
-每个逻辑单元（一次红-绿循环、一次 typecheck、一次测试失败修复）必须**在一个回合内连续执行完毕后才输出**：测试 → 分析失败 → 修正 → 重跑 → 全绿 整条链一气呵成，中间不停顿、不等用户说“继续”。
+flash 类模型在长程任务上容易在"预告下一步"处提前收尾——本规则源自一次真实事故（一次会话停四次，见 docs/agents/skill-design.md），是长程技能能否跑完的决定性规则。每个逻辑单元（一次红-绿循环、一次 typecheck、一次测试失败修复）必须**在一个回合内连续执行完毕后才输出**：测试 → 分析失败 → 修正 → 重跑 → 全绿 整条链一气呵成，中间不停顿、不等用户说"继续"。
 
-输出只允许发生在以下三种情况：
+回合终点仅为三类之一：
 - **合规交互点**：技能要求的用户确认（如阶段② seams 清单确认）——此时提问并等待
 - **外部阻塞**：权限拒绝、缺失授权、依赖不可用——此时明确说明需要什么授权或替代路径，不静默停止
 - **阶段完成**：整个阶段的出口条件满足（如阶段③的所有 seams 红-绿完成 + typecheck 通过、commit 完成）——单个 seam 全绿只是阶段③的内部步骤，不是回合终点
 
-预告下一步后立即执行该步骤，回合终点仅为合规交互点、外部阻塞或阶段出口条件满足。输出进度/预告本身不结束回合——输出后继续执行，直到三类终点之一达成。
+输出进度/预告本身不结束回合——输出后继续执行，直到三类终点之一达成；预告下一步后立即执行该步骤。逐 seam 的执行细则见 [stages.md 3e](references/stages.md#阶段-③tdd-开发循环)。
 
 ## 不做什么
 
@@ -39,7 +39,7 @@ description: "Implement from spec/ticket via strict TDD red-green loop, then typ
 - 不把重构塞进红-绿循环：重构归阶段⑤ Code Review
 - 不在阶段间停顿：单 seam 全绿、单次 typecheck 通过都不是回合终点（见回合连续性规则）
 - 不生成书面审查报告：阶段⑤审查结果只在对话输出，不落盘 `review-*.md` 类文件
-- 不手写超大改动：单次 `write` 超 ~150 行先写骨架再分批；批量 `replace` 超 ~5 处分批执行（见 [stages.md](references/stages.md) 3f）
+- 不手写超大改动：巨型 write/批量 replace 会撞输出上限、中途截断，因此单次 `write` 超 ~150 行先写骨架再分批补全；批量 `replace` 超 ~5 处先拆分再分批执行（见 [stages.md](references/stages.md) 3f）
 - 不跳步：阶段出口未达成不进入下一阶段（见路由规则）
 
 ## 任务拆分与 Todo 规定
