@@ -1,6 +1,6 @@
 ---
 name: commit-check
-description: "Run the pre-commit gate before any commit: review docs against the implementation, align README, keep the directory clean, and write a clear commit message. Use whenever the user is about to commit or mentions anything to check before committing — e.g. checking docs/README are in sync, cleaning up temp files, scanning for secrets/keys/.env in the change, or having you write the commit message. This is the commit workflow, not a teaching task: do not use for explaining git/commit conventions (that's a teach task)."
+description: "Run the pre-commit gate before any commit: verify docs match the implementation, align README, keep the directory clean, and write a clear commit message. Use whenever the user is about to commit or asks to check anything about the commit — e.g. verifying docs/README are in sync, cleaning up temp files, scanning for secrets/keys/.env in the change, or having you write the commit message. Not for general PR/code review (that's code-review), and not for explaining git/commit conventions (that's a teach task)."
 ---
 
 # Commit Check
