@@ -5,7 +5,7 @@ description: "Run the pre-commit gate before any commit: verify docs match the i
 
 # Commit Check
 
-提交前的**门禁检查**：审查文档 → 对齐 README → 保持目录卫生 → 规范 commit message，四项全过才允许 commit。本技能是轻量检查清单，不重写 code-review 的审查语义（[code-review](.agents/skills/code-review/SKILL.md) 是唯一事实源），也不替代任何完整实现流程——它是任何 commit 前的通用门禁，无论改动来自哪个流程；tdd-implement 阶段⑥ 将其编排为流程内 commit 门禁。
+提交前的**门禁检查**：审查文档 → 对齐 README → 保持目录卫生 → 规范 commit message，四项全过才允许 commit。本技能是轻量检查清单，不重写 code-review 的审查语义（[code-review](.agents/skills/code-review/SKILL.md) 是唯一事实源），也不替代任何完整实现流程——它是任何 commit 前的通用门禁，无论改动来自哪个流程。
 
 ## 四项检查（全部通过才 commit）
 
@@ -39,7 +39,7 @@ description: "Run the pre-commit gate before any commit: verify docs match the i
 ## 不做什么
 
 - 不做全量 code review：审查语义以 [code-review](.agents/skills/code-review/SKILL.md) 为唯一事实源，本技能不重写
-- 不替代实现流程的收尾：`tdd-implement` 阶段⑦ 仍负责文档对齐与 issue 状态更新；本技能只做 commit 门禁——`tdd-implement` 阶段⑥ 编排时与独立 commit 时同样适用
+- 不替代实现流程的收尾：`tdd-implement` 阶段⑦已含文档对齐与目录卫生，本技能只管独立 commit 的门禁
 - 不顺手重构：只检查与本次改动直接相关的内容，不扩权到无关文档/目录
 - 不发明扫描规则：敏感信息检测跑 `scripts/scan-sensitive.sh`，不每次重写 grep 模式
 
