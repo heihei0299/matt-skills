@@ -89,10 +89,27 @@ pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边
 - **全局**：`~/.config/opencode/`（`opencode.json` 配置、`skills/`、`agents/`、`commands/`），按 opencode 官方文档
 
 同一份技能（Agent Skills 标准）与 `AGENTS.md` 行为路由在两种 harness 下均可加载：opencode 从 `.opencode/skills/`、pi 从 `.pi/skills/` 与 `.agents/skills/`。
+## 仓库 CLI
 
+仓库内提供安装管理 CLI（`bin/cli.js`，依赖 `prompts`，见 `package.json`）：
+
+```sh
+node bin/cli.js list [--json]        # 列出 .agents/skills/ 下全部技能及描述
+node bin/cli.js install [选项]       # 把技能复制到目标工具目录（交互式选择）
+```
+
+`install` 选项：
+
+- `--dest <dir>`：复制到指定目录（覆盖工具映射）
+- `--tools <t1,t2>`：指定工具，项目级映射 `codex→.agents/skills`、`pi→.pi/skills`、`opencode→.opencode/skills`、`claude→.claude/skills`
+- `--global`：安装到全局目录（`~/.codex/skills`、`~/.pi/agent/skills`、`~/.config/opencode/skills`、`~/.claude/skills`）；`--project` 回到项目级
+- `--all`：安装全部技能（默认交互勾选）；`--force`：覆盖已存在的技能
 
 ## 开发
 
 ```sh
 npm test
 ```
+
+交互模式依赖 `prompts`（见 `package.json`）；测试见 `test/cli.test.js`。
+
