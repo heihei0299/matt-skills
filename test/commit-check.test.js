@@ -69,8 +69,8 @@ test('defers review semantics to the code-review skill (single source of truth)'
   assert.match(skill, /不重写/);
 });
 
-test('is orchestrated by tdd-implement as the in-flow commit gate', () => {
+test('references tdd-implement without coupling to its stage orchestration', () => {
   assert.match(skill, /tdd-implement/);
-  assert.match(skill, /阶段⑥/);
-  assert.match(skill, /commit 门禁/);
+  assert.doesNotMatch(skill, /阶段⑥/); // decoupled from tdd-implement stage numbers (4295aca)
+  assert.match(skill, /门禁/);
 });
