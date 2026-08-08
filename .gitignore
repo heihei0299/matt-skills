@@ -14,3 +14,6 @@ pi-session-*.html
 
 # 嵌套独立仓库（pi-session-anylize），非本仓库内容
 spec/
+
+# 本地开发符号链接（指向 ~/.cc-switch/skills/），不入库
+.agents/skills/skill-creator

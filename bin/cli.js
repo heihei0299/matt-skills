@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 import prompts from 'prompts';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
-
+const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
+// 独有技能不进 .agents/skills/（由 template/.opencode/skills 与 template/.pi/skills 镜像分发）。
+const PROPRIETARY_SKILLS = new Set(['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check']);
 // Exit cleanly when the consumer closes the pipe early (e.g. `list | head`).
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);
@@ -16,9 +18,14 @@ process.stdout.on('error', (err) => {
 const HELP = `matt-skills — install and manage this skill collection
 
 Usage:
-  matt-skills list [--json]              List available skills and their descriptions
-  matt-skills install [options]          Install skills (interactive by default)
-  matt-skills --help                     Show this help
+  matt-skills init [options]                   Initialize a project: template + upstream skills
+  matt-skills list [--json]                    List available skills and their descriptions
+  matt-skills install [options]                Install skills (interactive by default)
+  matt-skills --help                          Show this help
+
+Init options:
+  --dest <path>   Target directory (default: current directory)
+  --force         Overwrite existing files
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection
@@ -28,7 +35,6 @@ Install options:
   --project       Install to project skill directories (default)
   --dest <path>   Install everything into a single custom directory (overrides --tools)
 `;
-
 function parseFrontmatter(text) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return {};
@@ -158,6 +164,52 @@ async function installCommand({ dest, all, force, tools, global }) {
   }
 }
 
+async function initCommand({ dest, force }) {
+  const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
+
+  // 1. Copy the template (AGENTS.md + .opencode/ + .pi/).
+  const marker = path.join(target, 'AGENTS.md');
+  if (!force && (await pathExists(marker))) {
+    process.stdout.write('模板已存在（AGENTS.md），跳过；用 --force 覆盖\n');
+  } else {
+    await cp(TEMPLATE_DIR, target, { recursive: true, force });
+    process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+  }
+
+  // 2. Copy upstream skills (everything except the proprietary ones) into .agents/skills/.
+  const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+  const upstream = entries
+    .filter((e) => e.isDirectory() && !PROPRIETARY_SKILLS.has(e.name))
+    .map((e) => e.name)
+    .sort();
+  const skillsDir = path.join(target, '.agents', 'skills');
+  let installed = 0;
+  let skipped = 0;
+  for (const name of upstream) {
+    const dst = path.join(skillsDir, name);
+    if (!force && (await pathExists(dst))) {
+      skipped++;
+      continue;
+    }
+    await cp(path.join(SKILLS_DIR, name), dst, { recursive: true });
+    installed++;
+  }
+  process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}\n`);
+  process.stdout.write(`目标路径：${target}\n`);
+}
+
+function parseInitArgs(args) {
+  let dest;
+  let force = false;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--dest') dest = args[++i];
+    else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
+    else if (arg === '--force') force = true;
+  }
+  return { dest, force };
+}
+
 function parseInstallArgs(args) {
   let dest;
   let all = false;
@@ -180,7 +232,6 @@ function parseInstallArgs(args) {
     : null;
   return { dest, all, force, global, tools };
 }
-
 async function main() {
   const args = process.argv.slice(2);
 
@@ -200,6 +251,11 @@ async function main() {
         process.stdout.write(`${skill.name} — ${skill.description}\n`);
       }
     }
+    return;
+  }
+
+  if (command === 'init') {
+    await initCommand(parseInitArgs(rest));
     return;
   }
 

@@ -1,6 +1,6 @@
 # matt-skills
 
-mattpocock/skills（`skills/engineering` + `skills/productivity`）的配置仓库：工作区内容镜像为 `template/` 模板快照，将快照整个复制到目标仓库根目录，再按下方命令拉取上游技能，即完成初始化。
+mattpocock/skills（`skills/engineering` + `skills/productivity`）的配置仓库：工作区内容镜像为 `template/` 模板快照，以 npm 包 `@heihei0299/matt-skills` 分发，目标仓库一条命令即完成初始化。
 
 ## 模板结构
 
@@ -20,15 +20,27 @@ template/
 
 ## 初始化
 
-将 `template/` 整个文件夹复制到目标仓库根目录：
+在目标仓库根目录执行一条命令：
+
+```sh
+npx @heihei0299/matt-skills init
+```
+
+`init` 做两件事：
+
+1. 复制 `template/` 快照（`AGENTS.md`、`.opencode/`、`.pi/`）到当前目录；
+2. 把上游技能（engineering 17 个 + productivity 5 个）复制到 `.agents/skills/`。
+
+选项：`--dest <path>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件（默认跳过）。
+
+上游没有 `tdd-implement`、`grill-to-spec`、`diagnose-fix`、`commit-check`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`；pi 侧独有在 `.pi/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；9 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
+
+**pi-agent 用户**：初始化命令完全相同。pi 从 `.pi/skills/` 自动发现独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check），无需任何指向配置；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
+
+**手动方式（备选）**：无 npx 环境时，将 `template/` 整个文件夹复制到目标仓库根目录，再拉取上游技能：
 
 ```sh
 cp -r template/. /path/to/target/
-```
-
-然后拉取上游技能（engineering 17 个 + productivity 5 个）到目标仓库的 `.agents/skills/`：
-
-```sh
 git clone --depth 1 https://github.com/mattpocock/skills.git /tmp/mattpocock-skills
 cp -r /tmp/mattpocock-skills/skills/engineering/. .agents/skills/
 cp -r /tmp/mattpocock-skills/skills/productivity/. .agents/skills/
@@ -91,12 +103,15 @@ pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边
 同一份技能（Agent Skills 标准）与 `AGENTS.md` 行为路由在两种 harness 下均可加载：opencode 从 `.opencode/skills/`、pi 从 `.pi/skills/` 与 `.agents/skills/`。
 ## 仓库 CLI
 
-仓库内提供安装管理 CLI（`bin/cli.js`，依赖 `prompts`，见 `package.json`）：
+仓库内提供安装管理 CLI（`bin/cli.js`，依赖 `prompts`，见 `package.json`），同时作为 npm 包 `@heihei0299/matt-skills` 分发（`npx @heihei0299/matt-skills <command>`）：
 
 ```sh
-node bin/cli.js list [--json]        # 列出 .agents/skills/ 下全部技能及描述
-node bin/cli.js install [选项]       # 把技能复制到目标工具目录（交互式选择）
+node bin/cli.js init [--dest <dir>] [--force]   # 初始化项目：template + 上游技能
+node bin/cli.js list [--json]                   # 列出 .agents/skills/ 下全部技能及描述
+node bin/cli.js install [选项]                  # 把技能复制到目标工具目录（交互式选择）
 ```
+
+`init` 选项：`--dest <dir>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件（默认跳过），见「初始化」。
 
 `install` 选项：
 
@@ -105,6 +120,16 @@ node bin/cli.js install [选项]       # 把技能复制到目标工具目录（
 - `--global`：安装到全局目录（`~/.codex/skills`、`~/.pi/agent/skills`、`~/.config/opencode/skills`、`~/.claude/skills`）；`--project` 回到项目级
 - `--all`：安装全部技能（默认交互勾选）；`--force`：覆盖已存在的技能
 
+## 发布
+
+```sh
+npm version <patch|minor|major>
+npm publish
+```
+
+- `prepublishOnly` 自动跑全量测试（`node --test test/*.test.js`）
+- 发布内容 = `bin/` + `template/` + `.agents/skills/` + `README.md`，由 `package.json` 的 `files` 白名单控制，`npm pack` 可预览
+- `template/` 与 `.agents/skills/` 是包内容：改动后需重新发版才对目标仓库生效
 ## 开发
 
 ```sh

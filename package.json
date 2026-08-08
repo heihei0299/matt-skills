@@ -1,11 +1,26 @@
 {
-  "name": "matt-skills",
-  "private": true,
+  "name": "@heihei0299/matt-skills",
+  "version": "1.0.0",
+  "description": "Agent skills + 项目配置模板：一条命令初始化 opencode / pi-agent 项目（含 mattpocock/skills 上游技能）",
   "type": "module",
+  "bin": {
+    "matt-skills": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "template/",
+    ".agents/skills/",
+    "README.md"
+  ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test test/*.test.js",
+    "prepublishOnly": "node --test test/*.test.js"
   },
   "dependencies": {
     "prompts": "^2.4.2"
-  }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
 }
