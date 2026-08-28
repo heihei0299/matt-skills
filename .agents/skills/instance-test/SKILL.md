@@ -1,12 +1,12 @@
 ---
 name: instance-test
 disable-model-invocation: true
-description: "Verify project meets expected goals by running prompt instances in isolated temp projects"
+description: "Verify project meets expected goals by running prompt instances in isolated temp dirs"
 ---
 
 # Instance Test
 
-Run **instance** prompts to verify project meets expected goals via actual functional tests. Each **instance** is a prompt + expected files/behavior, executed in an isolated temp directory — no mocks, no stubs.
+Run **instance** prompts to verify project meets expected goals via actual functional tests. Each **instance** is a prompt + expected outcome, executed in an isolated temp dir — no mocks, no stubs.
 
 ## Steps
 
@@ -14,8 +14,10 @@ Run **instance** prompts to verify project meets expected goals via actual funct
 
 Collect the **instance** set to run:
 
-- User-provided instances (prompt + expected), or
-- Project defaults for this repo: `init` fresh, `init` skip, `init --force` backup, `sync` backup, `list` — see `instances.md` if present, otherwise derive from `README` expected behavior.
+- User-provided instances (prompt, command, expected files/stdout/exit code), or
+- Derived from `spec.md`/`README` acceptance criteria — extract each verifiable behavior as one instance, then confirm the list with the user before running.
+
+Each **instance** must declare: command to run, expected files/content, expected stdout phrases, expected exit code.
 
 Completion: instance list is fixed (prompt, expected outcome, verification command) — no instance is added mid-run.
 
@@ -23,9 +25,9 @@ Completion: instance list is fixed (prompt, expected outcome, verification comma
 
 For each **instance** in order:
 
-1. `mktemp -d` isolated dir.
-2. Execute the prompt's command (`node bin/cli.js init --dest <dir>` or `npx @heihei0299/matt-skills init` for remote) — capture stdout/stderr and exit code.
-3. Snapshot result files (`AGENTS.md`, `.opencode/`, `.pi/`, `.agents/skills/`) and `.bak` when expected.
+1. `mktemp -d` isolated dir (or `git worktree` / `--dest` if the project supports it).
+2. Execute the instance's command — capture stdout/stderr and exit code.
+3. Snapshot result files and side effects declared in expected.
 
 Do not run instances in parallel — one **instance** at a time, so failures are isolated and artifacts do not collide.
 
@@ -35,9 +37,9 @@ Completion: every **instance** has a run dir with captured output and file snaps
 
 Compare each **instance**'s actual vs expected:
 
-- File existence/content (`test -f`, `grep -q`, `diff` against template).
-- Stdout contains expected phrases (e.g. `模板：已复制`, `已备份`).
-- Exit code `0` and no unhandled errors.
+- File existence/content (`test -f`, `grep -q`, `diff`).
+- Stdout/stderr contains expected phrases.
+- Exit code matches expected.
 
 Mark `PASS`/`FAIL` per **instance** with evidence (file path, stdout line, or diff).
 
@@ -55,5 +57,5 @@ Do not write a report file (`report-*.md`) — output stays in conversation. Kee
 
 ## References
 
-- Instance definitions (if any): `references/instances.md` — auto-loaded only when present, not required.
-- Project expected behavior: `README` + `bin/cli.js` HELP.
+- Instance definitions (if any): `references/instances.md` — example set, auto-loaded only when present, not required.
+- Project expected behavior: `spec.md`/`README`/`--help` — the source of truth for what to verify.
