@@ -9,7 +9,7 @@ template/
 ├── AGENTS.md         项目级全局配置（行为路由 + 分文件指针）
 ├── .pi/              pi-agent 项目配置（pi 标准结构：`.pi/skills/` 直放独有技能，自动发现）
 └── .opencode/        分发内容（目标仓库的 opencode 项目配置）
-    ├── skills/       4 个独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check）
+    ├── skills/       5 个独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check、instance-test）
     ├── agents/       issue-audit 子代理定义
     ├── commands/     issue-audit + 9 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-great-skills）
     ├── docs/agents/  5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
@@ -160,8 +160,11 @@ npm publish
 ## 开发
 
 ```sh
-npm test
+npm test                          # 全量测试 122 项
+npm run build:template            # 从单源生成 template/.opencode/.pi（config/proprietary.json 为单一事实源）
 ```
 
-交互模式依赖 `prompts`（见 `package.json`）；测试见 `test/cli.test.js`。
+交互模式依赖 `prompts`（见 `package.json`）；测试见 `test/cli.test.js`、`test/cli-init.test.js`、`test/template-sync.test.js`。
+
+用户手动触发的功能测试：`/instance-test`（见 `.agents/skills/instance-test/SKILL.md`）——在隔离 `temp dir` 跑 prompt 实例验实际功能，`references/instances.md` 为通用模板。
 
