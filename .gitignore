@@ -17,3 +17,8 @@ spec/
 
 # 本地开发符号链接（指向 ~/.cc-switch/skills/），不入库
 .agents/skills/skill-creator
+
+# 备份文件（init --force / sync 自动备份）
+*.bak
+.opencode.bak/
+.pi.bak/

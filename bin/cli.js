@@ -7,9 +7,7 @@ import prompts from 'prompts';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
-// 独有技能不进 .agents/skills/（由 template/.opencode/skills 与 template/.pi/skills 镜像分发）。
 const PROPRIETARY_SKILLS = new Set(['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check']);
-// Exit cleanly when the consumer closes the pipe early (e.g. `list | head`).
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);
   throw err;
@@ -19,13 +17,17 @@ const HELP = `matt-skills — install and manage this skill collection
 
 Usage:
   matt-skills init [options]                   Initialize a project: template + upstream skills
+  matt-skills sync [options]                   Sync existing project to latest template + skills (backs up overwritten files to .bak)
   matt-skills list [--json]                    List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
   matt-skills --help                          Show this help
 
 Init options:
   --dest <path>   Target directory (default: current directory)
-  --force         Overwrite existing files
+  --force         Overwrite existing files (backs up to .bak)
+Sync options:
+  --dest <path>   Target directory (default: current directory)
+  --force         Overwrite without backup (default: backup to .bak)
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection
@@ -35,6 +37,7 @@ Install options:
   --project       Install to project skill directories (default)
   --dest <path>   Install everything into a single custom directory (overrides --tools)
 `;
+
 function parseFrontmatter(text) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return {};
@@ -56,11 +59,12 @@ async function listSkills() {
   const skills = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
+    if (entry.name.endsWith('.bak')) continue;
     let content;
     try {
       content = await readFile(path.join(SKILLS_DIR, entry.name, 'SKILL.md'), 'utf8');
     } catch {
-      continue; // directory without SKILL.md is not a skill
+      continue;
     }
     const { name, description } = parseFrontmatter(content);
     if (name && description) skills.push({ name, description });
@@ -75,6 +79,13 @@ async function pathExists(p) {
   } catch {
     return false;
   }
+}
+
+async function backupIfExists(p) {
+  if (!(await pathExists(p))) return null;
+  const bak = `${p}.bak`;
+  await cp(p, bak, { recursive: true, force: true });
+  return bak;
 }
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
@@ -122,8 +133,6 @@ async function promptSkills(skills) {
 
 async function installCommand({ dest, all, force, tools, global }) {
   const skills = await listSkills();
-
-  // 1. Decide the target directories.
   let targets;
   if (dest) {
     targets = [{ tool: null, dir: path.resolve(process.cwd(), dest) }];
@@ -137,15 +146,11 @@ async function installCommand({ dest, all, force, tools, global }) {
     }
     targets = selectedTools.map((tool) => ({ tool, dir: toolDir(tool, global) }));
   }
-
-  // 2. Decide which skills to install.
   const selected = all ? skills.map((s) => s.name) : await promptSkills(skills);
   if (selected.length === 0) {
     process.stdout.write('未选择任何技能，未安装任何技能\n');
     return;
   }
-
-  // 3. Copy per target and report a per-tool summary.
   for (const { tool, dir } of targets) {
     let installed = 0;
     let skipped = 0;
@@ -155,7 +160,7 @@ async function installCommand({ dest, all, force, tools, global }) {
         skipped++;
         continue;
       }
-      await cp(path.join(SKILLS_DIR, name), dst, { recursive: true });
+      await cp(path.join(SKILLS_DIR, name), dst, { recursive: true, force: true });
       installed++;
     }
     if (tool) process.stdout.write(`${tool}：已装 ${installed}、跳过 ${skipped}\n`);
@@ -166,35 +171,110 @@ async function installCommand({ dest, all, force, tools, global }) {
 
 async function initCommand({ dest, force }) {
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
-
-  // 1. Copy the template (AGENTS.md + .opencode/ + .pi/).
   const marker = path.join(target, 'AGENTS.md');
   if (!force && (await pathExists(marker))) {
-    process.stdout.write('模板已存在（AGENTS.md），跳过；用 --force 覆盖\n');
+    process.stdout.write('模板已存在（AGENTS.md），跳过；用 --force 覆盖（自动备份到 .bak）\n');
   } else {
-    await cp(TEMPLATE_DIR, target, { recursive: true, force });
-    process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+    if (force && (await pathExists(marker))) {
+      for (const name of ['AGENTS.md', '.opencode', '.pi']) {
+        const cur = path.join(target, name);
+        if (await pathExists(cur)) await backupIfExists(cur);
+      }
+      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+      process.stdout.write('模板：已备份到 .bak 并覆盖（AGENTS.md、.opencode/、.pi/）\n');
+    } else {
+      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+      process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+    }
   }
-
-  // 2. Copy upstream skills (everything except the proprietary ones) into .agents/skills/.
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const upstream = entries
-    .filter((e) => e.isDirectory() && !PROPRIETARY_SKILLS.has(e.name))
+    .filter((e) => e.isDirectory() && !PROPRIETARY_SKILLS.has(e.name) && !e.name.endsWith('.bak'))
     .map((e) => e.name)
     .sort();
   const skillsDir = path.join(target, '.agents', 'skills');
   let installed = 0;
   let skipped = 0;
+  let backedUp = 0;
   for (const name of upstream) {
+    const src = path.join(SKILLS_DIR, name);
     const dst = path.join(skillsDir, name);
+    if (src === dst) {
+      skipped++;
+      continue;
+    }
     if (!force && (await pathExists(dst))) {
       skipped++;
       continue;
     }
-    await cp(path.join(SKILLS_DIR, name), dst, { recursive: true });
+    if (force && (await pathExists(dst))) {
+      await backupIfExists(dst);
+      backedUp++;
+    }
+    await cp(src, dst, { recursive: true, force: true });
     installed++;
   }
-  process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}\n`);
+  if (force && backedUp > 0) {
+    process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}、备份 ${backedUp} 到 .bak\n`);
+  } else {
+    process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}\n`);
+  }
+  process.stdout.write(`目标路径：${target}\n`);
+}
+
+async function syncCommand({ dest, force }) {
+  const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
+  const marker = path.join(target, 'AGENTS.md');
+  const backup = !force;
+  if (!(await pathExists(marker))) {
+    process.stdout.write('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
+    await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+    process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+  } else {
+    process.stdout.write('同步：检测到现有项目，将增量更新并备份被覆盖文件到 .bak\n');
+    if (backup) {
+      for (const name of ['AGENTS.md', '.opencode', '.pi']) {
+        const cur = path.join(target, name);
+        if (await pathExists(cur)) await backupIfExists(cur);
+      }
+    }
+    await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+    process.stdout.write(backup ? '模板：已备份并同步（AGENTS.md、.opencode/、.pi/）\n' : '模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
+  }
+  const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+  const upstream = entries
+    .filter((e) => e.isDirectory() && !PROPRIETARY_SKILLS.has(e.name) && !e.name.endsWith('.bak'))
+    .map((e) => e.name)
+    .sort();
+  const skillsDir = path.join(target, '.agents', 'skills');
+  let installed = 0;
+  let updated = 0;
+  let backedUp = 0;
+  for (const name of upstream) {
+    const src = path.join(SKILLS_DIR, name);
+    const dst = path.join(skillsDir, name);
+    if (src === dst) {
+      updated++;
+      continue;
+    }
+    const exists = await pathExists(dst);
+    if (exists) {
+      if (backup) {
+        await backupIfExists(dst);
+        backedUp++;
+      }
+      await cp(src, dst, { recursive: true, force: true });
+      updated++;
+    } else {
+      await cp(src, dst, { recursive: true, force: true });
+      installed++;
+    }
+  }
+  if (backup) {
+    process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}（已备份 ${backedUp} 到 .bak）\n`);
+  } else {
+    process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}\n`);
+  }
   process.stdout.write(`目标路径：${target}\n`);
 }
 
@@ -232,16 +312,14 @@ function parseInstallArgs(args) {
     : null;
   return { dest, all, force, global, tools };
 }
+
 async function main() {
   const args = process.argv.slice(2);
-
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     process.stdout.write(HELP);
     return;
   }
-
   const [command, ...rest] = args;
-
   if (command === 'list') {
     const skills = await listSkills();
     if (rest.includes('--json')) {
@@ -253,17 +331,18 @@ async function main() {
     }
     return;
   }
-
   if (command === 'init') {
     await initCommand(parseInitArgs(rest));
     return;
   }
-
+  if (command === 'sync') {
+    await syncCommand(parseInitArgs(rest));
+    return;
+  }
   if (command === 'install') {
     await installCommand(parseInstallArgs(rest));
     return;
   }
-
   process.stderr.write(HELP);
   process.exitCode = 1;
 }

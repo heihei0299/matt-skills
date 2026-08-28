@@ -31,7 +31,16 @@ npx @heihei0299/matt-skills init
 1. 复制 `template/` 快照（`AGENTS.md`、`.opencode/`、`.pi/`）到当前目录；
 2. 把上游技能（engineering 17 个 + productivity 5 个）复制到 `.agents/skills/`。
 
-选项：`--dest <path>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件（默认跳过）。
+选项：`--dest <path>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件并自动备份被覆盖文件到 `.bak`（默认跳过）。
+
+**增量同步（已有项目）**：已有项目更新到最新模板与技能：
+
+```sh
+npx @heihei0299/matt-skills sync            # 增量同步，备份被覆盖文件到 .bak
+npx @heihei0299/matt-skills sync --force    # 覆盖不备份
+```
+
+`sync` 专为已有项目设计：自动检测 `AGENTS.md` 是否存在，存在则增量更新模板与上游技能并备份，不存在则等同全新 `init`。与 `init --force` 的区别：`sync` 默认即备份、语义更明确，建议已有项目优先用 `sync`。
 
 上游没有 `tdd-implement`、`grill-to-spec`、`diagnose-fix`、`commit-check`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`；pi 侧独有在 `.pi/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；9 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
 
@@ -107,11 +116,13 @@ pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边
 
 ```sh
 node bin/cli.js init [--dest <dir>] [--force]   # 初始化项目：template + 上游技能
+node bin/cli.js sync [--dest <dir>] [--force]   # 同步已有项目到最新（备份到 .bak）
 node bin/cli.js list [--json]                   # 列出 .agents/skills/ 下全部技能及描述
 node bin/cli.js install [选项]                  # 把技能复制到目标工具目录（交互式选择）
 ```
 
-`init` 选项：`--dest <dir>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件（默认跳过），见「初始化」。
+`init` 选项：`--dest <dir>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件并备份到 `.bak`（默认跳过），见「初始化」。
+`sync` 选项：`--dest <dir>` 指定目标目录；`--force` 覆盖不备份（默认备份），见「初始化」增量同步。
 
 `install` 选项：
 
