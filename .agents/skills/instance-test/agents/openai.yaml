@@ -1,0 +1,5 @@
+interface:
+  display_name: "Instance Test"
+  short_description: "Verify project via prompt instances in isolated temp projects"
+policy:
+  allow_implicit_invocation: false

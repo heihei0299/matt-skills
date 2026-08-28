@@ -25,7 +25,7 @@ const DOC_AGENTS = ['domain.md', 'issue-tracker.md', 'runtime-discipline.md', 's
 // Each proprietary skill mirrors to BOTH template/.opencode/skills/ (opencode
 // distribution) and template/.pi/skills/ (pi standard distribution, auto-discovered
 // from .pi/skills/).
-const PROPRIETARY_SKILLS = ['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check'];
+const PROPRIETARY_SKILLS = ['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'instance-test'];
 
 function readDirRecursive(dirPath) {
   const out = [];
