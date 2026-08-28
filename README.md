@@ -133,6 +133,22 @@ node bin/cli.js install [选项]                  # 把技能复制到目标工�
 
 ## 发布
 
+推送 `v*` 标签自动发布到 npm（GitHub Actions，见 `.github/workflows/publish.yml`）：
+
+```sh
+# 1. 确保 main 分支为最新且测试全绿
+git checkout main && git pull
+npm test
+
+# 2. 打标签并推送（标签即版本，v 前缀自动去除）
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+Action 流程：`checkout` → 校验标签在 `main` 分支 → `Node 24` → `npm ci` → `npm test` 全绿 → 以标签为准 `npm version <tag> --no-git-tag-version` → `npm publish --access public`（需在 GitHub Secrets 配置 `NPM_TOKEN`）。
+
+本地手动发布（备选）：
+
 ```sh
 npm version <patch|minor|major>
 npm publish
