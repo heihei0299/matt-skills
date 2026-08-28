@@ -174,3 +174,87 @@ test('stage ⑥ embeds the commit-check gate before commit', () => {
   assert.match(stages, /全部通过才 commit/);
   assert.match(skill, /commit-check/);
 });
+
+// ---- 多 issue 编排（按依赖分层并行） ----
+
+test('SKILL.md has multi-issue orchestration section (layered parallel)', () => {
+  assert.match(skill, /多 issue 编排/);
+  assert.match(skill, /按依赖分层并行/);
+  assert.match(skill, /Blocked by/);
+  assert.match(skill, /编排器职责/);
+  assert.match(skill, /单 issue 单代理/);
+  assert.match(skill, /分层并行/);
+});
+
+test('SKILL.md orchestration: trigger and single-issue fallback', () => {
+  assert.match(skill, /\.scratch\/<feature>\/issues\//);
+  assert.match(skill, /单 issue \/ 单 spec 仍走上节单线流程/);
+  assert.match(skill, /不为单 issue 引入编排/);
+});
+
+test('SKILL.md orchestration: subagent contract (full ①→⑦ each issue)', () => {
+  assert.match(skill, /各自治完成完整 tdd-implement 流程/);
+  assert.match(skill, /①→⑦/);
+  assert.match(skill, /独立 commit/);
+  assert.match(skill, /禁止跨 issue 改动/);
+});
+
+test('SKILL.md orchestration: conflict and convergence', () => {
+  assert.match(skill, /冲突处理/);
+  assert.match(skill, /rebase/);
+  assert.match(skill, /收敛/);
+  assert.match(skill, /全量测试/);
+});
+
+test('SKILL.md orchestration: turn continuity extends to layers', () => {
+  assert.match(skill, /编排模式下回合连续性延伸至/);
+  assert.match(skill, /一层内全部子代理派发后/);
+});
+
+test('SKILL.md orchestration: adds orchestration layer to task hierarchy', () => {
+  assert.match(skill, /编排层/);
+  assert.match(skill, /Blocked by.*分层/);
+  assert.match(skill, /分层清单/);
+});
+
+test('stages.md appendix exists with full A0-A5 coverage', () => {
+  assert.match(stages, /附录.*多 issue 编排/);
+  assert.match(stages, /A0.*依赖图构建/);
+  assert.match(stages, /A1.*拓扑分层/);
+  assert.match(stages, /A2.*分层调度/);
+  assert.match(stages, /A3.*子代理契约/);
+  assert.match(stages, /A4.*全量收敛/);
+  assert.match(stages, /A5.*回退与冲突/);
+});
+
+test('stages.md A0 parses Blocked by and detects cycles', () => {
+  assert.match(stages, /Blocked by/);
+  assert.match(stages, /None/);
+  assert.match(stages, /DAG/);
+  assert.match(stages, /环/);
+});
+
+test('stages.md A1 uses Kahn layered topological sort', () => {
+  assert.match(stages, /Kahn/);
+  assert.match(stages, /入度为 0/);
+  assert.match(stages, /L1/);
+  assert.match(stages, /L2/);
+});
+
+test('stages.md A3 subagent is a full single-issue tdd-implement unit', () => {
+  assert.match(stages, /以 \[tdd 技能\]/);
+  assert.match(stages, /禁止.*跨 issue 改动/);
+  assert.match(stages, /NN-<slug>/);
+  assert.match(stages, /spec\.md/);
+  assert.match(stages, /①→⑦/);
+  assert.match(stages, /完整的 tdd-implement 单 issue 执行单元/);
+});
+
+test('stages.md orchestration defers TDD semantics, does not re-rewrite', () => {
+  // Appendix must not re-define red-green rules; it defers to tdd skill
+  assert.match(stages, /TDD 语义以 \[tdd 技能\]/);
+});
+
+test('stages.md appendix does not apply to single-issue runs', () => {
+  assert.match(stages, /单 issue \/ 单 spec 不走本附录/);
+});
