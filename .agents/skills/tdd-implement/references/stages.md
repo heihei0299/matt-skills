@@ -232,9 +232,10 @@ Ln = 最后一层
 ```
 for each 层 Li in L1..Ln:
   并行派发：为 Li 中每个 issue 启动一个子代理（single 模式，禁止 parallel tasks 数组）
-  等待：阻塞直到 Li 全部子代理返回且对应 issue 已标 Status: resolved
-  收敛：若有失败，按 A5 回退；否则进入 Li+1
-全部层完成后进入 A4 全量收敛
+  等待：阻塞直到 Li 全部子代理返回回执卡片
+  验收：编排器按 A3 验收清单逐 issue 验收（只认回执卡片的关键信息 + 抽检验证，不消费全量日志）
+  收敛：验收全通过进入 Li+1；有不通过按 A5 回退重派该 issue
+全部层验收通过后进入 A4 全量收敛
 ```
 
 - **派发纪律**：与阶段⑤双轴审查一致——逐个 `subagent` 派发，禁止 `parallel tasks` 数组（同因：中文报告截断）。
@@ -249,22 +250,51 @@ for each 层 Li in L1..Ln:
   - `spec.md`（feature 级共享 spec，若无则以该 issue 正文为准）
   - 分配的单个 `NN-<slug>.md`（唯一 issue 输入）
   - `CONTEXT.md` + `docs/adr/`（术语与决策一致性）
-- **执行**：严格走 tdd-im-port ①→⑦全流程——①理解需求（读 spec + issue）→ ②确认 seams（该 issue 范围内）→ ③红-绿循环 → ④完整测试套件 → ⑤双轴 review → ⑥commit-check 门禁 + commit → ⑦文档对齐（仅该 issue 相关描述）+ `Status: resolved` + `## 实施总结` 落盘 + 目录卫生。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在子代理内重写。
+- **执行**：严格走 tdd-implement ①→⑦全流程——①理解需求（读 spec + issue）→ ②确认 seams（该 issue 范围内）→ ③红-绿循环 → ④完整测试套件 → ⑤双轴 review → ⑥commit-check 门禁 + commit → ⑦文档对齐（仅该 issue 相关描述）+ `Status: resolved` + `## 实施总结` 落盘 + 目录卫生。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在子代理内重写。
 - **产出**：
   - 独立 commit（message 含 issue 编号，如 `feat(<feature>): <issue title> (#NN)`）
   - 该 issue 文件 `Status: resolved` + 底部 `## 实施总结`
   - 该 issue 范围内的测试全绿 + typecheck 通过
 - **禁止**：跨 issue 改动；修改其他 issue 文件；跳过 ⑤/⑥ 直接 commit。
 
+#### 输出约束（子代理只返回回执卡片）
+
+子代理不向编排器透传全量过程日志（各 seam 的红-绿细节、typecheck 原始输出、双轴 review 全文、完整测试日志）。只返回一张**回执卡片**（结构化关键信息，中文，≤ 30 行）：
+
+```
+[回执] #NN <issue 标题>
+- 提交：<commit hash> — <message>
+- seams：<清单>
+- 测试：<数量> 项，全绿 / 失败清单
+- typecheck：通过 / 失败原因
+- review：Standards <通过/问题> / Spec <通过/问题>
+- 验收：checkbox <m/n 全绿，缺口说明>
+- 文档：<更新文件 / 无需更新>
+- 遗留：<如有>
+```
+
+卡片字段缺一不可；缺失字段视为验收不通过。详细过程与证据留在子代理的 commit 与 issue 文件中，编排器按需抽检而非全量消费。
+
+#### 主代理验收（编排器逐 issue 验收）
+
+编排器收到回执后逐 issue 验收，不盲信子代理自检：
+
+1. **落盘校验**：`git log --oneline` 含该 commit 且 message 含 `#NN`；issue 文件 `Status: resolved` 且底部 `## 实施总结` 已落盘。
+2. **抽检验证**：抽跑该 issue 相关测试（或 `tsc --noEmit` 抽检），不重跑全量套件；抽检失败即打回。
+3. **改动边界**：`git diff <base>..HEAD --name-only` 核对无跨 issue 文件改动；有跨改视为不通过。
+4. **卫生**：`git status` 无 `[DEBUG-...]` 残留与未跟踪临时文件。
+
+任一项不通过 → 打回重派该子代理（仅该 issue），层内其他已通过不受影响；验收通过才计入层收敛。验收结论随层收敛一并输出。
+
 子代理内部的回合连续性、任务分解、Todo 规定与单线模式完全一致（见 SKILL.md 回合连续性规则与 stages.md 阶段③ 3e/3f）。
 
 ### A4. 全量收敛
 
-全部层 `resolved` 后，编排器执行：
+全部层逐 issue 验收通过后，编排器执行：
 
 1. **全量测试套件**：跑仓库完整测试套件（阶段④口径），失败则按 A5 回退。
 2. **目录卫生**：`git status` 确认无 `[DEBUG-...]` 残留、无未跟踪临时文件；有残留则清理后重检。
-3. **汇总总结**：在会话输出汇总各 issue 的提交 hash、seams 清单、验收 checkbox 全绿情况、测试结果、文档对齐清单；不另写汇总文件（总结只在对话输出，各 issue 的 `## 实施总结` 已落盘）。
+3. **汇总总结**：在会话输出汇总各 issue 的回执卡片关键信息（提交 hash / seams / 验收 checkbox / 测试结果 / 文档对齐）；不另写汇总文件，不透传子代理全量日志（各 issue 的 `## 实施总结` 已落盘，详查落盘文件）。
 
 ### A5. 回退与冲突
 

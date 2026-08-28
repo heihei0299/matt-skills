@@ -258,3 +258,55 @@ test('stages.md orchestration defers TDD semantics, does not re-rewrite', () => 
 test('stages.md appendix does not apply to single-issue runs', () => {
   assert.match(stages, /单 issue \/ 单 spec 不走本附录/);
 });
+
+test('SKILL.md orchestration: subagent output 受限 to receipt card', () => {
+  assert.match(skill, /子代理输出约束/);
+  assert.match(skill, /回执卡片/);
+  assert.match(skill, /不透传全量过程日志/);
+  assert.match(skill, /红-绿细节/);
+  assert.match(skill, /结构化关键信息/);
+});
+
+test('SKILL.md orchestration: main-agent acceptance gate', () => {
+  assert.match(skill, /主代理验收/);
+  assert.match(skill, /不盲信回执/);
+  assert.match(skill, /逐 issue 验收/);
+  assert.match(skill, /抽检验证/);
+  assert.match(skill, /无跨 issue 改动/);
+  assert.match(skill, /打回重派/);
+  assert.match(skill, /验收通过才计入层收敛/);
+});
+
+test('SKILL.md orchestration:编排器职责含验收', () => {
+  assert.match(skill, /逐 issue 验收/);
+});
+
+test('stages.md A2 scheduling includes acceptance step', () => {
+  assert.match(stages, /回执卡片/);
+  assert.match(stages, /验收.*逐 issue 验收|逐 issue 验收.*回执/);
+  assert.match(stages, /验收全通过进入/);
+});
+
+test('stages.md A3 has output constraint (receipt card only)', () => {
+  assert.match(stages, /输出约束.*回执卡片|回执卡片.*输出约束/);
+  assert.match(stages, /不向编排器透传全量过程日志/);
+  assert.match(stages, /≤ 30 行/);
+  assert.match(stages, /\[回执\]/);
+  assert.match(stages, /seams.*测试.*typecheck.*review/s);
+  assert.match(stages, /缺失字段视为验收不通过/);
+});
+
+test('stages.md A3 has main-agent acceptance checklist', () => {
+  assert.match(stages, /主代理验收.*逐 issue 验收|编排器.*验收/);
+  assert.match(stages, /不盲信子代理自检/);
+  assert.match(stages, /落盘校验/);
+  assert.match(stages, /抽检验证/);
+  assert.match(stages, /改动边界/);
+  assert.match(stages, /打回重派/);
+});
+
+test('stages.md A4 summary is from receipt cards not full logs', () => {
+  assert.match(stages, /回执卡片关键信息/);
+  assert.match(stages, /不透传子代理全量日志/);
+});
+

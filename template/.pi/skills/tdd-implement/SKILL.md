@@ -27,11 +27,13 @@ description: "Implement from a spec or ticket via strict TDD red-green loop, the
 当 `.scratch/<feature>/issues/` 下存在多个 issue 且彼此有 `Blocked by` 依赖时走本模式；单 issue / 单 spec 仍走上节单线流程。触发后主代理为**编排器**，子代理按**单 issue 单代理**各自治完成完整 tdd-implement 流程（①→⑦）。详规见 [`stages.md` 附录](references/stages.md#附录-多-issue-编排按依赖分层并行)，本节只定契约：
 
 - **触发**：扫描 `.scratch/<feature>/issues/` 多文件且含 `Blocked by` 时进入编排模式；否则单线执行——不为单 issue 引入编排开销。
-- **编排器职责**：解析 `Blocked by` 依赖图 → 拓扑分层 → 按层调度子代理 → 层间收敛验证（全量测试 + `git status` 干净）→ 汇总实施总结。
+- **编排器职责**：解析 `Blocked by` 依赖图 → 拓扑分层 → 按层调度子代理 → 逐 issue 验收（见下）→ 层间收敛验证（全量测试 + `git status` 干净）→ 汇总实施总结。
 - **子代理契约（单 issue 单代理）**：输入 `spec.md + 单个 issue.md + CONTEXT.md/ADRs`，严格走 tdd-implement ①→⑦（含 seams 确认、红-绿循环、typecheck、双轴 review、commit-check 门禁、issue `resolved` + 实施总结）；产出独立 commit；禁止跨 issue 改动。
-- **分层并行**：同层无依赖的 issue 并行派发子代理，层内全部 `resolved` 后才进入下一层；层间串行，层内并行。
+- **子代理输出约束**：只返回**回执卡片**（结构化关键信息），不透传全量过程日志。回执字段：issue 编号与标题 / commit hash / seams 清单 / 测试结果（数量与是否全绿）/ typecheck 结论 / 双轴 review 结论 / 验收 checkbox 结果 / 文档对齐清单 / 遗留与风险。红-绿细节、typecheck 原始输出、review 全文等过程日志留在子代理内部，不向主代理透传。
+- **主代理验收**：编排器不盲信回执，逐 issue 验收后才算该 issue 完成。验收项：① commit 存在且 message 含 issue 编号 ② issue 文件 `Status: resolved` + `## 实施总结` 已落盘 ③ 抽检验证（抽跑相关测试或 `tsc --noEmit` 抽检，不重跑全量）④ 无跨 issue 改动（`git diff --name-only` 核对）⑤ 工作区干净。任一项不通过则打回重派该子代理，层内其他已通过不受影响；验收通过才计入层收敛。
+- **分层并行**：同层无依赖的 issue 并行派发子代理，层内全部验收通过后才进入下一层；层间串行，层内并行。
 - **冲突处理**：同层子代理若触及同一文件，后完成者 rebase 解决冲突后重跑 typecheck + 相关测试；跨层天然串行无冲突。
-- **收敛**：全部层完成后编排器跑全量测试套件 + 目录卫生检查，任一失败按回退路由回到对应层重派。
+- **收敛**：全部层验收通过后编排器跑全量测试套件 + 目录卫生检查，任一失败按回退路由回到对应层重派。
 
 ## 回合连续性规则
 
