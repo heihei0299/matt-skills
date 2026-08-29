@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, cp, stat } from 'node:fs/promises';
+import { readdir, readFile, cp, stat, writeFile, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -86,6 +86,21 @@ async function backupIfExists(p) {
   const bak = `${p}.bak`;
   await cp(p, bak, { recursive: true, force: true });
   return bak;
+}
+
+async function ensureSkillsGitignore(skillsDir) {
+  try {
+    await mkdir(skillsDir, { recursive: true });
+    const gi = path.join(skillsDir, '.gitignore');
+    const content = '# matt-skills backup — pi skips .bak via explicit filter + this fallback\n*.bak\n*.bak/\n';
+    if (await pathExists(gi)) {
+      const cur = await readFile(gi, 'utf8');
+      if (cur.includes('*.bak')) return;
+      await writeFile(gi, cur.endsWith('\n') ? `${cur}${content}` : `${cur}\n${content}`);
+    } else {
+      await writeFile(gi, content);
+    }
+  } catch {}
 }
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
@@ -219,6 +234,7 @@ async function initCommand({ dest, force }) {
   } else {
     process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}\n`);
   }
+  await ensureSkillsGitignore(skillsDir);
   process.stdout.write(`目标路径：${target}\n`);
 }
 
@@ -275,6 +291,7 @@ async function syncCommand({ dest, force }) {
   } else {
     process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}\n`);
   }
+  await ensureSkillsGitignore(skillsDir);
   process.stdout.write(`目标路径：${target}\n`);
 }
 
