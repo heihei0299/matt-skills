@@ -59,6 +59,11 @@
 
 ### 操作
 
+#### Git 安全前置（历史保护）
+- 进入本阶段前记录 `BASE_HEAD=$(git rev-parse HEAD)`，后续所有 `git` 操作必须满足 `git merge-base --is-ancestor $BASE_HEAD HEAD`（仅追加、不可后退）。若校验失败立即经 `git reflog` 恢复后才继续。
+- 为达 `git status` 干净仅删本次产生的 `[DEBUG-...]`/一次性脚本等未跟踪临时文件，禁止执行 `git reset --hard`、`git checkout .`、`git clean -fd`、`git stash push --include-untracked`、`git push --force`、`git rebase -i` 等（需显式用户确认才可执行；`stash` 如需使用改用 `--keep-index` 并在 `pop` 后校验）。术语与禁令见 `CONTEXT.md` Git History Preservation 与 `docs/agents/skill-design.md` Rule 4。
+
+#### TDD 编排
 **红-绿循环前与循环中都查阅 tdd 技能各节**（Every section applies on every cycle）：TDD 语义与测试规则以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不再在此重写——好测试标准见 [tdd/tests.md](.agents/skills/tdd/tests.md)，Mock 指南见 [tdd/mocking.md](.agents/skills/tdd/mocking.md)。
 本阶段只执行编排：按阶段②生成的 todo 清单逐条推进（大小任务层次与 Subtodo 格式见 [SKILL.md「任务拆分与 Todo 规定」](../SKILL.md#任务拆分与-todo-规定)），每完成一个 todo（红-绿 cycle + typecheck）立即更新其状态为 `done`，再进入下一个 todo。
 
@@ -87,6 +92,11 @@
 #### 3g. Todo 更新纪律
 - 每完成一个红-绿 cycle（含 typecheck），按实际推进更新对应 todo 状态：`in-progress` → `done`
 - 更新基于当前实际状态，不基于旧快照重写整个清单；已完成项（done）永不回退
+
+
+#### 3h. Git 历史保护（Git History Preservation）
+- 阶段出口前必做祖先校验：`git merge-base --is-ancestor $BASE_HEAD HEAD` 若为 false，说明历史被改写（`reset --hard`/`checkout .`/`clean -fd`/`stash --include-untracked` 等导致），立即经 `git reflog` 找回并恢复 `BASE_HEAD` 后的提交，校验通过才算出口条件满足。
+- 为达 `git status` 干净仅删本次产生的 `[DEBUG-...]`/一次性脚本等未跟踪临时文件，禁止用 git 层命令达到干净。详见 `CONTEXT.md` Git History Preservation 与 `docs/agents/skill-design.md` Rule 4。
 
 ### 出口条件
 - 所有 seams 的红-绿循环完成
@@ -148,8 +158,8 @@
 
 ### 操作
 1. 调用 [commit-check 技能](.agents/skills/commit-check/SKILL.md) 执行提交门禁——四项检查：①审查文档 ②对齐 README ③保持目录卫生 ④规范 commit message
-2. 四项**全部通过才 commit**：将工作提交到当前分支，附清晰的 commit message
-3. 任一项发现问题的：先修复，再重跑该项，全部通过才 commit
+2. **历史校验**：commit 前执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`，若为 false 说明历史被改写，立即经 `git reflog` 恢复 `BASE_HEAD` 后的提交，校验通过才继续
+3. 四项**全部通过才 commit**（含历史校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 通过）：将工作提交到当前分支，附清晰的 commit message
 
 ### 出口条件
 - Commit 完成
@@ -182,7 +192,7 @@
    ```
 
 5. 无关联 issue（直接实现用户给的 spec）→ 跳过状态更新，将总结作为会话最终输出
-6. **保持目录卫生**：清理本次实现产生的临时产物——`[DEBUG-...]` 标记的调试代码/日志、一次性脚本、临时文件与备份文件；用 `git status` 确认工作区只含预期改动，无残留未跟踪文件后才结束
+6. **保持目录卫生**：仅清理本次实现产生的临时产物——`[DEBUG-...]` 标记的调试代码/日志、一次性脚本、临时文件与备份文件；用 `git status` 确认工作区只含预期改动，无残留未跟踪文件后才结束。禁止为达干净而执行 `git reset --hard`、`git checkout .`、`git clean -fd`、`git stash push --include-untracked` 等（需显式用户确认；`stash` 如需使用改用 `--keep-index` 并在 `pop` 后校验 `git merge-base --is-ancestor $BASE_HEAD HEAD`）。
 
 ### 出口条件
 - 文档与实现对齐（无相关文档或已更新）
@@ -241,6 +251,7 @@ for each 层 Li in L1..Ln:
 - **派发纪律**：与阶段⑤双轴审查一致——逐个 `subagent` 派发，禁止 `parallel tasks` 数组（同因：中文报告截断）。
 - **等待语义**：层内任一子代理失败不取消同层其他子代理；待层内全部返回后统一按 A5 处理。
 - **回合连续性**：编排器在层间不结束回合——一层收敛后立即派发下一层，直到全部层完成或外部阻塞；预告下一层后立即执行。
+- **Git 历史保护**：编排器在分层调度前记录 `BASE_HEAD=$(git rev-parse HEAD)`，每层收敛后校验 `git merge-base --is-ancestor $BASE_HEAD HEAD`，失败即经 `git reflog` 恢复；层内禁止为达干净而执行 `git reset --hard`、`git checkout .`、`git clean -fd`、`git stash push --include-untracked`、`git push --force` 等（需显式确认）。
 
 ### A3. 子代理契约（单 issue 单代理）
 
@@ -286,22 +297,23 @@ for each 层 Li in L1..Ln:
 
 任一项不通过 → 打回重派该子代理（仅该 issue），层内其他已通过不受影响；验收通过才计入层收敛。验收结论随层收敛一并输出。
 
-子代理内部的回合连续性、任务分解、Todo 规定与单线模式完全一致（见 SKILL.md 回合连续性规则与 stages.md 阶段③ 3e/3f）。
+子代理内部的回合连续性、任务分解、Todo 规定、Git 历史保护与单线模式完全一致（见 SKILL.md 回合连续性规则、stages.md 阶段③ 3e/3f/3h 与 Git 安全前置）。子代理同样在入口记录 `BASE_HEAD` 并在每阶段出口校验 `git merge-base --is-ancestor $BASE_HEAD HEAD`，禁止 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked` 等。
 
 ### A4. 全量收敛
 
 全部层逐 issue 验收通过后，编排器执行：
 
 1. **全量测试套件**：跑仓库完整测试套件（阶段④口径），失败则按 A5 回退。
-2. **目录卫生**：`git status` 确认无 `[DEBUG-...]` 残留、无未跟踪临时文件；有残留则清理后重检。
-3. **汇总总结**：在会话输出汇总各 issue 的回执卡片关键信息（提交 hash / seams / 验收 checkbox / 测试结果 / 文档对齐）；不另写汇总文件，不透传子代理全量日志（各 issue 的 `## 实施总结` 已落盘，详查落盘文件）。
+2. **历史校验**：执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`，若为 false 说明编排过程中历史被改写，立即经 `git reflog` 恢复后重跑收敛。
+3. **目录卫生**：`git status` 确认无 `[DEBUG-...]` 残留、无未跟踪临时文件；有残留则仅删本次临时产物后重检，禁止 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked` 等。
+4. **汇总总结**：在会话输出汇总各 issue 的回执卡片关键信息（提交 hash / seams / 验收 checkbox / 测试结果 / 文档对齐）；不另写汇总文件，不透传子代理全量日志（各 issue 的 `## 实施总结` 已落盘，详查落盘文件）。
 
 ### A5. 回退与冲突
 
 - **子代理内回退**：按 SKILL.md 回退路由在子代理内闭环（typecheck 失败 → ③、测试失败 → ③、review 不通过 → ③/②/①）。
 - **层收敛失败**：层内任一子代理未达到 `resolved`（测试失败 / review 不通过 / commit-check 门禁失败）→ 该 issue 保持原 `Status`，编排器在层等待结束后报告失败清单，不自动进入下一层；待修复后重派该层失败节点。
 - **全量收敛失败**：A4 全量测试失败 → 定位到失败测试归属的 issue，回到其所在层重派对应子代理。
-- **文件冲突**：同层子代理若触及同一文件，后完成者 rebase 解决冲突后重跑 typecheck + 相关测试；跨层天然串行无冲突。冲突检测以 `git` 合并结果为准，编排器不做静态预判。
+- **文件冲突**：同层子代理若触及同一文件，后完成者 rebase 解决冲突后重跑 typecheck + 相关测试；跨层天然串行无冲突。冲突解决禁止使用 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked` 丢弃对方提交，rebase 后必校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 且 `git log --oneline` 含全部层提交；冲突检测以 `git` 合并结果为准，编排器不做静态预判。
 - **环依赖**：A0 检测到环即报错终止，不派发任何子代理。
 
 ### 出口条件

@@ -75,3 +75,39 @@ test('diagnosis report is marked as landed', () => {
   assert.match(diagnosis, /已修复 \+ 已落地/);
   assert.match(diagnosis, /### 落地状态/);
 });
+
+test('skill-design.md carries Rule 4 Git History Preservation', () => {
+  assert.match(spec, /Rule 4.*Git History Preservation/);
+  assert.match(spec, /BASE_HEAD/);
+  assert.match(spec, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
+  assert.match(spec, /git reset --hard/);
+  assert.match(spec, /git checkout \./);
+  assert.match(spec, /git clean -fd/);
+  assert.match(spec, /git stash push --include-untracked/);
+  assert.match(spec, /git reflog/);
+});
+
+test('CONTEXT.md glossary holds Git History Preservation term', () => {
+  assert.match(context, /\*\*Git History Preservation\*\*/);
+  assert.match(context, /Git 历史保护/);
+  assert.match(context, /BASE_HEAD/);
+  assert.match(context, /merge-base --is-ancestor/);
+  assert.match(context, /git reset --hard/);
+});
+
+test('ADR 0003 records git-history-preservation decision', () => {
+  const adr3 = readFileSync(path.join(dir, 'docs', 'adr', '0003-git-history-preservation.md'), 'utf8');
+  assert.match(adr3, /BASE_HEAD/);
+  assert.match(adr3, /merge-base --is-ancestor/);
+  assert.match(adr3, /git reset --hard|reset --hard/);
+});
+
+test('runtime-discipline.md carries Git History Preservation discipline', () => {
+  assert.match(runtime, /Git 历史保护/);
+  assert.match(runtime, /BASE_HEAD/);
+  assert.match(runtime, /merge-base --is-ancestor/);
+  assert.match(runtime, /git reset --hard/);
+  assert.match(runtime, /git checkout \./);
+  assert.match(runtime, /git clean -fd/);
+  assert.match(runtime, /stash push --include-untracked/);
+});

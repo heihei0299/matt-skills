@@ -25,7 +25,8 @@ description: "Run the pre-commit gate before any commit: verify docs match the i
 ### ③ 保持目录卫生
 
 - `git status` 确认工作区只含预期改动：无残留未跟踪文件、无临时产物（调试脚本、日志、备份文件、`[DEBUG-...]` 残留）
-- 清理本次改动产生的临时文件（一次性脚本、转储、探针）——删除或移入明确的非提交位置
+- 清理本次改动产生的临时文件（一次性脚本、转储、探针）——仅删本次产生的未跟踪临时产物，禁止为达干净而执行 `git reset --hard`、`git checkout .`、`git clean -fd`、`git stash push --include-untracked`、`git push --force`、`git rebase -i` 等（需显式用户确认；`stash` 如需使用改用 `--keep-index` 并在 `pop` 后校验 `git merge-base --is-ancestor $BASE_HEAD HEAD`）。详见 `CONTEXT.md` Git History Preservation 与 `docs/agents/skill-design.md` Rule 4
+- 若本次会话记录了 `BASE_HEAD`，commit 前校验 `git merge-base --is-ancestor $BASE_HEAD HEAD`，失败即经 `git reflog` 恢复后才提交
 - 确认没有敏感信息进入改动（密钥、token、`.env`、私钥）——跑 `scripts/scan-sensitive.sh`，不用手写扫描
 - 提交后工作区应为干净状态（`git status` 无输出）
 

@@ -310,3 +310,60 @@ test('stages.md A4 summary is from receipt cards not full logs', () => {
   assert.match(stages, /不透传子代理全量日志/);
 });
 
+
+// ---- Git History Preservation (fix for stash/clean dropping commits) ----
+
+test('stage ③ has Git History Preservation preface and checks', () => {
+  assert.match(stages, /Git 历史保护/);
+  assert.match(stages, /Git History Preservation/);
+  assert.match(stages, /BASE_HEAD/);
+  assert.match(stages, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
+  assert.match(stages, /git reflog/);
+});
+
+test('stage ③ forbids destructive git commands without confirmation', () => {
+  assert.match(stages, /git reset --hard/);
+  assert.match(stages, /git checkout \./);
+  assert.match(stages, /git clean -fd/);
+  assert.match(stages, /git stash push --include-untracked/);
+  assert.match(stages, /--keep-index/);
+});
+
+test('stage ⑥ commit has ancestor check before commit', () => {
+  assert.match(stages, /历史校验/);
+  assert.match(stages, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
+  assert.match(stages, /全部通过才 commit/);
+});
+
+test('stage ⑦ directory clean forbids git-level clean', () => {
+  assert.match(stages, /仅清理本次实现产生的临时产物/);
+  assert.match(stages, /禁止为达干净而执行/);
+  assert.match(stages, /git reset --hard/);
+});
+
+test('stages.md A2/A4 carry Git History Preservation', () => {
+  assert.match(stages, /A2.*分层调度/s);
+  assert.match(stages, /Git 历史保护/);
+  assert.match(stages, /BASE_HEAD.*HEAD/);
+  assert.match(stages, /git merge-base --is-ancestor/);
+});
+
+test('stages.md A3 subagent inherits Git History Preservation', () => {
+  assert.match(stages, /子代理.*Git 历史保护|Git 历史保护.*子代理/s);
+  assert.match(stages, /BASE_HEAD/);
+});
+
+test('stages.md A5 conflict handling forbids destructive git and checks history', () => {
+  assert.match(stages, /文件冲突/);
+  assert.match(stages, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
+});
+
+test('commit-check ③ forbids destructive git for clean', () => {
+  const commitCheck = readFileSync(path.join(dir, '.agents', 'skills', 'commit-check', 'SKILL.md'), 'utf8');
+  assert.match(commitCheck, /禁止为达干净而执行/);
+  assert.match(commitCheck, /git reset --hard/);
+  assert.match(commitCheck, /git checkout \./);
+  assert.match(commitCheck, /git clean -fd/);
+  assert.match(commitCheck, /git stash push --include-untracked/);
+  assert.match(commitCheck, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
+});

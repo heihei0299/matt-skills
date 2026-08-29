@@ -42,6 +42,10 @@ _Avoid_: keep going, don't stop
 Splitting a giant turn — one large `write` or a batch of `replace`s — into small steps that are individually verified before continuing, so the turn never hits output caps and gets truncated mid-work.
 _Avoid_: step-by-step, take it slow
 
+**Git History Preservation** (Git 历史保护):
+Every git-touching skill must preserve history after `BASE_HEAD=$(git rev-parse HEAD)` recorded at stage entry — history may only be appended. Before any commit or stage exit, verify `git merge-base --is-ancestor $BASE_HEAD HEAD`; if it fails, history was rewritten and must be recovered via `git reflog` before continuing. "Directory clean" (`git status` clean) may only be achieved by deleting the skill's own temporary artifacts (`[DEBUG-...]`, one-off scripts, untracked probe files); destructive git commands `git reset --hard`, `git checkout .`, `git clean -fd`, `git stash push --include-untracked`, `git push --force`, `git rebase -i` are forbidden without explicit user confirmation.
+_Avoid_: force clean, stash all
+
 **Long-Horizon Skill** (长程多阶段技能):
 A skill whose run spans multiple stages or seams executed continuously (e.g. tdd-implement, diagnosing-bugs, improve-codebase-architecture, wayfinder, grill-to-spec, to-spec). The class of skill that must carry a Turn Continuity rule.
 _Avoid_: complex skill, big skill
