@@ -24,12 +24,15 @@ Prompt: verify idempotent init without --force
 Command: `init` twice without `--force`, second with local edit to `AGENTS.md`
 Expected: second stdout `模板已存在.*跳过`, `上游技能：已装 0、跳过 22`; local edit preserved; exit 0.
 
-### 3. Init --force with backup
-Prompt: verify forced init backs up
+### 3. Init --force with direct overwrite
+Prompt: verify forced init directly overwrites
 Command: `init --force --dest <tmp>` after local edit
-Expected: stdout `已备份` + `备份 22`; `AGENTS.md.bak` exists with local edit; `AGENTS.md` restored from template; `.agents/skills/tdd.bak` exists; exit 0.
+Expected: stdout `已覆盖` + `已装 22`; `AGENTS.md.bak` exists with local edit; `AGENTS.md` restored from template; no `.agents/skills/*.bak`; no `.opencode.bak`/`.pi.bak`; exit 0.
 
 ### 4. Sync on existing
+Prompt: verify sync directly updates existing project
+Command: `sync --dest <tmp>` after local edit
+Expected: stdout `同步` + `已同步`/`已更新`; `AGENTS.md.bak` exists; `.agents/skills/tdd` updated; exit 0.
 Prompt: verify sync backs up existing project
 Command: `sync --dest <tmp>` after local edit
 Expected: stdout `同步` + `已备份`; `AGENTS.md.bak` exists; exit 0.

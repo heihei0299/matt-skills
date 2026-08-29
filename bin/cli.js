@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, cp, stat, writeFile, mkdir } from 'node:fs/promises';
+import { readdir, readFile, cp, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,17 +17,17 @@ const HELP = `matt-skills — install and manage this skill collection
 
 Usage:
   matt-skills init [options]                   Initialize a project: template + upstream skills
-  matt-skills sync [options]                   Sync existing project to latest template + skills (backs up overwritten files to .bak)
+  matt-skills sync [options]                   Sync existing project to latest template + skills
   matt-skills list [--json]                    List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
   matt-skills --help                          Show this help
 
 Init options:
   --dest <path>   Target directory (default: current directory)
-  --force         Overwrite existing files (backs up to .bak)
+  --force         Overwrite existing files
 Sync options:
   --dest <path>   Target directory (default: current directory)
-  --force         Overwrite without backup (default: backup to .bak)
+  --force         Overwrite existing files
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection
@@ -86,21 +86,6 @@ async function backupIfExists(p) {
   const bak = `${p}.bak`;
   await cp(p, bak, { recursive: true, force: true });
   return bak;
-}
-
-async function ensureSkillsGitignore(skillsDir) {
-  try {
-    await mkdir(skillsDir, { recursive: true });
-    const gi = path.join(skillsDir, '.gitignore');
-    const content = '# matt-skills backup — pi skips .bak via explicit filter + this fallback\n*.bak\n*.bak/\n';
-    if (await pathExists(gi)) {
-      const cur = await readFile(gi, 'utf8');
-      if (cur.includes('*.bak')) return;
-      await writeFile(gi, cur.endsWith('\n') ? `${cur}${content}` : `${cur}\n${content}`);
-    } else {
-      await writeFile(gi, content);
-    }
-  } catch {}
 }
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
@@ -188,15 +173,13 @@ async function initCommand({ dest, force }) {
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
   if (!force && (await pathExists(marker))) {
-    process.stdout.write('模板已存在（AGENTS.md），跳过；用 --force 覆盖（自动备份到 .bak）\n');
+    process.stdout.write('模板已存在（AGENTS.md），跳过；用 --force 覆盖\n');
   } else {
     if (force && (await pathExists(marker))) {
-      for (const name of ['AGENTS.md', '.opencode', '.pi']) {
-        const cur = path.join(target, name);
-        if (await pathExists(cur)) await backupIfExists(cur);
-      }
+      const cur = path.join(target, 'AGENTS.md');
+      if (await pathExists(cur)) await backupIfExists(cur);
       await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-      process.stdout.write('模板：已备份到 .bak 并覆盖（AGENTS.md、.opencode/、.pi/）\n');
+      process.stdout.write('模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
     } else {
       await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
       process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
@@ -210,7 +193,6 @@ async function initCommand({ dest, force }) {
   const skillsDir = path.join(target, '.agents', 'skills');
   let installed = 0;
   let skipped = 0;
-  let backedUp = 0;
   for (const name of upstream) {
     const src = path.join(SKILLS_DIR, name);
     const dst = path.join(skillsDir, name);
@@ -222,19 +204,10 @@ async function initCommand({ dest, force }) {
       skipped++;
       continue;
     }
-    if (force && (await pathExists(dst))) {
-      await backupIfExists(dst);
-      backedUp++;
-    }
     await cp(src, dst, { recursive: true, force: true });
     installed++;
   }
-  if (force && backedUp > 0) {
-    process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}、备份 ${backedUp} 到 .bak\n`);
-  } else {
-    process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}\n`);
-  }
-  await ensureSkillsGitignore(skillsDir);
+  process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}\n`);
   process.stdout.write(`目标路径：${target}\n`);
 }
 
@@ -247,15 +220,13 @@ async function syncCommand({ dest, force }) {
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
     process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
   } else {
-    process.stdout.write('同步：检测到现有项目，将增量更新并备份被覆盖文件到 .bak\n');
+    process.stdout.write('同步：检测到现有项目，将增量更新\n');
     if (backup) {
-      for (const name of ['AGENTS.md', '.opencode', '.pi']) {
-        const cur = path.join(target, name);
-        if (await pathExists(cur)) await backupIfExists(cur);
-      }
+      const cur = path.join(target, 'AGENTS.md');
+      if (await pathExists(cur)) await backupIfExists(cur);
     }
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    process.stdout.write(backup ? '模板：已备份并同步（AGENTS.md、.opencode/、.pi/）\n' : '模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
+    process.stdout.write(backup ? '模板：已同步（AGENTS.md、.opencode/、.pi/）\n' : '模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
   }
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const upstream = entries
@@ -265,7 +236,6 @@ async function syncCommand({ dest, force }) {
   const skillsDir = path.join(target, '.agents', 'skills');
   let installed = 0;
   let updated = 0;
-  let backedUp = 0;
   for (const name of upstream) {
     const src = path.join(SKILLS_DIR, name);
     const dst = path.join(skillsDir, name);
@@ -275,10 +245,6 @@ async function syncCommand({ dest, force }) {
     }
     const exists = await pathExists(dst);
     if (exists) {
-      if (backup) {
-        await backupIfExists(dst);
-        backedUp++;
-      }
       await cp(src, dst, { recursive: true, force: true });
       updated++;
     } else {
@@ -286,12 +252,7 @@ async function syncCommand({ dest, force }) {
       installed++;
     }
   }
-  if (backup) {
-    process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}（已备份 ${backedUp} 到 .bak）\n`);
-  } else {
-    process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}\n`);
-  }
-  await ensureSkillsGitignore(skillsDir);
+  process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}\n`);
   process.stdout.write(`目标路径：${target}\n`);
 }
 

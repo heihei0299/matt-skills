@@ -136,7 +136,7 @@ test('`init --force` overwrites an existing project', () => {
     fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL EDIT');
     const { status, stdout, stderr } = runCli(['init', '--dest', dest, '--force']);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /模板：已(复制|备份)/);
+    assert.match(stdout, /模板：已(复制|备份|覆盖)/);
     assert.match(stdout, /上游技能：已装 22、跳过 0/);
     const source = fs.readFileSync(path.join(REPO_ROOT, 'template', 'AGENTS.md'), 'utf8');
     assert.equal(
