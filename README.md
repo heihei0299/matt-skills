@@ -131,6 +131,25 @@ node bin/cli.js install [选项]                  # 把技能复制到目标工�
 - `--global`：安装到全局目录（`~/.codex/skills`、`~/.pi/agent/skills`、`~/.config/opencode/skills`、`~/.claude/skills`）；`--project` 回到项目级
 - `--all`：安装全部技能（默认交互勾选）；`--force`：覆盖已存在的技能
 
+
+### 上游同步（自动更新）
+
+本仓库的 `.agents/skills/` 中 **非独有技能** 来自 `mattpocock/skills` 上游。已实现双通道自动同步：
+
+- **本地 CLI**：`matt-skills check`（只读比对）与 `matt-skills update`（一键覆盖本地 `.agents/skills/`，自动处理 `writing-great-skills → writing-for-agents` 重命名与增删）
+- **GitHub Actions**：`.github/workflows/sync-upstream.yml` 每周一 02:00 UTC 自动 `check`，有差异则 `apply` 并提 PR（`upstream-sync/<short-sha>`），支持 `workflow_dispatch` 手动触发（`ref`/`dry_run` 参数）
+
+```sh
+npx @heihei0299/matt-skills check                    # 只读检查，对比本地 vs 上游 HEAD（有差异 exit 1）
+npx @heihei0299/matt-skills check --json             # JSON 输出：{ head, counts, result: { added, updated, renamed, removed, same } }
+npx @heihei0299/matt-skills update --dry-run         # 演练，不写文件
+npx @heihei0299/matt-skills update                   # 覆盖 .agents/skills 非独有技能
+node scripts/sync-upstream.js --check               # 等价底层脚本（CLI check/update 的实现）
+node scripts/sync-upstream.js --apply --dry-run
+```
+
+实现细节：`scripts/sync-upstream.js` 为单一事实源（CLI 与 Actions 共用），以 `config/proprietary.json` 为独有白名单，上游通过 `git clone --depth 1 https://github.com/mattpocock/skills.git` 获取，比对 `SKILL.md` 的 sha256，自动处理新增/更新/重命名/删除；Actions 提 PR 后需人工合入，合入后按“发布”节打 `v*` 标签即发布（自动 patch 发版可在后续扩展为 PR 合入后自动 bump）。
+上游重命名映射：`RENAMES = { "writing-great-skills": "writing-for-agents" }`，Actions/CLI 均会删除旧目录并复制新目录。
 ## 发布
 
 推送 `v*` 标签自动发布到 npm（GitHub Actions，见 `.github/workflows/publish.yml`）：

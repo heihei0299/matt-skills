@@ -1,0 +1,115 @@
+name: Sync upstream skills
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # 每周一 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: '上游 ref（默认 HEAD）'
+        required: false
+        default: 'HEAD'
+      dry_run:
+        description: '仅检查，不提 PR'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check upstream diff
+        id: check
+        run: |
+          REF="${{ inputs.ref || 'HEAD' }}"
+          if [ "$REF" = "HEAD" ]; then
+            node scripts/sync-upstream.js --check --json > /tmp/sync-check.json || true
+          else
+            node scripts/sync-upstream.js --check --json --ref "$REF" > /tmp/sync-check.json || true
+          fi
+          cat /tmp/sync-check.json
+          # 判断是否有差异
+          HAS_DIFF=$(node -p "const j=require('/tmp/sync-check.json'); (j.result.added.length+j.result.updated.length+j.result.removed.length+j.result.renamed.length)>0 ? 'true' : 'false'")
+          echo "has_diff=$HAS_DIFF" >> "$GITHUB_OUTPUT"
+          HEAD=$(node -p "require('/tmp/sync-check.json').head.slice(0,7)")
+          echo "head=$HEAD" >> "$GITHUB_OUTPUT"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "dry_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dry run summary
+        if: steps.check.outputs.dry_run == 'true'
+        run: |
+          echo "Dry run 模式，仅检查不更新"
+          cat /tmp/sync-check.json
+
+      - name: Apply sync
+        if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
+        run: |
+          REF="${{ inputs.ref || 'HEAD' }}"
+          if [ "$REF" = "HEAD" ]; then
+            node scripts/sync-upstream.js --apply
+          else
+            node scripts/sync-upstream.js --apply --ref "$REF"
+          fi
+          echo "=== 应用后状态 ==="
+          npm test 2>&1 | tail -n 50 || true
+
+      - name: Build template after sync (if changed)
+        if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
+        run: |
+          # 上游技能不进 template，但为保险重建一次（幂等）
+          npm run build:template || true
+          git status --short
+
+      - name: Create Pull Request
+        if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: upstream-sync/${{ steps.check.outputs.head }}
+          branch-suffix: timestamp
+          title: 'chore(upstream): 同步 mattpocock/skills 至 ${{ steps.check.outputs.head }}'
+          commit-message: 'chore(upstream): 同步 mattpocock/skills 至 ${{ steps.check.outputs.head }}'
+          body: |
+            自动同步上游技能 `mattpocock/skills` HEAD `${{ steps.check.outputs.head }}`。
+
+            - 触发：定时任务 / 手动 dispatch
+            - 工具：`node scripts/sync-upstream.js --apply`（覆盖 `.agents/skills` 非独有技能，自动处理 `writing-great-skills → writing-for-agents` 重命名）
+            - 独有技能（`config/proprietary.json`）不受影响，不进 `template/`
+            - 请审查 diff 后合入；合入后按需打 `v*` 标签触发 npm 发布（自动 patch 发版可在后续扩展为自动 bump）
+
+            差异摘要（`scripts/sync-upstream.js --check --json`）：
+
+            ```json
+            ${{ steps.check.outputs.head }}
+            ```
+            详见 Actions 日志中 `/tmp/sync-check.json`。
+
+            合入后请：
+            1. 本地 `npm test` 全绿
+            2. 需要发版时 `git tag vX.Y.Z && git push origin vX.Y.Z`
+          labels: upstream-sync
+          delete-branch: true
+
+      - name: No diff summary
+        if: steps.check.outputs.has_diff == 'false'
+        run: echo "✅ 上游已是最新，无需同步"

@@ -20,6 +20,10 @@ Usage:
   matt-skills sync [options]                   Sync existing project to latest template + skills
   matt-skills list [--json]                    List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
+  matt-skills check [--json] [--upstream <url>] [--ref <ref>]
+                                              Check if upstream skills are up to date (read-only)
+  matt-skills update [--dry-run] [--force] [--upstream <url>] [--ref <ref>]
+                                              Update .agents/skills from upstream (auto handles renames)
   matt-skills --help                          Show this help
 
 Init options:
@@ -28,6 +32,15 @@ Init options:
 Sync options:
   --dest <path>   Target directory (default: current directory)
   --force         Overwrite existing files
+Check options:
+  --json          Output as JSON
+  --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
+  --ref <ref>     Upstream ref (default: HEAD)
+Update options:
+  --dry-run       Show what would change without writing files
+  --force         Force overwrite (default is to overwrite; kept for compatibility)
+  --upstream <url> Upstream repo URL
+  --ref <ref>     Upstream ref
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection
@@ -291,6 +304,77 @@ function parseInstallArgs(args) {
   return { dest, all, force, global, tools };
 }
 
+async function checkCommand(args) {
+  const { compare } = await import('../scripts/sync-upstream.js');
+  const json = args.includes('--json');
+  const upstreamIdx = args.indexOf('--upstream');
+  const upstreamUrl = upstreamIdx !== -1 ? args[upstreamIdx + 1] : undefined;
+  const refIdx = args.indexOf('--ref');
+  const ref = refIdx !== -1 ? args[refIdx + 1] : undefined;
+  const cmp = await compare({ upstreamUrl, ref });
+  if (json) {
+    process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result }, null, 2) + '\n');
+  } else {
+    const lines = [];
+    lines.push(`上游 HEAD: ${cmp.head}`);
+    lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream}`);
+    lines.push('');
+    const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
+    if (totalDiff === 0) {
+      lines.push('✅ 已是最新，无差异');
+    } else {
+      if (cmp.result.added.length) lines.push(`新增 (${cmp.result.added.length}): ${cmp.result.added.join(', ')}`);
+      if (cmp.result.updated.length) lines.push(`更新 (${cmp.result.updated.length}): ${cmp.result.updated.join(', ')}`);
+      if (cmp.result.renamed.length) lines.push(`重命名 (${cmp.result.renamed.length}): ${cmp.result.renamed.map((r) => `${r.from}→${r.to}`).join(', ')}`);
+      if (cmp.result.removed.length) lines.push(`删除 (${cmp.result.removed.length}): ${cmp.result.removed.join(', ')}`);
+      if (cmp.result.same.length) lines.push(`一致 (${cmp.result.same.length}): ${cmp.result.same.join(', ')}`);
+    }
+    process.stdout.write(lines.join('\n') + '\n');
+  }
+  const { rm } = await import('node:fs/promises');
+  await rm(cmp.dest, { recursive: true, force: true });
+  const hasDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length > 0;
+  if (hasDiff) process.exitCode = 1;
+}
+
+async function updateCommand(args) {
+  const { applySync } = await import('../scripts/sync-upstream.js');
+  const dryRun = args.includes('--dry-run');
+  const json = args.includes('--json');
+  const upstreamIdx = args.indexOf('--upstream');
+  const upstreamUrl = upstreamIdx !== -1 ? args[upstreamIdx + 1] : undefined;
+  const refIdx = args.indexOf('--ref');
+  const ref = refIdx !== -1 ? args[refIdx + 1] : undefined;
+  const res = await applySync({ upstreamUrl, ref, dryRun });
+  if (json) {
+    process.stdout.write(JSON.stringify({ head: res.head, result: res.result, actions: res.actions, dryRun }, null, 2) + '\n');
+  } else {
+    const lines = [];
+    lines.push(`上游 HEAD: ${res.head}`);
+    lines.push(`本地非独有: ${res.counts.local}  上游: ${res.counts.upstream}`);
+    lines.push('');
+    const totalDiff = res.result.added.length + res.result.updated.length + res.result.removed.length + res.result.renamed.length;
+    if (totalDiff === 0) {
+      lines.push('✅ 已是最新，无差异');
+    } else {
+      if (res.result.added.length) lines.push(`新增 (${res.result.added.length}): ${res.result.added.join(', ')}`);
+      if (res.result.updated.length) lines.push(`更新 (${res.result.updated.length}): ${res.result.updated.join(', ')}`);
+      if (res.result.renamed.length) lines.push(`重命名 (${res.result.renamed.length}): ${res.result.renamed.map((r) => `${r.from}→${r.to}`).join(', ')}`);
+      if (res.result.removed.length) lines.push(`删除 (${res.result.removed.length}): ${res.result.removed.join(', ')}`);
+      if (res.result.same.length) lines.push(`一致 (${res.result.same.length}): ${res.result.same.join(', ')}`);
+    }
+    process.stdout.write(lines.join('\n') + '\n');
+    if (res.actions.length) {
+      process.stdout.write(`\n已执行 ${res.actions.length} 项:\n`);
+      for (const a of res.actions) process.stdout.write(`  - ${a}\n`);
+    }
+    if (dryRun) process.stdout.write('\n(dry-run，未写文件)\n');
+  }
+  if (!dryRun && res.actions.length) {
+    process.stdout.write('\n提示：请运行 npm test 验证，并按需执行 npm run build:template 更新模板镜像\n');
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
@@ -321,10 +405,17 @@ async function main() {
     await installCommand(parseInstallArgs(rest));
     return;
   }
+  if (command === 'check') {
+    await checkCommand(rest);
+    return;
+  }
+  if (command === 'update') {
+    await updateCommand(rest);
+    return;
+  }
   process.stderr.write(HELP);
   process.exitCode = 1;
 }
-
 main().catch((error) => {
   process.stderr.write(`error: ${error.message}\n`);
   process.exitCode = 1;
