@@ -17,7 +17,7 @@ const HELP = `matt-skills — install and manage this skill collection
 
 Usage:
   matt-skills init [options]                   Initialize a project: template + upstream skills
-  matt-skills sync [options]                   Sync existing project to latest template + skills
+  matt-skills sync [--apply|--force] [--dest <path>] [--upstream <url>] [--ref <ref>] [--json]   Sync existing project to latest template + skills
   matt-skills list [--json]                    List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
   matt-skills check [--json] [--upstream <url>] [--ref <ref>]
@@ -30,8 +30,12 @@ Init options:
   --dest <path>   Target directory (default: current directory)
   --force         Overwrite existing files
 Sync options:
+  --apply         Apply changes (safe incremental, respects custom AGENTS.md)
+  --force         Hard overwrite (backup .bak + full sync)
   --dest <path>   Target directory (default: current directory)
-  --force         Overwrite existing files
+  --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
+  --ref <ref>     Upstream ref (default: HEAD)
+  --json          Output as JSON
 Check options:
   --json          Output as JSON
   --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
@@ -224,7 +228,38 @@ async function initCommand({ dest, force }) {
   process.stdout.write(`目标路径：${target}\n`);
 }
 
-async function syncCommand({ dest, force }) {
+async function syncCommand({ dest, force, apply, upstreamUrl, ref, json }) {
+  // 默认：仅对比不写盘 (check 模式)，--apply / --force 显式写盘
+  const doApply = apply || force;
+  if (!doApply) {
+    const { compare } = await import('../scripts/sync-upstream.js');
+    const cmp = await compare({ upstreamUrl, ref });
+    if (json) {
+      process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result }, null, 2) + '\n');
+    } else {
+      const lines = [];
+      lines.push(`上游 HEAD: ${cmp.head}`);
+      lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream}`);
+      lines.push('');
+      const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
+      if (totalDiff === 0) {
+        lines.push('✅ 已是最新，无差异');
+      } else {
+        if (cmp.result.added.length) lines.push(`新增 (${cmp.result.added.length}): ${cmp.result.added.join(', ')}`);
+        if (cmp.result.updated.length) lines.push(`更新 (${cmp.result.updated.length}): ${cmp.result.updated.join(', ')}`);
+        if (cmp.result.renamed.length) lines.push(`重命名 (${cmp.result.renamed.length}): ${cmp.result.renamed.map((r) => `${r.from}→${r.to}`).join(', ')}`);
+        if (cmp.result.removed.length) lines.push(`删除 (${cmp.result.removed.length}): ${cmp.result.removed.join(', ')}`);
+        if (cmp.result.same.length) lines.push(`一致 (${cmp.result.same.length}): ${cmp.result.same.join(', ')}`);
+      }
+      process.stdout.write(lines.join('\n') + '\n');
+    }
+    const { rm } = await import('node:fs/promises');
+    await rm(cmp.dest, { recursive: true, force: true });
+    const hasDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length > 0;
+    if (hasDiff) process.exitCode = 1;
+    return;
+  }
+
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
   const backup = !force;
@@ -272,13 +307,23 @@ async function syncCommand({ dest, force }) {
 function parseInitArgs(args) {
   let dest;
   let force = false;
+  let apply = false;
+  let json = false;
+  let upstreamUrl;
+  let ref;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--dest') dest = args[++i];
     else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
     else if (arg === '--force') force = true;
+    else if (arg === '--apply') apply = true;
+    else if (arg === '--json') json = true;
+    else if (arg === '--upstream') upstreamUrl = args[++i];
+    else if (arg.startsWith('--upstream=')) upstreamUrl = arg.slice('--upstream='.length);
+    else if (arg === '--ref') ref = args[++i];
+    else if (arg.startsWith('--ref=')) ref = arg.slice('--ref='.length);
   }
-  return { dest, force };
+  return { dest, force, apply, json, upstreamUrl, ref };
 }
 
 function parseInstallArgs(args) {

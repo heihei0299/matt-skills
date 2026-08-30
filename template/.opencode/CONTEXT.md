@@ -32,6 +32,10 @@ _Avoid_: inheriting repo, child repo
 The one-time action of setting up a Target Repository: copying `template/` into its root (`cp -r template/. <target>/`), then fetching the 22 upstream skills from the Upstream Repository. Copying, not inheriting — no runtime relationship survives the copy.
 _Avoid_: inherit, bootstrap
 
+**Sync** (同步):
+`matt-skills sync` 同步 Target Repository 的模板与上游技能：默认仅对比不写盘（`check`），`--apply` 为安全增量（`AGENTS.md` 有定制如 `tdd-implement` 则跳过，上游技能直接强制覆盖 `rm+cp` 但不 `remove`，独有技能与 `template/.opencode/.pi` 增量 `add/update`）、`--force` 为硬盖（`AGENTS.md` 备份 `.bak` 后强制覆盖，技能与模板全量 `add/update/remove`）。`update` 已合并到 `sync` 并删除。
+_Avoid_: update, force sync
+
 ## Skill Design
 
 **Turn Continuity** (回合连续性):
