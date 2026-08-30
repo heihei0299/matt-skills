@@ -33,6 +33,7 @@ async function main() {
   await tryCopyDir(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
   await cp(path.join(ROOT, 'AGENTS.md'), path.join(ROOT, 'template/AGENTS.md'));
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
+  await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.opencode/docs/agents'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.pi/docs/agents'));
   console.log('template built: proprietary', PROPRIETARY.length, 'skills');

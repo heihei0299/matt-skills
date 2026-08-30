@@ -17,7 +17,7 @@ const root = (p) => path.join(dir, p);
 const DOC_AGENTS = ['domain.md', 'issue-tracker.md', 'runtime-discipline.md', 'skill-design.md', 'triage-labels.md'];
 
 // Config-repo positioning: template/ ships config + proprietary skills only.
-// The 22 upstream skills (engineering/productivity) are fetched manually into
+// The 25 upstream skills (engineering/productivity) are fetched manually into
 // target repos per README, so they must NOT be copied into template/.
 // tdd-implement, grill-to-spec & diagnose-fix mirror from the workspace
 // .agents/skills/; issue-audit ships as a subagent + command (workspace sources
