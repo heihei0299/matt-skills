@@ -7,7 +7,7 @@ This spec exists because of a real incident: a long-horizon skill run on a flash
 
 Every **Long-Horizon Skill** must carry a positive **Turn Continuity** rule of its own: the consecutive actions of a stage (red → green → typecheck → next seam) are executed serially **within one turn**, until the stage's exit condition is met. Do not end the turn at "announce the next step" points, and do not wait for the user to say "continue".
 
-- State it **positively** (per the negation principle in `writing-great-skills`): describe the target behaviour, never the banned one.
+- State it **positively** (per the negation principle in `writing-for-agents`): describe the target behaviour, never the banned one.
 - It must be **self-contained** — the skill cannot rely on the harness `/goal` line, because no `/goal` exists when the user does not activate one.
 - Every stage ends on a checkable exit condition; reaching it is the only thing that ends the turn.
 - A sub-step going green (e.g. one seam) is not a stage exit — a stage ends only when all of its seams are complete. Progress output does not itself end the turn: output, then keep executing until one of the three endpoints (compliance checkpoint, external blocker, stage exit) is reached.

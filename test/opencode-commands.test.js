@@ -22,7 +22,7 @@ const EXPLICIT_SKILLS = [
   'improve-codebase-architecture',
   'teach',
   'handoff',
-  'writing-great-skills',
+  'writing-for-agents',
 ];
 
 function readDirRecursive(dirPath) {

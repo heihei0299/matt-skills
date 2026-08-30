@@ -9,7 +9,7 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-// Independent literal: the 27 skills shipped in this repo.
+// Independent literal: the 30 skills shipped in this repo.
 const SKILL_NAMES = [
   'ask-matt',
   'codebase-design',
@@ -37,7 +37,10 @@ const SKILL_NAMES = [
   'to-tickets',
   'triage',
   'wayfinder',
-  'writing-great-skills',
+  'to-questionnaire',
+  'wait-what',
+  'wizard',
+  'writing-for-agents',
 ];
 
 // Proprietary skills: mirrored into template/.opencode/skills + template/.pi/skills,
@@ -80,7 +83,7 @@ test('`init` copies the full template (AGENTS.md, .opencode/, .pi/) into the tar
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板：已(复制|备份)/);
-    assert.match(stdout, /上游技能：已装 22、跳过 0/);
+    assert.match(stdout, /上游技能：已装 25、跳过 0/);
     for (const rel of TEMPLATE_FILES) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
@@ -117,7 +120,7 @@ test('`init` on an already-initialized project skips without overwriting', () =>
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板已存在（AGENTS.md），跳过/);
-    assert.match(stdout, /上游技能：已装 0、跳过 22/);
+    assert.match(stdout, /上游技能：已装 0、跳过 25/);
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT');
     assert.equal(
       fs.readFileSync(path.join(dest, '.agents', 'skills', 'tdd', 'SKILL.md'), 'utf8'),
@@ -137,7 +140,7 @@ test('`init --force` overwrites an existing project', () => {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest, '--force']);
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板：已(复制|备份|覆盖)/);
-    assert.match(stdout, /上游技能：已装 22、跳过 0/);
+    assert.match(stdout, /上游技能：已装 25、跳过 0/);
     const source = fs.readFileSync(path.join(REPO_ROOT, 'template', 'AGENTS.md'), 'utf8');
     assert.equal(
       fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'),

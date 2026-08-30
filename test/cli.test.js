@@ -9,7 +9,7 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-// Independent literal: the 27 skills shipped in this repo.
+// Independent literal: the 30 skills shipped in this repo.
 const SKILL_NAMES = [
   'ask-matt',
   'codebase-design',
@@ -37,7 +37,10 @@ const SKILL_NAMES = [
   'to-tickets',
   'triage',
   'wayfinder',
-  'writing-great-skills',
+  'to-questionnaire',
+  'wait-what',
+  'wizard',
+  'writing-for-agents',
 ];
 
 // Literal lines copied from the skills' SKILL.md frontmatter, including
@@ -60,11 +63,11 @@ function runCli(args, cwd = REPO_ROOT, opts = {}) {
   });
 }
 
-test('`list` exits 0 and prints all 27 skills with their names', () => {
+test('`list` exits 0 and prints all 30 skills with their names', () => {
   const { status, stdout, stderr } = runCli(['list']);
   assert.equal(status, 0, stderr);
   const lines = stdout.trim().split('\n').filter(Boolean);
-  assert.equal(lines.length, 27);
+  assert.equal(lines.length, 30);
   const names = lines.map((line) => line.split(' — ')[0]);
   assert.deepEqual([...names].sort(), [...SKILL_NAMES].sort());
 });
@@ -77,11 +80,11 @@ test('`list` prints each skill description from its frontmatter', () => {
   }
 });
 
-test('`list --json` emits a JSON array with all 27 skills', () => {
+test('`list --json` emits a JSON array with all 30 skills', () => {
   const { status, stdout, stderr } = runCli(['list', '--json']);
   assert.equal(status, 0, stderr);
   const skills = JSON.parse(stdout);
-  assert.equal(skills.length, 27);
+  assert.equal(skills.length, 30);
   assert.deepEqual(
     skills.map((s) => s.name).sort(),
     [...SKILL_NAMES].sort(),
@@ -97,7 +100,7 @@ test('`list` works from any working directory (temp dir)', () => {
   try {
     const { status, stdout, stderr } = runCli(['list'], tmp);
     assert.equal(status, 0, stderr);
-    assert.equal(stdout.trim().split('\n').filter(Boolean).length, 27);
+    assert.equal(stdout.trim().split('\n').filter(Boolean).length, 30);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -130,7 +133,7 @@ test('`install --all --dest` copies every skill (incl. attached files) and print
     assert.deepEqual(installed, [...SKILL_NAMES].sort());
     assert.ok(fs.existsSync(path.join(dest, 'triage', 'AGENT-BRIEF.md')), 'triage/AGENT-BRIEF.md missing');
     assert.ok(fs.existsSync(path.join(dest, 'tdd', 'tests.md')), 'tdd/tests.md missing');
-    assert.match(stdout, /已装 27、跳过 0/);
+    assert.match(stdout, /已装 30、跳过 0/);
     assert.match(stdout, new RegExp(`目标路径：${dest.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -145,7 +148,7 @@ test('`install --all` rerun without --force skips existing skills and does not o
     fs.writeFileSync(path.join(dest, 'tdd', 'tests.md'), 'LOCAL EDIT');
     const { status, stdout, stderr } = runCli(['install', '--all', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /已装 0、跳过 27/);
+    assert.match(stdout, /已装 0、跳过 30/);
     assert.equal(fs.readFileSync(path.join(dest, 'tdd', 'tests.md'), 'utf8'), 'LOCAL EDIT');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -164,7 +167,7 @@ test('`install --tools codex --all` lands in `.agents/skills/` under the working
       .map((e) => e.name)
       .sort();
     assert.deepEqual(installed, [...SKILL_NAMES].sort());
-    assert.match(stdout, /已装 27、跳过 0/);
+    assert.match(stdout, /已装 30、跳过 0/);
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }
@@ -178,7 +181,7 @@ test('`install --force` overwrites existing skills', () => {
     fs.writeFileSync(path.join(dest, 'tdd', 'tests.md'), 'LOCAL EDIT');
     const { status, stdout, stderr } = runCli(['install', '--all', '--force', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /已装 27、跳过 0/);
+    assert.match(stdout, /已装 30、跳过 0/);
     const source = fs.readFileSync(path.join(REPO_ROOT, '.agents', 'skills', 'tdd', 'tests.md'), 'utf8');
     assert.equal(
       fs.readFileSync(path.join(dest, 'tdd', 'tests.md'), 'utf8'),
@@ -278,8 +281,8 @@ test('`install --tools claude,codex --all` installs into both project dirs', () 
         .sort();
       assert.deepEqual(installed, [...SKILL_NAMES].sort(), rel);
     }
-    assert.match(stdout, /claude：已装 27、跳过 0/);
-    assert.match(stdout, /codex：已装 27、跳过 0/);
+    assert.match(stdout, /claude：已装 30、跳过 0/);
+    assert.match(stdout, /codex：已装 30、跳过 0/);
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }

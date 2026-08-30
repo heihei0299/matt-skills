@@ -7,11 +7,11 @@ This spec exists because of a real incident: a long-horizon skill run on a flash
 
 Every **Long-Horizon Skill** must carry a positive **Turn Continuity** rule of its own: the consecutive actions of a stage (red → green → typecheck → next seam) are executed serially **within one turn**, until the stage's exit condition is met. Do not end the turn at "announce the next step" points, and do not wait for the user to say "continue".
 
-- State it **positively** (per the negation principle in `writing-great-skills`): describe the target behaviour, never the banned one.
+- State it **positively** (per the negation principle in `writing-for-agents`): describe the target behaviour, never the banned one.
 - It must be **self-contained** — the skill cannot rely on the harness `/goal` line, because no `/goal` exists when the user does not activate one.
 - Every stage ends on a checkable exit condition; reaching it is the only thing that ends the turn.
 - A sub-step going green (e.g. one seam) is not a stage exit — a stage ends only when all of its seams are complete. Progress output does not itself end the turn: output, then keep executing until one of the three endpoints (compliance checkpoint, external blocker, stage exit) is reached.
-- Canonical example: the 回合连续性 rule in [`.agents/skills/tdd-implement/references/stages.md`](../../skills/tdd-implement/references/stages.md) stage ③.
+- Canonical example: the 回合连续性 rule in [`.agents/skills/tdd-implement/references/stages.md`](../../.agents/skills/tdd-implement/references/stages.md) stage ③.
 
 ## Rule 2 — Model Selection
 
@@ -31,7 +31,7 @@ Every skill that touches git must preserve history after `BASE_HEAD`: history ma
 
 To achieve "directory clean" (`git status` clean) the skill may only delete its own temporary artifacts (`[DEBUG-...]`, one-off scripts, untracked probe files) — it must never use git-level destructive commands to reach a clean state. The following are forbidden without explicit user confirmation: `git reset --hard`, `git checkout .`, `git clean -fd`, `git stash push --include-untracked` (use `--keep-index` instead and `pop` with verification), `git push --force`, `git rebase -i` and any `reset`/`checkout` that moves `HEAD` backward.
 
-Canonical enforcement: [`tdd-implement/references/stages.md`](../../skills/tdd-implement/references/stages.md) stage ③/⑥/⑦/A2-A4 Git 安全红线 and [`commit-check/SKILL.md`](../../skills/commit-check/SKILL.md) ③ 目录卫生.
+Canonical enforcement: [`tdd-implement/references/stages.md`](../../.agents/skills/tdd-implement/references/stages.md) stage ③/⑥/⑦/A2-A4 Git 安全红线 and [`commit-check/SKILL.md`](../../.agents/skills/commit-check/SKILL.md) ③ 目录卫生.
 ## Long-horizon skills inventory
 
 Skills currently classified as Long-Horizon, to be evolved against these rules as they are touched: `tdd-implement` (fixed), `diagnose-fix` (fixed — new orchestration skill for diagnosis + TDD fix, carries its own Turn Continuity rule), `diagnosing-bugs`, `improve-codebase-architecture`, `wayfinder`, `grill-to-spec`, `to-spec`. Backfilling existing skill texts is out of scope for now — these rules bind new and edited skills going forward.

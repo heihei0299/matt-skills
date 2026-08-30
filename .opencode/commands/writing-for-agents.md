@@ -4,7 +4,7 @@ description: 技能写作参考——编写和编辑技能的最佳实践（词�
 
 # Writing Great Skills
 
-加载并执行 writing-great-skills 技能，编写/编辑技能：
+加载并执行 writing-for-agents 技能，编写/编辑技能：
 
 **主题：** $ARGUMENTS
 

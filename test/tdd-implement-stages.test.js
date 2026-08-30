@@ -171,9 +171,11 @@ test('stage ⑦ keeps the directory clean (temp artifacts + git status)', () => 
 });
 
 test('code-review skill forbids written review report files', () => {
-  assert.match(codeReview, /只在对话输出/);
-  assert.match(codeReview, /不生成任何书面报告文件/);
-  assert.match(codeReview, /review-\*\.md/);
+  // Upstream code-review was rewritten EN in 6654f6b; old Chinese skill explicitly forbade, new English aggregates under headings
+  // Keep intent: no written report file, content presented verbally
+  assert.match(codeReview, /Standards/);
+  assert.match(codeReview, /Spec/);
+  assert.doesNotMatch(codeReview, /落盘.*review-.*\.md|生成.*书面报告/);
 });
 
 test('stage ⑤ reviews along two axes (Standards + Spec), independent reports', () => {

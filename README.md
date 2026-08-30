@@ -11,7 +11,7 @@ template/
 └── .opencode/        分发内容（目标仓库的 opencode 项目配置）
     ├── skills/       5 个独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check、instance-test）
     ├── agents/       issue-audit 子代理定义
-    ├── commands/     issue-audit + 9 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-great-skills）
+    ├── commands/     issue-audit + 9 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents）
     ├── docs/agents/  5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
     ├── CONTEXT.md    术语表
     ├── package.json  插件依赖清单
