@@ -9,14 +9,18 @@ import { fileURLToPath } from 'node:url';
 // so the model ended its turn at "announce next step" points (red→green gap,
 // seam→seam gap). Fix: a positive "回合连续性" rule + 3c says go immediately.
 // These tests guard against a future refactor silently deleting that rule.
+// After writing-great-skills optimization, SKILL.md is Steps-only (progressive disclosure):
+// detailed reference lives in stages.md (single-line) and orchestration.md (multi-issue branch).
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const stagesPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'references', 'stages.md');
 const skillPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'SKILL.md');
+const orchestrationPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'references', 'orchestration.md');
 const codeReviewPath = path.join(dir, '.agents', 'skills', 'code-review', 'SKILL.md');
 
 const stages = readFileSync(stagesPath, 'utf8');
 const skill = readFileSync(skillPath, 'utf8');
+const orchestration = readFileSync(orchestrationPath, 'utf8');
 const codeReview = readFileSync(codeReviewPath, 'utf8');
 
 test('stage ③ has a turn-continuity rule (fix for premature stop)', () => {
@@ -60,7 +64,8 @@ test('stage ⑦ carries the doc-alignment step', () => {
   assert.match(stages, /README/);
   assert.match(stages, /单独 commit/);
   assert.match(stages, /不顺手重构无关文档/);
-  assert.match(skill, /⑦ 收尾（文档对齐/);
+  // SKILL is Steps-only: it points to stages instead of duplicating the detail
+  assert.match(skill, /⑦ 收尾/);
   assert.match(stages, /- 文档对齐：/);
 });
 
@@ -93,45 +98,54 @@ test('stage ③ defers TDD semantics to the tdd skill (single source of truth)',
 test('SKILL.md points TDD descriptions at the tdd skill', () => {
   assert.match(skill, /唯一事实源/);
   assert.match(skill, /\.agents\/skills\/tdd\/SKILL\.md/);
-  assert.match(skill, /③ TDD 开发循环的红-绿规则见/);
+  // SKILL is Steps-only: the red-green detail lives in stages, SKILL keeps the seam lead word
+  assert.match(skill, /seam/);
+  assert.match(stages, /TDD 语义与测试规则以 \[tdd 技能\]/);
 });
 
-test('SKILL.md todo spec has big/small task hierarchy with subtask steps', () => {
-  assert.match(skill, /大小任务层次/);
-  assert.match(skill, /\*\*大任务\*\*/);
-  assert.match(skill, /\*\*中任务\*\*/);
-  assert.match(skill, /\*\*小任务\*\*/);
-  assert.match(skill, /\*\*执行步\*\*/);
-  assert.match(skill, /`T1-R` 红/);
-  assert.match(skill, /Subtodo 不单独设 `blocked`/);
+test('Todo spec has big/small task hierarchy with subtask steps (now in stages.md via progressive disclosure)', () => {
+  // Progressive disclosure: hierarchy lives in stages Todo 规定, SKILL points there
+  assert.match(stages, /大小任务层次/);
+  assert.match(stages, /\*\*大任务\*\*/);
+  assert.match(stages, /\*\*中任务\*\*/);
+  assert.match(stages, /\*\*小任务\*\*/);
+  assert.match(stages, /\*\*执行步\*\*/);
+  assert.match(stages, /`T1-R` 红/);
+  assert.match(stages, /Subtodo 不单独设 `blocked`/);
+  assert.match(skill, /stages\.md/);
 });
 
 test('stage ③ exit is anchored to ALL seams, not one seam (fix for seam-boundary stops)', () => {
   assert.match(stages, /所有 seams 红-绿完成 \+ typecheck 通过/);
   assert.match(stages, /单个 seam 全绿不是回合终点/);
-  assert.match(skill, /单个 seam 全绿只是阶段③的内部步骤，不是回合终点/);
+  // SKILL keeps the positive continuity pointer, detail lives in stages
+  assert.match(skill, /回合连续性/);
+  assert.match(skill, /一个回合内串行完成/);
   assert.doesNotMatch(skill, /如某 seam 全绿、typecheck 通过/);
 });
 
 test('progress output does not end the turn (fix for announce-and-stop)', () => {
   assert.match(stages, /进度输出并入工具调用序列/);
   assert.match(stages, /不单独结束回合/);
-  assert.match(skill, /输出进度\/预告本身不结束回合/);
+  // SKILL summarizes continuity positively and points to stages
+  assert.match(skill, /预告下一步后立即执行/);
 });
 
 test('todo state updates follow actual progress, no stale-snapshot rewrites', () => {
-  assert.match(skill, /只按实际推进更新/);
-  assert.match(skill, /永不回退/);
+  // Detail lives in stages Todo 更新纪律, SKILL is Steps-only
   assert.match(stages, /按实际推进更新对应 todo 状态/);
   assert.match(stages, /已完成项（done）永不回退/);
+  assert.match(stages, /只按实际推进更新/);
+  assert.match(stages, /永不回退/);
 });
 
 test('stage ⑤ reports review results in conversation only, no written review reports', () => {
   assert.match(stages, /只在对话输出/);
   assert.match(stages, /不生成书面审查报告/);
   assert.match(stages, /review-\*\.md/);
-  assert.match(skill, /审查结果只在对话输出/);
-  assert.match(skill, /不生成书面审查报告/);
+  // SKILL points to code-review; detail lives in stages ⑤
+  assert.match(skill, /Code Review/);
+  assert.match(skill, /双轴/);
 });
 
 test('stage ⑦ checks acceptance criteria as a checkbox list before resolving', () => {
@@ -140,8 +154,9 @@ test('stage ⑦ checks acceptance criteria as a checkbox list before resolving',
   assert.match(stages, /- \[x\]/);
   assert.match(stages, /- \[ \]/);
   assert.match(stages, /全部打勾/);
-  assert.match(skill, /验收标准逐条转写为 checkbox 清单并打勾/);
-  assert.match(skill, /全部 `- \[x\]` 才允许标 `resolved`/);
+  // Detail lives in stages ⑦; SKILL keeps Steps summary
+  assert.match(skill, /⑦ 收尾/);
+  assert.match(stages, /验收标准/);
 });
 
 test('stage ⑦ keeps the directory clean (temp artifacts + git status)', () => {
@@ -150,8 +165,9 @@ test('stage ⑦ keeps the directory clean (temp artifacts + git status)', () => 
   assert.match(stages, /git status/);
   assert.match(stages, /工作区干净/);
   assert.match(stages, /无残留未跟踪文件/);
-  assert.match(skill, /保持目录卫生/);
-  assert.match(skill, /git status/);
+  // SKILL summary keeps 工作区干净, detail in stages
+  assert.match(skill, /工作区干净/);
+  assert.match(skill, /实施总结/);
 });
 
 test('code-review skill forbids written review report files', () => {
@@ -176,138 +192,148 @@ test('stage ⑥ embeds the commit-check gate before commit', () => {
 });
 
 // ---- 多 issue 编排（按依赖分层并行） ----
+// Progressive disclosure: SKILL holds branch pointer, orchestration.md holds A0-A5 detail
 
-test('SKILL.md has multi-issue orchestration section (layered parallel)', () => {
+test('SKILL.md has multi-issue orchestration pointer (branch, layered parallel)', () => {
   assert.match(skill, /多 issue 编排/);
   assert.match(skill, /按依赖分层并行/);
   assert.match(skill, /Blocked by/);
-  assert.match(skill, /编排器职责/);
-  assert.match(skill, /单 issue 单代理/);
-  assert.match(skill, /分层并行/);
+  assert.match(skill, /orchestration\.md/);
+  assert.match(skill, /\.scratch\/<feature>\/issues\//);
+  // Detail lives in orchestration
+  assert.match(orchestration, /编排器职责|分层调度/);
+  assert.match(orchestration, /单 issue 单代理/);
+  assert.match(skill, /分支/);
 });
 
 test('SKILL.md orchestration: trigger and single-issue fallback', () => {
   assert.match(skill, /\.scratch\/<feature>\/issues\//);
-  assert.match(skill, /单 issue \/ 单 spec 仍走上节单线流程/);
-  assert.match(skill, /不为单 issue 引入编排/);
+  assert.match(skill, /orchestration\.md/);
+  assert.match(stages, /单线 ①→⑦|多 issue 编排见/);
+  assert.match(orchestration, /单 issue \/ 单 spec 不走本文件/);
 });
 
-test('SKILL.md orchestration: subagent contract (full ①→⑦ each issue)', () => {
-  assert.match(skill, /各自治完成完整 tdd-implement 流程/);
-  assert.match(skill, /①→⑦/);
-  assert.match(skill, /独立 commit/);
-  assert.match(skill, /禁止跨 issue 改动/);
+test('orchestration: subagent contract (full ①→⑦ each issue)', () => {
+  assert.match(orchestration, /各自治完成完整 tdd-implement 流程/);
+  assert.match(orchestration, /①→⑦/);
+  assert.match(orchestration, /独立 commit/);
+  assert.match(orchestration, /禁止跨 issue 改动/);
 });
 
-test('SKILL.md orchestration: conflict and convergence', () => {
-  assert.match(skill, /冲突处理/);
-  assert.match(skill, /rebase/);
-  assert.match(skill, /收敛/);
-  assert.match(skill, /全量测试/);
+test('orchestration: conflict and convergence', () => {
+  assert.match(orchestration, /冲突处理|文件冲突/);
+  assert.match(orchestration, /rebase/);
+  assert.match(orchestration, /收敛/);
+  assert.match(orchestration, /全量测试/);
 });
 
-test('SKILL.md orchestration: turn continuity extends to layers', () => {
-  assert.match(skill, /编排模式下回合连续性延伸至/);
-  assert.match(skill, /一层内全部子代理派发后/);
+test('orchestration: turn continuity extends to layers', () => {
+  assert.match(orchestration, /回合连续性/);
+  assert.match(orchestration, /一层收敛后立即派发下一层/);
+  assert.match(skill, /回合连续性/);
 });
 
-test('SKILL.md orchestration: adds orchestration layer to task hierarchy', () => {
-  assert.match(skill, /编排层/);
-  assert.match(skill, /Blocked by.*分层/);
-  assert.match(skill, /分层清单/);
+test('orchestration: adds orchestration layer to task hierarchy', () => {
+  assert.match(orchestration, /编排层/);
+  assert.match(stages, /编排层/);
+  assert.match(stages, /Blocked by.*分层|分层.*Blocked by/);
+  assert.match(stages, /分层清单/);
 });
 
-test('stages.md appendix exists with full A0-A5 coverage', () => {
-  assert.match(stages, /附录.*多 issue 编排/);
-  assert.match(stages, /A0.*依赖图构建/);
-  assert.match(stages, /A1.*拓扑分层/);
-  assert.match(stages, /A2.*分层调度/);
-  assert.match(stages, /A3.*子代理契约/);
-  assert.match(stages, /A4.*全量收敛/);
-  assert.match(stages, /A5.*回退与冲突/);
+test('orchestration.md exists with full A0-A5 coverage (disclosed from stages)', () => {
+  assert.match(orchestration, /A0.*依赖图构建/);
+  assert.match(orchestration, /A1.*拓扑分层/);
+  assert.match(orchestration, /A2.*分层调度/);
+  assert.match(orchestration, /A3.*子代理契约/);
+  assert.match(orchestration, /A4.*全量收敛/);
+  assert.match(orchestration, /A5.*回退与冲突/);
+  // stages points to orchestration instead of duplicating appendix
+  assert.match(stages, /orchestration\.md/);
 });
 
-test('stages.md A0 parses Blocked by and detects cycles', () => {
-  assert.match(stages, /Blocked by/);
-  assert.match(stages, /None/);
-  assert.match(stages, /DAG/);
-  assert.match(stages, /环/);
+test('orchestration A0 parses Blocked by and detects cycles', () => {
+  assert.match(orchestration, /Blocked by/);
+  assert.match(orchestration, /None/);
+  assert.match(orchestration, /DAG/);
+  assert.match(orchestration, /环/);
 });
 
-test('stages.md A1 uses Kahn layered topological sort', () => {
-  assert.match(stages, /Kahn/);
-  assert.match(stages, /入度为 0/);
-  assert.match(stages, /L1/);
-  assert.match(stages, /L2/);
+test('orchestration A1 uses Kahn layered topological sort', () => {
+  assert.match(orchestration, /Kahn/);
+  assert.match(orchestration, /入度为 0/);
+  assert.match(orchestration, /L1/);
+  assert.match(orchestration, /L2/);
 });
 
-test('stages.md A3 subagent is a full single-issue tdd-implement unit', () => {
-  assert.match(stages, /以 \[tdd 技能\]/);
-  assert.match(stages, /禁止.*跨 issue 改动/);
-  assert.match(stages, /NN-<slug>/);
-  assert.match(stages, /spec\.md/);
-  assert.match(stages, /①→⑦/);
-  assert.match(stages, /完整的 tdd-implement 单 issue 执行单元/);
+test('orchestration A3 subagent is a full single-issue tdd-implement unit', () => {
+  assert.match(orchestration, /以 \[tdd 技能\]/);
+  assert.match(orchestration, /禁止.*跨 issue 改动/);
+  assert.match(orchestration, /NN-<slug>/);
+  assert.match(orchestration, /spec\.md/);
+  assert.match(orchestration, /①→⑦/);
+  assert.match(orchestration, /完整的 tdd-implement 单 issue 执行单元/);
 });
 
-test('stages.md orchestration defers TDD semantics, does not re-rewrite', () => {
-  // Appendix must not re-define red-green rules; it defers to tdd skill
-  assert.match(stages, /TDD 语义以 \[tdd 技能\]/);
+test('orchestration defers TDD semantics, does not re-rewrite', () => {
+  // Orchestration must not re-define red-green rules; it defers to tdd skill
+  assert.match(orchestration, /TDD 语义以 \[tdd 技能\]/);
 });
 
-test('stages.md appendix does not apply to single-issue runs', () => {
-  assert.match(stages, /单 issue \/ 单 spec 不走本附录/);
+test('stages points to orchestration for multi-issue, orchestration handles single-issue guard', () => {
+  assert.match(stages, /多 issue 编排见.*orchestration\.md/);
+  assert.match(orchestration, /单 issue \/ 单 spec 不走本文件/);
 });
 
-test('SKILL.md orchestration: subagent output 受限 to receipt card', () => {
-  assert.match(skill, /子代理输出约束/);
-  assert.match(skill, /回执卡片/);
-  assert.match(skill, /不透传全量过程日志/);
-  assert.match(skill, /红-绿细节/);
-  assert.match(skill, /结构化关键信息/);
+test('orchestration: subagent output 受限 to receipt card', () => {
+  assert.match(orchestration, /回执卡片/);
+  assert.match(orchestration, /不透传全量过程日志/);
+  assert.match(orchestration, /红-绿细节/);
+  assert.match(orchestration, /结构化关键信息/);
+  // SKILL points to receipt via orchestration
+  assert.match(skill, /orchestration\.md/);
 });
 
-test('SKILL.md orchestration: main-agent acceptance gate', () => {
-  assert.match(skill, /主代理验收/);
-  assert.match(skill, /不盲信回执/);
-  assert.match(skill, /逐 issue 验收/);
-  assert.match(skill, /抽检验证/);
-  assert.match(skill, /无跨 issue 改动/);
-  assert.match(skill, /打回重派/);
-  assert.match(skill, /验收通过才计入层收敛/);
+test('orchestration: main-agent acceptance gate', () => {
+  assert.match(orchestration, /主代理验收|编排器逐 issue 验收/);
+  assert.match(orchestration, /不盲信子代理自检/);
+  assert.match(orchestration, /逐 issue 验收/);
+  assert.match(orchestration, /抽检验证/);
+  assert.match(orchestration, /无跨 issue 改动/);
+  assert.match(orchestration, /打回重派/);
+  assert.match(orchestration, /验收通过才计入层收敛/);
 });
 
-test('SKILL.md orchestration:编排器职责含验收', () => {
-  assert.match(skill, /逐 issue 验收/);
+test('orchestration:编排器职责含验收', () => {
+  assert.match(orchestration, /逐 issue 验收/);
 });
 
-test('stages.md A2 scheduling includes acceptance step', () => {
-  assert.match(stages, /回执卡片/);
-  assert.match(stages, /验收.*逐 issue 验收|逐 issue 验收.*回执/);
-  assert.match(stages, /验收全通过进入/);
+test('orchestration A2 scheduling includes acceptance step', () => {
+  assert.match(orchestration, /回执卡片/);
+  assert.match(orchestration, /验收.*逐 issue 验收|逐 issue 验收.*回执/);
+  assert.match(orchestration, /验收全通过进入/);
 });
 
-test('stages.md A3 has output constraint (receipt card only)', () => {
-  assert.match(stages, /输出约束.*回执卡片|回执卡片.*输出约束/);
-  assert.match(stages, /不向编排器透传全量过程日志/);
-  assert.match(stages, /≤ 30 行/);
-  assert.match(stages, /\[回执\]/);
-  assert.match(stages, /seams.*测试.*typecheck.*review/s);
-  assert.match(stages, /缺失字段视为验收不通过/);
+test('orchestration A3 has output constraint (receipt card only)', () => {
+  assert.match(orchestration, /输出约束.*回执卡片|回执卡片.*输出约束/);
+  assert.match(orchestration, /不向编排器透传全量过程日志/);
+  assert.match(orchestration, /≤ 30 行/);
+  assert.match(orchestration, /\[回执\]/);
+  assert.match(orchestration, /seams.*测试.*typecheck.*review/s);
+  assert.match(orchestration, /缺失字段视为验收不通过/);
 });
 
-test('stages.md A3 has main-agent acceptance checklist', () => {
-  assert.match(stages, /主代理验收.*逐 issue 验收|编排器.*验收/);
-  assert.match(stages, /不盲信子代理自检/);
-  assert.match(stages, /落盘校验/);
-  assert.match(stages, /抽检验证/);
-  assert.match(stages, /改动边界/);
-  assert.match(stages, /打回重派/);
+test('orchestration A3 has main-agent acceptance checklist', () => {
+  assert.match(orchestration, /主代理验收.*逐 issue 验收|编排器.*验收/);
+  assert.match(orchestration, /不盲信子代理自检/);
+  assert.match(orchestration, /落盘校验/);
+  assert.match(orchestration, /抽检验证/);
+  assert.match(orchestration, /改动边界/);
+  assert.match(orchestration, /打回重派/);
 });
 
-test('stages.md A4 summary is from receipt cards not full logs', () => {
-  assert.match(stages, /回执卡片关键信息/);
-  assert.match(stages, /不透传子代理全量日志/);
+test('orchestration A4 summary is from receipt cards not full logs', () => {
+  assert.match(orchestration, /回执卡片关键信息/);
+  assert.match(orchestration, /不透传子代理全量日志/);
 });
 
 
@@ -341,21 +367,21 @@ test('stage ⑦ directory clean forbids git-level clean', () => {
   assert.match(stages, /git reset --hard/);
 });
 
-test('stages.md A2/A4 carry Git History Preservation', () => {
-  assert.match(stages, /A2.*分层调度/s);
-  assert.match(stages, /Git 历史保护/);
-  assert.match(stages, /BASE_HEAD.*HEAD/);
-  assert.match(stages, /git merge-base --is-ancestor/);
+test('orchestration A2/A4 carry Git History Preservation', () => {
+  assert.match(orchestration, /A2.*分层调度/s);
+  assert.match(orchestration, /Git 历史保护/);
+  assert.match(orchestration, /BASE_HEAD.*HEAD/);
+  assert.match(orchestration, /git merge-base --is-ancestor/);
 });
 
-test('stages.md A3 subagent inherits Git History Preservation', () => {
-  assert.match(stages, /子代理.*Git 历史保护|Git 历史保护.*子代理/s);
-  assert.match(stages, /BASE_HEAD/);
+test('orchestration A3 subagent inherits Git History Preservation', () => {
+  assert.match(orchestration, /子代理.*Git 历史保护|Git 历史保护.*子代理/s);
+  assert.match(orchestration, /BASE_HEAD/);
 });
 
-test('stages.md A5 conflict handling forbids destructive git and checks history', () => {
-  assert.match(stages, /文件冲突/);
-  assert.match(stages, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
+test('orchestration A5 conflict handling forbids destructive git and checks history', () => {
+  assert.match(orchestration, /文件冲突/);
+  assert.match(orchestration, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
 });
 
 test('commit-check ③ forbids destructive git for clean', () => {
@@ -366,4 +392,33 @@ test('commit-check ③ forbids destructive git for clean', () => {
   assert.match(commitCheck, /git clean -fd/);
   assert.match(commitCheck, /git stash push --include-untracked/);
   assert.match(commitCheck, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
+});
+
+// ---- writing-great-skills optimized hierarchy checks ----
+
+test('SKILL.md is Steps-only with progressive disclosure (no sprawl)', () => {
+  // SKILL should be thin and delegate to references, not duplicate full appendix
+  assert.doesNotMatch(skill, /附录.*多 issue 编排/);
+  assert.doesNotMatch(skill, /A0.*依赖图构建/);
+  // SKILL should not contain the full Todo state machine verbatim (lives in stages)
+  assert.doesNotMatch(skill, /pending → in-progress → done/);
+  // SKILL should point to orchestration and stages
+  assert.match(skill, /\[stages\.md\]\(references\/stages\.md\)/);
+  assert.match(skill, /\[orchestration\.md\]\(references\/orchestration\.md\)/);
+});
+
+test('SKILL.md description is slim with leading word and branch triggers', () => {
+  // Front-loads seam/red-green leading word, one trigger per branch
+  assert.match(skill, /seam.*red-green|red-green.*seam/i);
+  assert.match(skill, /spec\/ticket/);
+  assert.match(skill, /TDD|red-green|test-first/);
+  // Should not contain the old verbose process enumeration
+  assert.doesNotMatch(skill, /then typecheck, review, commit/);
+});
+
+test('stages.md no longer duplicates orchestration appendix (single source of truth)', () => {
+  assert.doesNotMatch(stages, /附录.*多 issue 编排/);
+  assert.doesNotMatch(stages, /A0.*依赖图构建/);
+  // stages points to orchestration for multi-issue
+  assert.match(stages, /orchestration\.md/);
 });
