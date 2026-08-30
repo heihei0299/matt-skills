@@ -21,6 +21,7 @@ description: "Run the pre-commit gate before any commit: verify docs match the i
 - 改动涉及项目结构、分发文件、技能/命令清单时，检查 README 中对应的结构说明、映射表、清单是否同步
 - 改动涉及用法/CLI/配置/示例时，检查 README 对应描述与实际一致
 - 存在模板镜像/分发副本时，确认源文件与副本同步（如有守护测试，跑一遍确认）
+- **特例：skill 与 AGENTS.md 的模板同步增量**：若 `git diff HEAD` 仅涉及 `AGENTS.md` 的 `tdd-implement ↔ implement` 路由行 + `.agents/skills/`/`.pi/skills/`/`.opencode/skills/` 的技能文件 + `.gitignore` 的 `.pi/` 忽略，且同目录存在 `AGENTS.md.bak`（模板同步 `sync`/`init --force` 的备份），视为模板同步的预期增量，禁止自动 `checkout -- AGENTS.md` 回滚；存在性按文件系统判（`ls .agents/skills/<name> .pi/skills/<name> .opencode/skills/<name>` 任一存在即算存在，不以 `git ls-files` 为准）；缺技能则正向补齐而非回滚文档
 
 ### ③ 保持目录卫生
 
