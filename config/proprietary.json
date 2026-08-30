@@ -1,1 +1,7 @@
-["tdd-implement", "grill-to-spec", "diagnose-fix", "commit-check", "instance-test"]
+[
+  "tdd-implement",
+  "grill-to-spec",
+  "diagnose-fix",
+  "commit-check",
+  "scaffold-functional-test"
+]

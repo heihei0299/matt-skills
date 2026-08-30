@@ -7,7 +7,7 @@ import prompts from 'prompts';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
-const PROPRIETARY_SKILLS = new Set(['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'instance-test']);
+const PROPRIETARY_SKILLS = new Set(['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test']);
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);
   throw err;

@@ -1,61 +1,70 @@
 ---
 name: instance-test
 disable-model-invocation: true
-description: "Verify project meets expected goals by running prompt instances in isolated temp dirs"
+description: "matt-skills 专属功能测试示范（由 scaffold-functional-test 从 spec 生成）— 验证 sync 合并 update 后的行为；仅显式调用"
 ---
 
-# Instance Test
+# Instance Test — matt-skills 专属示范
 
-Run **instance** prompts to verify project meets expected goals via actual functional tests. Each **instance** is a prompt + expected outcome, executed in an isolated temp dir — no mocks, no stubs.
+本 skill 是 **matt-skills 专属**的功能测试示范，由 `scaffold-functional-test` 从 `.scratch/sync-merge-update/spec.md` 生成（见 `references/instances.md` 头部 `spec hash` + `generatedAt`）。它是生成器产出形态的示例，不随 Template Snapshot 分发，仅保留于 Workspace。旧通用执行器文案已废弃。
+
+兼容别名：`instance-test` 保留原名以兼容历史调用，实际为 `matt-functional-test` 的示范实现。
 
 ## Steps
 
 ### 1. Gather instances
 
-Collect the **instance** set to run:
+实例集已由生成器按**受控扩展模型**落盘于 `references/instances.md`（头部含 `spec hash` + `generatedAt`，每实例含**溯源** `spec.md` 章节/行号，`<!-- manual -->` 段受保护）。
 
-- User-provided instances (prompt, command, expected files/stdout/exit code), or
-- Derived from `spec.md`/`README` acceptance criteria — extract each verifiable behavior as one instance, then confirm the list with the user before running.
+执行前校验指纹：若当前 spec 的 `spec hash` 与 `references/instances.md` 头部不一致，提示「spec 已变更，建议重跑 scaffold-functional-test」但不自动覆盖，需用户显式确认才 regenerate（AI 先给 diff 建议）。
 
-Each **instance** must declare: command to run, expected files/content, expected stdout phrases, expected exit code.
+每实例声明：`prompt/command/expected files/content/expected stdout phrases/expected exit code` 必选，`setup/env/timeout/type/teardown` 可选，默认 `type: cli`。
 
-Completion: instance list is fixed (prompt, expected outcome, verification command) — no instance is added mid-run.
+完成：实例清单已固定（含溯源与指纹），`<!-- manual -->` 段未被覆盖。
 
 ### 2. Run instances
 
 For each **instance** in order:
 
-1. `mktemp -d` isolated dir (or `git worktree` / `--dest` if the project supports it).
-2. Execute the instance's command — capture stdout/stderr and exit code.
-3. Snapshot result files and side effects declared in expected.
+1. `mktemp -d` 隔离目录（或项目支持的 `git worktree` / `--dest`），单线程串行，不并行。
+2. 执行实例的 `command` 与可选 `setup`，捕获 stdout/stderr 与 exit code。
+3. 快照 `expected` 声明的文件与副作用。
 
-Do not run instances in parallel — one **instance** at a time, so failures are isolated and artifacts do not collide.
+一个 **instance** 一次，失败不阻断后续，产物不碰撞。
 
-Completion: every **instance** has a run dir with captured output and file snapshot.
+完成：每实例均有独立 run dir 与捕获输出。
 
 ### 3. Evaluate
 
-Compare each **instance**'s actual vs expected:
+对比每实例的 actual vs expected：
 
-- File existence/content (`test -f`, `grep -q`, `diff`).
-- Stdout/stderr contains expected phrases.
-- Exit code matches expected.
+- 文件存在性/内容（`test -f`/`grep -q`/`diff`）
+- Stdout/stderr 含预期短语
+- Exit code 一致
+- 扩展字段（`env`/`timeout`/`type`）行为符合声明
 
-Mark `PASS`/`FAIL` per **instance** with evidence (file path, stdout line, or diff).
+标记 `PASS`/`FAIL`，附 `expected vs actual` diff 与 run dir 证据。
 
-Completion: every **instance** has a `PASS` or `FAIL` with evidence — no unevaluated instance.
+完成：每实例均有 `PASS` 或 `FAIL` 且含证据。
 
 ### 4. Report
 
-Summarize in conversation:
+对话内汇总：
 
-- `PASS m/n` with per-instance evidence.
-- Failures list the gap (expected vs actual) and the run dir for reproduction.
-- Clean up temp dirs unless `--keep` is requested.
+- `PASS m/n` + per-instance evidence
+- 失败项列出 gap（expected vs actual）与 run dir 复现路径
+- 成功默认清理临时目录、失败默认保留；`--keep` 保留全部；`--report` 显式开启才落盘报告文件
 
-Do not write a report file (`report-*.md`) — output stays in conversation. Keep temp dirs only on failure for debugging.
+不以文件刷屏——默认输出在对话，报告文件仅显式开启才写。
 
-## References
+## 实例来源
 
-- Instance definitions (if any): `references/instances.md` — example set, auto-loaded only when present, not required.
-- Project expected behavior: `spec.md`/`README`/`--help` — the source of truth for what to verify.
+- 源 spec：`.scratch/sync-merge-update/spec.md`（`spec hash` 见 `references/instances.md` 头部）
+- 推导策略：混合推导（验收标准锚点 + 需求/接口/边界补充），每实例含溯源，无溯源视为幻觉
+- 手工段：`<!-- manual -->` 保护
+
+## 引用
+
+- 生成器：`scaffold-functional-test`（读 spec 产出本 skill）
+- 领域术语：`CONTEXT.md`
+- 技能设计：`docs/agents/skill-design.md`

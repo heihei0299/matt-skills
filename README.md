@@ -9,7 +9,7 @@ template/
 ├── AGENTS.md         项目级全局配置（行为路由 + 分文件指针）
 ├── .pi/              pi-agent 项目配置（pi 标准结构：`.pi/skills/` 直放独有技能，自动发现）
 └── .opencode/        分发内容（目标仓库的 opencode 项目配置）
-    ├── skills/       5 个独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check、instance-test）
+    ├── skills/       5 个独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check、scaffold-functional-test）
     ├── agents/       issue-audit 子代理定义
     ├── commands/     issue-audit + 9 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents）
     ├── docs/agents/  5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
@@ -46,7 +46,7 @@ npx @heihei0299/matt-skills sync --apply --dest <path> --upstream <url> --ref <r
 
 上游没有 `tdd-implement`、`grill-to-spec`、`diagnose-fix`、`commit-check`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`；pi 侧独有在 `.pi/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；9 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
 
-**pi-agent 用户**：初始化命令完全相同。pi 从 `.pi/skills/` 自动发现独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check），无需任何指向配置；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
+**pi-agent 用户**：初始化命令完全相同。pi 从 `.pi/skills/` 自动发现独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check、scaffold-functional-test），无需任何指向配置；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
 
 **手动方式（备选）**：无 npx 环境时，将 `template/` 整个文件夹复制到目标仓库根目录，再拉取上游技能：
 
@@ -60,7 +60,7 @@ rm -rf /tmp/mattpocock-skills
 
 上游没有 `tdd-implement`、`grill-to-spec`、`diagnose-fix`、`commit-check`，复制天然不冲突。目标仓库会话即自动加载全部技能（上游在 `.agents/skills/`、独有在 `.opencode/skills/`；pi 侧独有在 `.pi/skills/`）与项目级全局配置（行为路由表、分文件约定）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；9 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
 
-**pi-agent 用户**：初始化命令完全相同。pi 从 `.pi/skills/` 自动发现独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check），无需任何指向配置；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
+**pi-agent 用户**：初始化命令完全相同。pi 从 `.pi/skills/` 自动发现独有技能（tdd-implement、grill-to-spec、diagnose-fix、commit-check、scaffold-functional-test），无需任何指向配置；首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
 
 ## 维护约定
 
@@ -68,8 +68,8 @@ rm -rf /tmp/mattpocock-skills
 
 | 工作区 | 模板 |
 |--------|------|
-| `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` | `template/.opencode/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` |
-| `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` | `template/.pi/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check}/` |
+| `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check,scaffold-functional-test}/` | `template/.opencode/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check,scaffold-functional-test}/` |
+| `.agents/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check,scaffold-functional-test}/` | `template/.pi/skills/{tdd-implement,grill-to-spec,diagnose-fix,commit-check,scaffold-functional-test}/` |
 | `.opencode/agents/issue-audit.md`、`commands/*.md`（issue-audit + 9 个显式技能命令）、`.gitignore`、`package.json`、`package-lock.json` | `template/.opencode/` 同名 |
 | `.pi/prompts/issue-audit.md`（pi 命令：opencode 版适配，去 subagent frontmatter） | `template/.pi/prompts/issue-audit.md` |
 | `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
@@ -79,7 +79,7 @@ rm -rf /tmp/mattpocock-skills
 独有技能需同步**双份**：`.opencode/skills/`（opencode 分发）与 `.pi/skills/`（pi 标准分发）。
 `test/template-sync.test.js` 守护同步（含路径映射），漏同步测试即红。
 
-新增技能前先查上游 `mattpocock/skills` 是否已存在；仅上游没有的技能才作为独有技能落在本仓库（当前独有：tdd-implement、grill-to-spec、diagnose-fix、commit-check），上游技能一律不进 `template/`。
+新增技能前先查上游 `mattpocock/skills` 是否已存在；仅上游没有的技能才作为独有技能落在本仓库（当前独有：tdd-implement、grill-to-spec、diagnose-fix、commit-check、scaffold-functional-test），上游技能一律不进 `template/`。
 
 ## harness 支持
 
@@ -189,5 +189,5 @@ npm run build:template            # 从单源生成 template/.opencode/.pi（con
 
 交互模式依赖 `prompts`（见 `package.json`）；测试见 `test/cli.test.js`、`test/cli-init.test.js`、`test/template-sync.test.js`。
 
-用户手动触发的功能测试：`/instance-test`（见 `.agents/skills/instance-test/SKILL.md`）——在隔离 `temp dir` 跑 prompt 实例验实际功能，`references/instances.md` 为通用模板。
+用户手动触发的功能测试：`/instance-test`（matt-skills 专属示范，见 `.agents/skills/instance-test/SKILL.md`）——验证 sync 合并 update 后的行为，`references/instances.md` 由 `scaffold-functional-test` 从 spec 生成；通用模板已废弃。新增生成器 `/scaffold-functional-test`（见 `.agents/skills/scaffold-functional-test/SKILL.md`）——读 spec 生成定制化功能测试 skill。
 
