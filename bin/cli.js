@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, cp, stat } from 'node:fs/promises';
+import { readdir, readFile, cp, stat, rm, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -254,19 +254,35 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json }) {
 
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
-  const backup = !force;
   if (!(await pathExists(marker))) {
     process.stdout.write('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
     process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
-  } else {
+  } else if (force) {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
-    if (backup) {
-      const cur = path.join(target, 'AGENTS.md');
-      if (await pathExists(cur)) await backupIfExists(cur);
-    }
+    await backupIfExists(path.join(target, 'AGENTS.md'));
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    process.stdout.write(backup ? '模板：已同步（AGENTS.md、.opencode/、.pi/）\n' : '模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
+    process.stdout.write('模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
+  } else if (apply) {
+    process.stdout.write('同步：检测到现有项目，将增量更新\n');
+    let skipAgents = false;
+    try {
+      const content = await readFile(path.join(target, 'AGENTS.md'), 'utf8');
+      if (content.includes('tdd-implement')) skipAgents = true;
+    } catch {}
+    if (skipAgents) {
+      await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
+      await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
+      process.stdout.write('模板：已同步（AGENTS.md 跳过，已含定制）\n');
+    } else {
+      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+      process.stdout.write('模板：已同步（AGENTS.md、.opencode/、.pi/）\n');
+    }
+  } else {
+    // fallback for any other doApply case (should not reach here because !doApply already returned)
+    process.stdout.write('同步：检测到现有项目，将增量更新\n');
+    await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+    process.stdout.write('模板：已同步（AGENTS.md、.opencode/、.pi/）\n');
   }
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const upstream = entries
@@ -274,6 +290,7 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json }) {
     .map((e) => e.name)
     .sort();
   const skillsDir = path.join(target, '.agents', 'skills');
+  await mkdir(skillsDir, { recursive: true });
   let installed = 0;
   let updated = 0;
   for (const name of upstream) {
@@ -285,11 +302,26 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json }) {
     }
     const exists = await pathExists(dst);
     if (exists) {
+      await rm(dst, { recursive: true, force: true });
       await cp(src, dst, { recursive: true, force: true });
       updated++;
     } else {
       await cp(src, dst, { recursive: true, force: true });
       installed++;
+    }
+  }
+  if (force) {
+    let localEntries = [];
+    try {
+      localEntries = await readdir(skillsDir, { withFileTypes: true });
+    } catch {}
+    for (const e of localEntries) {
+      if (!e.isDirectory()) continue;
+      if (e.name.endsWith('.bak')) continue;
+      if (e.name === '.git') continue;
+      if (PROPRIETARY_SKILLS.has(e.name)) continue;
+      if (upstream.includes(e.name)) continue;
+      await rm(path.join(skillsDir, e.name), { recursive: true, force: true });
     }
   }
   process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}\n`);
