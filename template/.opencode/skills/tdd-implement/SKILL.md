@@ -27,10 +27,10 @@ description: "Implement from a spec or ticket via strict TDD red-green loop, the
 当 `.scratch/<feature>/issues/` 下存在多个 issue 且彼此有 `Blocked by` 依赖时走本模式；单 issue / 单 spec 仍走上节单线流程。触发后主代理为**编排器**，子代理按**单 issue 单代理**各自治完成完整 tdd-implement 流程（①→⑦）。详规见 [`stages.md` 附录](references/stages.md#附录-多-issue-编排按依赖分层并行)，本节只定契约：
 
 - **触发**：扫描 `.scratch/<feature>/issues/` 多文件且含 `Blocked by` 时进入编排模式；否则单线执行——不为单 issue 引入编排开销。
-- **编排器职责**：解析 `Blocked by` → Kahn 分层 → 按 `stages.md A2` 分层调度（逐 issue 验收 + 层收敛验证：全量测试 + `git status`）→ `stages.md A4` 全量收敛 → 汇总（详规见附录）。
-- **子代理契约（单 issue 单代理）**：输入 `spec.md + 单个 issue.md + CONTEXT.md/ADRs`，各自治完成完整 tdd-implement 流程 ①→⑦（`stages.md A3`：④为相关测试，全量由编排器层收敛/A4 负责，单线仍全量）——含 seams 确认、红-绿循环、typecheck、相关测试、双轴 review、commit-check 门禁、issue `resolved` + 实施总结；产出独立 commit；禁止跨 issue 改动。
-- **子代理输出约束**：只返回**回执卡片**（`stages.md A3` 输出约束，≤30 行，结构化关键信息），不透传全量过程日志（红-绿细节、typecheck 原始输出、review 全文留在子代理）。回执字段：issue 编号与标题 / commit hash / seams 清单 / 相关测试结果（数量与是否全绿，全量由编排器层收敛/A4验证）/ typecheck 结论 / 双轴 review 结论 / 验收 checkbox 结果 / 文档对齐清单 / 遗留与风险。
-- **主代理验收**：编排器不盲信回执，逐 issue 验收后才算该 issue 完成。**完成条件（5 项检查表，全部通过才计入层收敛，任一不过即打回重派，详见 `stages.md A3-验收`）**：① 落盘校验（commit 含 `#NN` 且 `Status: resolved` + `## 实施总结` 已落盘，验收通过才计入层收敛的前提）② 抽检验证（相关测试/`tsc --noEmit`，不重跑全量）③ 改动边界（`git diff --name-only` 无跨 issue 改动）④ 卫生（`git status` 无残留）⑤ 提交关联（message 含 issue 编号）。验收通过才计入层收敛，否则打回重派。
+- **编排器职责**：解析 `Blocked by` 依赖图 → 拓扑分层 → 按层调度子代理 → 逐 issue 验收（见下）→ 层间收敛验证（全量测试 + `git status` 干净）→ 汇总实施总结。
+- **子代理契约（单 issue 单代理）**：输入 `spec.md + 单个 issue.md + CONTEXT.md/ADRs`，严格走 tdd-implement ①→⑦（含 seams 确认、红-绿循环、typecheck、双轴 review、commit-check 门禁、issue `resolved` + 实施总结）；产出独立 commit；禁止跨 issue 改动。
+- **子代理输出约束**：只返回**回执卡片**（结构化关键信息），不透传全量过程日志。回执字段：issue 编号与标题 / commit hash / seams 清单 / 测试结果（数量与是否全绿）/ typecheck 结论 / 双轴 review 结论 / 验收 checkbox 结果 / 文档对齐清单 / 遗留与风险。红-绿细节、typecheck 原始输出、review 全文等过程日志留在子代理内部，不向主代理透传。
+- **主代理验收**：编排器不盲信回执，逐 issue 验收后才算该 issue 完成。验收项：① commit 存在且 message 含 issue 编号 ② issue 文件 `Status: resolved` + `## 实施总结` 已落盘 ③ 抽检验证（抽跑相关测试或 `tsc --noEmit` 抽检，不重跑全量）④ 无跨 issue 改动（`git diff --name-only` 核对）⑤ 工作区干净。任一项不通过则打回重派该子代理，层内其他已通过不受影响；验收通过才计入层收敛。
 - **分层并行**：同层无依赖的 issue 并行派发子代理，层内全部验收通过后才进入下一层；层间串行，层内并行。
 - **冲突处理**：同层子代理若触及同一文件，后完成者 rebase 解决冲突后重跑 typecheck + 相关测试；跨层天然串行无冲突。
 - **收敛**：全部层验收通过后编排器跑全量测试套件 + 目录卫生检查，任一失败按回退路由回到对应层重派。
@@ -50,13 +50,13 @@ flash 类模型在长程任务上容易在"预告下一步"处提前收尾——
 
 ## 不做什么
 
-- TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源——本技能只编排阶段与运行时规则，不重写红-绿循环、seam 定义、好测试标准与 mocking 边界
-- 重构仅在阶段⑤ Code Review 进行——不把重构塞进红-绿循环
-- 连续执行至阶段出口——不在阶段间停顿，单 seam 全绿、单次 typecheck 通过都不是回合终点（见回合连续性规则）
-- 审查结果只在对话输出——不生成书面审查报告，不落盘 `review-*.md` 类文件（阶段⑤）
-- 大改动分批写入——不手写超大改动，单次 `write` 超 ~150 行先写骨架再分批补全，批量 `replace` 超 ~5 处先拆分再分批执行（见 [stages.md](references/stages.md) 3f，防输出截断）
-- 按路由规则顺序推进——阶段出口未达成不进入下一阶段，不跳步
-- 单 issue 单线执行——不为单 issue 引入编排，单 issue / 单 spec 不走多 issue 编排分支
+- 不重写 TDD 语义：红-绿循环、seam 定义、好测试标准、mocking 边界一律查 [tdd 技能](.agents/skills/tdd/SKILL.md)，本技能只编排阶段与运行时规则
+- 不把重构塞进红-绿循环：重构归阶段⑤ Code Review
+- 不在阶段间停顿：单 seam 全绿、单次 typecheck 通过都不是回合终点（见回合连续性规则）
+- 不生成书面审查报告：阶段⑤审查结果只在对话输出，不落盘 `review-*.md` 类文件
+- 不手写超大改动：巨型 write/批量 replace 会撞输出上限、中途截断，因此单次 `write` 超 ~150 行先写骨架再分批补全；批量 `replace` 超 ~5 处先拆分再分批执行（见 [stages.md](references/stages.md) 3f）
+- 不跳步：阶段出口未达成不进入下一阶段（见路由规则）
+- 不为单 issue 引入编排：单 issue / 单 spec 不走多 issue 编排分支
 
 ## 任务拆分与 Todo 规定
 
@@ -120,7 +120,7 @@ pending → in-progress → done
 | ⑥ Commit | commit 完成 | → ⑦ 收尾 |
 | ⑦ 收尾 | issue 状态已更新 + 实施总结已写 | ✅ 结束 |
 
-编排模式流转：`编排器：依赖图 → 分层 → [层内并行子代理(①→⑦，其中④为相关测试) → 层收敛(逐 issue 验收 + 全量测试)]×N → 全量收敛(A4) → 汇总总结 ✅`；子代理内部仍走上表单 issue 流转（④为相关测试口径，单线模式仍为全量）。
+编排模式流转：`编排器：依赖图 → 分层 → [层内并行子代理(①→⑦) → 层收敛]×N → 全量收敛 → 汇总总结 ✅`；子代理内部仍走上表单 issue 流转。
 
 ### 回退路由
 
