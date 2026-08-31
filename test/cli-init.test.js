@@ -9,9 +9,10 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-// Independent literal: the 31 skills shipped in this repo.
+// Independent literal: the 32 skills shipped in this repo.
 const SKILL_NAMES = [
   'ask-matt',
+  'ci-guard',
   'codebase-design',
   'code-review',
   'commit-check',
@@ -46,7 +47,7 @@ const SKILL_NAMES = [
 
 // Proprietary skills: mirrored into template/.opencode/skills + template/.pi/skills,
 // never copied into .agents/skills/ by `init`.
-const PROPRIETARY = ['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test'];
+const PROPRIETARY = ['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test'];
 
 const UPSTREAM = [...SKILL_NAMES].filter((n) => !PROPRIETARY.includes(n)).sort();
 

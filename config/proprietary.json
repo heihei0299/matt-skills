@@ -1,4 +1,5 @@
 [
+  "ci-guard",
   "tdd-implement",
   "grill-to-spec",
   "diagnose-fix",

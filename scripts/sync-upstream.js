@@ -21,7 +21,7 @@ async function loadProprietary() {
     const raw = await readFile(PROPRIETARY_PATH, 'utf8');
     return new Set(JSON.parse(raw));
   } catch {
-    return new Set(['tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'instance-test']);
+    return new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test']);
   }
 }
 

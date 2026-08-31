@@ -1,52 +1,19 @@
-name: Publish to npm
+name: Publish to npm (deprecated — migrated to ci.yml)
 
+# 已迁移至 .github/workflows/ci.yml 的 publish job（单文件锁死）
+# 本文件仅保留防双发：不再监听 push.tags，改为手动触发占位
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '手动触发占位（实际发布请 push tag 触发 ci.yml）'
+        required: false
+        type: string
 
 jobs:
-  publish:
+  noop:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Verify tag is on main
-        run: |
-          TAG_COMMIT=$(git rev-list -n 1 "$GITHUB_REF")
-          if ! git branch -a --contains "$TAG_COMMIT" | grep -qE "main|origin/main"; then
-            echo "Tag $GITHUB_REF is not on main branch, skipping publish"
-            echo "Branches containing tag:"
-            git branch -a --contains "$TAG_COMMIT" || true
-            exit 1
-          fi
-          echo "Tag $GITHUB_REF is on main, proceeding"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Set version from tag
-        run: |
-          TAG=${GITHUB_REF#refs/tags/v}
-          echo "Setting version to $TAG from tag $GITHUB_REF"
-          npm version "$TAG" --no-git-tag-version --allow-same-version
-          echo "package.json version is now $(node -p "require('./package.json').version")"
-
-      - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: echo "publish.yml 已废弃，发布由 ci.yml 的 publish job 承接（verify→publish 单文件不可绕过）"
