@@ -45,23 +45,21 @@ const SKILL_NAMES = [
   'writing-for-agents',
 ];
 
-// Proprietary skills: mirrored into template/.opencode/skills + template/.pi/skills,
-// never copied into .agents/skills/ by `init`.
 const PROPRIETARY = ['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test'];
 
-const UPSTREAM = [...SKILL_NAMES].filter((n) => !PROPRIETARY.includes(n)).sort();
-
-// Template files that must land in the target project root.
+// Template files that must land in the target project root (single-source).
 const TEMPLATE_FILES = [
   'AGENTS.md',
+  '.agents/skills/tdd-implement/SKILL.md',
+  '.agents/skills/diagnose-fix/SKILL.md',
+  '.agents/skills/commit-check/scripts/scan-sensitive.sh',
+  '.agents/skills/grilling/SKILL.md',
   '.opencode/CONTEXT.md',
   '.opencode/commands/issue-audit.md',
-  '.opencode/skills/tdd-implement/SKILL.md',
-  '.opencode/skills/diagnose-fix/SKILL.md',
   '.opencode/docs/agents/runtime-discipline.md',
   '.pi/prompts/issue-audit.md',
-  '.pi/skills/tdd-implement/SKILL.md',
-  '.pi/skills/commit-check/scripts/scan-sensitive.sh',
+  '.pi/skills/.gitkeep',
+  '.opencode/skills/.gitkeep',
 ];
 
 function runCli(args, cwd = REPO_ROOT) {
@@ -79,13 +77,14 @@ function listDir(dir) {
     .sort();
 }
 
-test('`init` copies the full template (AGENTS.md, .opencode/, .pi/) into the target', () => {
+test('`init` copies the full template (AGENTS.md, .agents/skills, .opencode/, .pi/) into the target', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板：已(复制|备份)/);
-    assert.match(stdout, /上游技能：已装 26、跳过 0/);
+    // 新模板一次性分发全量 32 技能，不再单独打印上游技能 26
+    assert.match(stdout, /技能：已装/);
     for (const rel of TEMPLATE_FILES) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
@@ -94,18 +93,25 @@ test('`init` copies the full template (AGENTS.md, .opencode/, .pi/) into the tar
   }
 });
 
-test('`init` copies upstream skills into .agents/skills/ but never the proprietary ones', () => {
+test('`init` copies ALL skills (upstream + proprietary) into .agents/skills/', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     const installed = listDir(path.join(dest, '.agents', 'skills'));
-    assert.deepEqual(installed, UPSTREAM);
+    assert.deepEqual(installed, [...SKILL_NAMES].sort());
     for (const name of PROPRIETARY) {
       assert.ok(
-        !fs.existsSync(path.join(dest, '.agents', 'skills', name)),
-        `${name} must not land in .agents/skills/`,
+        fs.existsSync(path.join(dest, '.agents', 'skills', name, 'SKILL.md')),
+        `${name} should land in .agents/skills/ (single source)`,
       );
+    }
+    // harness skill dirs should be empty placeholders, not contain shared skills
+    for (const harness of ['.pi/skills', '.opencode/skills']) {
+      const entries = fs.readdirSync(path.join(dest, harness));
+      assert.ok(entries.includes('.gitkeep'), `${harness} missing .gitkeep`);
+      const real = entries.filter(e => !['.gitkeep','README.md'].includes(e));
+      assert.deepEqual(real, [], `${harness} should contain no shared skills`);
     }
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -122,7 +128,7 @@ test('`init` on an already-initialized project skips without overwriting', () =>
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板已存在（AGENTS.md），跳过/);
-    assert.match(stdout, /上游技能：已装 0、跳过 26/);
+    // 模板已存在时不再打印新增计数，而是跳过
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT');
     assert.equal(
       fs.readFileSync(path.join(dest, '.agents', 'skills', 'tdd', 'SKILL.md'), 'utf8'),
@@ -142,7 +148,9 @@ test('`init --force` overwrites an existing project', () => {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest, '--force']);
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板：已(复制|备份|覆盖)/);
-    assert.match(stdout, /上游技能：已装 26、跳过 0/);
+    // force 后应包含全量技能
+    const installed = listDir(path.join(dest, '.agents', 'skills'));
+    assert.deepEqual(installed, [...SKILL_NAMES].sort());
     const source = fs.readFileSync(path.join(REPO_ROOT, 'template', 'AGENTS.md'), 'utf8');
     assert.equal(
       fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'),
@@ -160,8 +168,10 @@ test('`init` without --dest targets the current working directory', () => {
     const { status, stdout, stderr } = runCli(['init'], cwd);
     assert.equal(status, 0, stderr);
     assert.ok(fs.existsSync(path.join(cwd, 'AGENTS.md')));
-    assert.ok(fs.existsSync(path.join(cwd, '.opencode', 'skills', 'grill-to-spec', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'grill-to-spec', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'grilling')));
+    assert.ok(fs.existsSync(path.join(cwd, '.pi/skills/.gitkeep')));
+    assert.ok(fs.existsSync(path.join(cwd, '.opencode/skills/.gitkeep')));
     assert.match(stdout, new RegExp(`目标路径：${cwd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });

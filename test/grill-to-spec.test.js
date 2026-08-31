@@ -16,9 +16,9 @@ import { MAP_SKILL, normalize } from './mirror-utils.js';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillPath = path.join(dir, '.agents', 'skills', 'grill-to-spec', 'SKILL.md');
-const tmplPath = path.join(dir, 'template', '.opencode', 'skills', 'grill-to-spec', 'SKILL.md');
+const tmplPath = path.join(dir, 'template', '.agents', 'skills', 'grill-to-spec', 'SKILL.md');
 const rulesPath = path.join(dir, '.agents', 'skills', 'grill-to-spec', 'references', 'rules.md');
-const tmplRulesPath = path.join(dir, 'template', '.opencode', 'skills', 'grill-to-spec', 'references', 'rules.md');
+const tmplRulesPath = path.join(dir, 'template', '.agents', 'skills', 'grill-to-spec', 'references', 'rules.md');
 
 const skill = readFileSync(skillPath, 'utf8');
 const rules = readFileSync(rulesPath, 'utf8');

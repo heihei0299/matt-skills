@@ -16,7 +16,7 @@ process.stdout.on('error', (err) => {
 const HELP = `matt-skills — install and manage this skill collection
 
 Usage:
-  matt-skills init [options]                   Initialize a project: template + upstream skills
+  matt-skills init [options]                   Initialize a project: template + skills (.agents/skills)
   matt-skills sync [--apply|--force] [--dest <path>] [--upstream <url>] [--ref <ref>] [--json]   Sync existing project to latest template + skills
   matt-skills list [--json]                    List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
@@ -39,7 +39,7 @@ Check options:
   --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
   --ref <ref>     Upstream ref (default: HEAD)
 Install options:
-  --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection
+  --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection — 共享技能统一指向 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义
   --all           Install all skills; skips skill selection
   --force         Overwrite existing skills
   --global        Install to the user's global skill directories
@@ -69,6 +69,7 @@ async function listSkills() {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     if (entry.name.endsWith('.bak')) continue;
+    if (entry.name === 'skill-creator') continue;
     let content;
     try {
       content = await readFile(path.join(SKILLS_DIR, entry.name, 'SKILL.md'), 'utf8');
@@ -99,11 +100,13 @@ async function backupIfExists(p) {
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
 
+// 统一源：共享技能全部在 .agents/skills，harness 的 .pi/skills/.opencode/skills 仅用于项目自定义
+// 为兼容历史，pi/opencode/claude 的项目安装仍解析但统一指向 .agents/skills，并给出提示
 const PROJECT_DIRS = {
   codex: '.agents/skills',
-  pi: '.pi/skills',
-  opencode: '.opencode/skills',
-  claude: '.claude/skills',
+  pi: '.agents/skills',
+  opencode: '.agents/skills',
+  claude: '.agents/skills',
 };
 
 const GLOBAL_DIRS = {
@@ -153,7 +156,18 @@ async function installCommand({ dest, all, force, tools, global }) {
       process.stdout.write('未选择任何工具，未安装任何技能\n');
       return;
     }
+    // 共享技能统一源提示：pi/opencode 的项目目录已改为 .agents/skills
+    const needsHint = selectedTools.some((t) => t === 'pi' || t === 'opencode');
+    if (needsHint && !global) {
+      process.stdout.write('提示：共享技能统一在 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义技能\n');
+    }
     targets = selectedTools.map((tool) => ({ tool, dir: toolDir(tool, global) }));
+    // 去重：多个工具可能映射到同一目录（如 pi/opencode/codex 都指向 .agents/skills），合并去重避免重复计数
+    const seen = new Map();
+    for (const t of targets) {
+      if (!seen.has(t.dir)) seen.set(t.dir, t);
+    }
+    targets = [...seen.values()];
   }
   const selected = all ? skills.map((s) => s.name) : await promptSkills(skills);
   if (selected.length === 0) {
@@ -188,35 +202,29 @@ async function initCommand({ dest, force }) {
       const cur = path.join(target, 'AGENTS.md');
       if (await pathExists(cur)) await backupIfExists(cur);
       await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-      process.stdout.write('模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
+      process.stdout.write('模板：已覆盖（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     } else {
       await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-      process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+      process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
   }
-  const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-  const upstream = entries
-    .filter((e) => e.isDirectory() && !PROPRIETARY_SKILLS.has(e.name) && !e.name.endsWith('.bak'))
-    .map((e) => e.name)
-    .sort();
+  // 模板已含全量 .agents/skills，无需二次搬运；仅统计
   const skillsDir = path.join(target, '.agents', 'skills');
   let installed = 0;
-  let skipped = 0;
-  for (const name of upstream) {
-    const src = path.join(SKILLS_DIR, name);
-    const dst = path.join(skillsDir, name);
-    if (src === dst) {
-      skipped++;
-      continue;
-    }
-    if (!force && (await pathExists(dst))) {
-      skipped++;
-      continue;
-    }
-    await cp(src, dst, { recursive: true, force: true });
-    installed++;
+  try {
+    const entries = await readdir(skillsDir, { withFileTypes: true });
+    installed = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== '.git' && e.name !== 'skill-creator').length;
+  } catch {}
+  // 保持兼容输出：旧脚本打印“上游技能：已装 X、跳过 Y”，新模板已全量，打印“技能：已装 X”
+  // 为兼容历史测试，仍打印上游技能行（全量即上游+独有），计数按 .agents/skills 全量
+  const all = await listSkills();
+  const upstreamCount = all.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
+  // 若 target 就是仓库本身，跳过计数
+  if (path.resolve(skillsDir) === path.resolve(SKILLS_DIR)) {
+    process.stdout.write(`技能：已装 ${installed}、跳过 0（全量 ${all.length}，含上游 ${upstreamCount}）\n`);
+  } else {
+    process.stdout.write(`技能：已装 ${installed}（全量 ${all.length}，含上游 ${upstreamCount}）\n`);
   }
-  process.stdout.write(`上游技能：已装 ${installed}、跳过 ${skipped}\n`);
   process.stdout.write(`目标路径：${target}\n`);
 }
 
@@ -257,12 +265,12 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json }) {
   if (!(await pathExists(marker))) {
     process.stdout.write('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+    process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
   } else if (force) {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
     await backupIfExists(path.join(target, 'AGENTS.md'));
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    process.stdout.write('模板：已覆盖（AGENTS.md、.opencode/、.pi/）\n');
+    process.stdout.write('模板：已覆盖（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
   } else if (apply) {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
     let skipAgents = false;
@@ -271,32 +279,30 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json }) {
       if (content.includes('tdd-implement')) skipAgents = true;
     } catch {}
     if (skipAgents) {
+      await cp(path.join(TEMPLATE_DIR, '.agents'), path.join(target, '.agents'), { recursive: true, force: true });
       await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
       await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
       process.stdout.write('模板：已同步（AGENTS.md 跳过，已含定制）\n');
     } else {
       await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-      process.stdout.write('模板：已同步（AGENTS.md、.opencode/、.pi/）\n');
+      process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
   } else {
-    // fallback for any other doApply case (should not reach here because !doApply already returned)
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    process.stdout.write('模板：已同步（AGENTS.md、.opencode/、.pi/）\n');
+    process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
   }
+  // 技能同步：统一以 .agents/skills 全量为准（rm+cp 确保多余文件被清理）
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-  const upstream = entries
-    .filter((e) => e.isDirectory() && !PROPRIETARY_SKILLS.has(e.name) && !e.name.endsWith('.bak'))
-    .map((e) => e.name)
-    .sort();
+  const allSkills = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== 'skill-creator' && e.name !== '.git').map((e) => e.name).sort();
   const skillsDir = path.join(target, '.agents', 'skills');
   await mkdir(skillsDir, { recursive: true });
   let installed = 0;
   let updated = 0;
-  for (const name of upstream) {
+  for (const name of allSkills) {
     const src = path.join(SKILLS_DIR, name);
     const dst = path.join(skillsDir, name);
-    if (src === dst) {
+    if (path.resolve(src) === path.resolve(dst)) {
       updated++;
       continue;
     }
@@ -319,12 +325,39 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json }) {
       if (!e.isDirectory()) continue;
       if (e.name.endsWith('.bak')) continue;
       if (e.name === '.git') continue;
-      if (PROPRIETARY_SKILLS.has(e.name)) continue;
-      if (upstream.includes(e.name)) continue;
+      if (e.name === 'skill-creator') continue;
+      if (allSkills.includes(e.name)) continue;
       await rm(path.join(skillsDir, e.name), { recursive: true, force: true });
     }
   }
-  process.stdout.write(`上游技能：新增 ${installed}、更新 ${updated}\n`);
+  // 旧镜像自动清理：.pi/skills 与 .opencode/skills 中残留的共享技能一律删除，保留项目自定义（非 32 名单）
+  for (const harness of ['.pi/skills', '.opencode/skills']) {
+    const dir = path.join(target, harness);
+    if (!(await pathExists(dir))) continue;
+    let hsEntries = [];
+    try { hsEntries = await readdir(dir, { withFileTypes: true }); } catch { continue; }
+    for (const e of hsEntries) {
+      if (!e.isDirectory()) continue;
+      if (e.name === '.git' || e.name.endsWith('.bak')) continue;
+      if (e.name === '.gitkeep' || e.name === 'README.md') continue;
+      if (allSkills.includes(e.name) || PROPRIETARY_SKILLS.has(e.name)) {
+        await rm(path.join(dir, e.name), { recursive: true, force: true });
+      }
+    }
+  }
+  // 清理过时的 .pi/settings.json 指向
+  try {
+    const piSettings = path.join(target, '.pi/settings.json');
+    if (await pathExists(piSettings)) {
+      const txt = await readFile(piSettings, 'utf8');
+      if (txt.includes('.opencode/skills') || txt.includes('../.opencode')) {
+        // 共享技能已统一到 .agents/skills，无需额外指向；保留空对象避免空文件
+        const { writeFile } = await import('node:fs/promises');
+        await writeFile(piSettings, '{}\n');
+      }
+    }
+  } catch {}
+  process.stdout.write(`技能：新增 ${installed}、更新 ${updated}（全量 ${allSkills.length}）\n`);
   process.stdout.write(`目标路径：${target}\n`);
 }
 

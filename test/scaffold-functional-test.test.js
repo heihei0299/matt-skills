@@ -9,15 +9,13 @@ const root = (p) => path.join(dir, p);
 
 const skillPath = root('.agents/skills/scaffold-functional-test/SKILL.md');
 const yamlPath = root('.agents/skills/scaffold-functional-test/agents/openai.yaml');
-const tmplOpencode = root('template/.opencode/skills/scaffold-functional-test/SKILL.md');
-const tmplPi = root('template/.pi/skills/scaffold-functional-test/SKILL.md');
+const tmplAgents = root('template/.agents/skills/scaffold-functional-test/SKILL.md');
 const templateSyncPath = root('test/template-sync.test.js');
 
 test('scaffold-functional-test skill exists as proprietary skill', () => {
   assert.ok(existsSync(skillPath), 'workspace skill SKILL.md must exist');
   assert.ok(existsSync(yamlPath), 'agents/openai.yaml must exist');
-  assert.ok(existsSync(tmplOpencode), 'template .opencode mirror must exist');
-  assert.ok(existsSync(tmplPi), 'template .pi mirror must exist');
+  assert.ok(existsSync(tmplAgents), 'template .agents mirror must exist');
 });
 
 test('scaffold-functional-test SKILL.md carries required metadata and steps', () => {

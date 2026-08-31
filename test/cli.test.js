@@ -209,9 +209,9 @@ test('`install --tools codex` without --all prints a no-skill message and exits 
 
 const PROJECT_MAPPING = {
   codex: '.agents/skills',
-  pi: '.pi/skills',
-  opencode: '.opencode/skills',
-  claude: '.claude/skills',
+  pi: '.agents/skills',
+  opencode: '.agents/skills',
+  claude: '.agents/skills',
 };
 
 const GLOBAL_MAPPING = {
@@ -221,7 +221,7 @@ const GLOBAL_MAPPING = {
   claude: '.claude/skills',
 };
 
-test('project install maps each tool to its official directory', async (t) => {
+test('project install maps each tool to .agents/skills (single source)', async (t) => {
   for (const [tool, rel] of Object.entries(PROJECT_MAPPING)) {
     await t.test(`${tool} → ${rel}`, () => {
       const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
@@ -269,22 +269,20 @@ test('global install maps each tool under $HOME', async (t) => {
   }
 });
 
-test('`install --tools claude,codex --all` installs into both project dirs', () => {
+test('`install --tools claude,codex --all` dedups to single .agents/skills (single source)', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
   try {
     const { status, stdout, stderr } = runCli(['install', '--tools', 'claude,codex', '--all'], cwd);
     assert.equal(status, 0, stderr);
-    for (const rel of ['.claude/skills', '.agents/skills']) {
-      const target = path.join(cwd, rel);
-      const installed = fs
-        .readdirSync(target, { withFileTypes: true })
-        .filter((e) => e.isDirectory())
-        .map((e) => e.name)
-        .sort();
-      assert.deepEqual(installed, [...SKILL_NAMES].sort(), rel);
-    }
-    assert.match(stdout, /claude：已装 32、跳过 0/);
-    assert.match(stdout, /codex：已装 32、跳过 0/);
+    const target = path.join(cwd, '.agents/skills');
+    const installed = fs
+      .readdirSync(target, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort();
+    assert.deepEqual(installed, [...SKILL_NAMES].sort(), '.agents/skills');
+    assert.ok(!fs.existsSync(path.join(cwd, '.claude/skills')), '.claude/skills should not be created (unified source)');
+    assert.match(stdout, /已装 32/);
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }

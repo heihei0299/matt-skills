@@ -93,8 +93,8 @@ test('sync --apply 上游技能强制覆盖：本地修改被 rm+cp 恢复为上
   }
 });
 
-// Seam 2b: PROPRIETARY 跳过不盖
-test('sync --apply 跳过 PROPRIETARY：独有技能不被覆盖', () => {
+// Seam 2b: PROPRIETARY 统一源已纳入全量同步 — --apply 也会通过模板+全量技能 rm+cp 覆盖
+test('sync --apply 覆盖 PROPRIETARY：独有技能随全量同步被更新', () => {
   const dest = createDestWithCustomAgents('LOCAL tdd-implement');
   const propSkill = 'tdd-implement';
   const propSrc = path.join(REPO_ROOT, '.agents/skills', propSkill);
@@ -104,12 +104,12 @@ test('sync --apply 跳过 PROPRIETARY：独有技能不被覆盖', () => {
     const mdPath = path.join(propDst, 'SKILL.md');
     fs.writeFileSync(mdPath, 'LOCAL PROPRIETARY EDIT');
     const before = fs.readFileSync(mdPath, 'utf8');
-
+    const srcContent = fs.readFileSync(path.join(REPO_ROOT, '.agents/skills', propSkill, 'SKILL.md'), 'utf8');
     const { status } = runCli(['sync', '--apply', '--dest', dest]);
     assert.equal(status, 0);
-    // 对于 --apply，独有技能应跳过？ 但当前 upstream 循环已跳过 PROPRIETARY，所以应保留
     const after = fs.readFileSync(mdPath, 'utf8');
-    assert.equal(after, before, 'PROPRIETARY 技能应被跳过，不被覆盖');
+    assert.equal(after, srcContent, 'PROPRIETARY 技能随全量同步应被覆盖为最新');
+    assert.notEqual(after, before, '应不再保留旧编辑');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }

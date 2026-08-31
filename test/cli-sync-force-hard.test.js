@@ -94,7 +94,7 @@ test('sync --force 删除 remove 列表技能（本地多余非独有技能被 r
   }
 });
 
-test('sync --force 保留 PROPRIETARY 与 .bak 目录，不误删', () => {
+test('sync --force 更新 PROPRIETARY 且保留 .bak/.git 不误删', () => {
   const dest = createDestWithCustomAgents('LOCAL tdd-implement');
   const propSkill = 'tdd-implement';
   const propDir = path.join(dest, '.agents/skills', propSkill);
@@ -105,6 +105,7 @@ test('sync --force 保留 PROPRIETARY 与 .bak 目录，不误删', () => {
     fs.cpSync(path.join(REPO_ROOT, '.agents/skills', propSkill), propDir, { recursive: true, force: true });
     fs.writeFileSync(path.join(propDir, 'SKILL.md'), 'LOCAL PROPRIETARY EDIT');
     const beforeProp = fs.readFileSync(path.join(propDir, 'SKILL.md'), 'utf8');
+    const srcProp = fs.readFileSync(path.join(REPO_ROOT, '.agents/skills', propSkill, 'SKILL.md'), 'utf8');
 
     fs.mkdirSync(bakSkill, { recursive: true });
     fs.writeFileSync(path.join(bakSkill, 'SKILL.md'), 'bak');
@@ -116,9 +117,10 @@ test('sync --force 保留 PROPRIETARY 与 .bak 目录，不误删', () => {
 
     const { status } = runCli(['sync', '--force', '--dest', dest]);
     assert.equal(status, 0);
-    // PROPRIETARY 保留
-    assert.ok(fs.existsSync(propDir), 'PROPRIETARY 技能应保留');
-    assert.equal(fs.readFileSync(path.join(propDir, 'SKILL.md'), 'utf8'), beforeProp, 'PROPRIETARY 不应被覆盖');
+    // PROPRIETARY 随全量同步更新（目录保留，内容更新为最新）
+    assert.ok(fs.existsSync(propDir), 'PROPRIETARY 技能目录应保留');
+    assert.equal(fs.readFileSync(path.join(propDir, 'SKILL.md'), 'utf8'), srcProp, 'PROPRIETARY 应被更新为最新');
+    assert.notEqual(fs.readFileSync(path.join(propDir, 'SKILL.md'), 'utf8'), beforeProp, '不应保留旧编辑');
     // .bak 保留
     assert.ok(fs.existsSync(bakSkill), '.bak 目录应保留');
     // .git 保留
