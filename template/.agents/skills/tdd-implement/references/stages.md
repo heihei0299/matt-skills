@@ -35,7 +35,6 @@
 
 ### 边界
 
-- 本阶段只澄清需求——实现与测试设计在后续阶段进行
 
 ---
 
@@ -60,8 +59,6 @@
 ### 边界
 
 - 一个 seam 对应一个公共接口上的一个待测行为（输入 + 预期输出）：一个 seam = 一个测试 + 一个最小实现 cycle；同一接口的多个行为拆分为多个 seam，而非内部函数
-
-> Seams 定义参考：[tdd 技能](.agents/skills/tdd/SKILL.md#seams--where-tests-go)
 
 ---
 
@@ -132,8 +129,6 @@
 - 全部 todo 为 done 才进入阶段④
 - 测试质量规则（公共接口验证、独立断言、mock 边界、重构归属 review）见 tdd 技能，不在本阶段重写
 
-> Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
-> 好测试标准：[tdd/tests.md](.agents/skills/tdd/tests.md)
 
 ---
 
@@ -145,7 +140,7 @@
 
 ### 操作
 
-1. 运行仓库的完整测试套件
+1. 运行仓库的完整测试套件（单线模式的唯一全量；多 issue 子代理此步仅相关，全量由 A4 统一执行）
 2. 检查所有测试是否通过
 
 ### 出口条件
@@ -251,7 +246,7 @@
 
 ## Todo 规定
 
-本节为阶段②/③的共用规定，完成"任务拆分"到"回合内执行"的闭环。
+本节复用 `tdd`/`implement` 的 Todo 规定，`tdd-implement` 仅做多 issue 编排与串联，不再重写层次细节。
 
 ### 拆分层级（大小任务层次）
 

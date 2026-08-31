@@ -57,7 +57,6 @@ disable-model-invocation: true
 | 触发点 | 条件 | 动作 |
 |--------|------|------|
 | ② seam 确认 | 用户不同意 seams | → ① 补充 |
-| ② 综合时 | 关键信息缺失 | → ① 补采 |
 | ② 发布后 | spec 有问题 | → ① 重新循环 |
 
 ## 异常终止
@@ -72,8 +71,6 @@ disable-model-invocation: true
 
 - ① 出口达成后方可进入 ②
 - 全程不写代码、不动源码：唯一允许写入的文件是领域文档（`CONTEXT.md`/ADR）与 spec
-- ② 探索代码只为确认 seams 与术语——只读不改
-- 产出物格式细则（Glossary/ADR/Spec 守则）与反模式见 [references/rules.md](references/rules.md)，不在本文件重写
 
 ## 引用
 

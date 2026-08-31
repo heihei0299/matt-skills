@@ -46,7 +46,7 @@ for each 层 Li in L1..Ln:
   并行派发：为 Li 中每个 issue 启动一个子代理（single 模式，禁止 parallel tasks 数组）
   等待：阻塞直到 Li 全部子代理返回回执卡片
   验收：编排器按 A3 验收清单逐 issue 验收（只认回执卡片的关键信息 + 抽检验证，不消费全量日志）
-  层收敛验证：验收全通过进入全量验证（完成条件 4 项，全部通过才进下一层，任一失败按 A5 回退）：①该层全部 issue 验收通过 ②全量测试套件通过 ③`git status` 卫生（仅删本次临时产物，正向；护栏：禁止 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked`）④历史校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 通过；验收不通过或全量/卫生/历史任一失败按 A5 回退重派该 issue
+  层收敛验证：验收全通过进入全量验证（完成条件 4 项，全部通过才进下一层，任一失败按 A5 回退）：①该层全部 issue 验收通过 ②相关测试套件通过（全量仅在 A4） ③`git status` 卫生（仅删本次临时产物，正向；护栏：禁止 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked`）④历史校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 通过；验收不通过或相关/卫生/历史任一失败按 A5 回退重派该 issue
 全部层层收敛通过后进入 A4 全量收敛
 ```
 
@@ -108,7 +108,7 @@ for each 层 Li in L1..Ln:
 
 全部层逐 issue 验收通过后，编排器执行：
 
-1. **全量测试套件**：跑仓库完整测试套件（阶段④口径），失败则按 A5 回退。
+1. **全量测试套件**：跑仓库完整测试套件（所有 issue 执行完毕后的唯一全量，阶段④与 A2 已改为相关，仅此一次）
 2. **历史校验**：执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`，若为 false 说明编排过程中历史被改写，立即经 `git reflog` 恢复后重跑收敛。
 3. **目录卫生**：`git status` 确认无 `[DEBUG-...]` 残留、无未跟踪临时文件；有残留则仅删本次临时产物后重检，禁止 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked` 等。
 4. **汇总总结**：在会话输出汇总各 issue 的回执卡片关键信息（提交 hash / seams / 验收 checkbox / 测试结果 / 文档对齐）；不另写汇总文件，不透传子代理全量日志（各 issue 的 `## 实施总结` 已落盘，详查落盘文件）。

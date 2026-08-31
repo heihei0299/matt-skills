@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_SKILLS_DIR = path.join(ROOT, '.agents', 'skills');
 const PROPRIETARY_PATH = path.join(ROOT, 'config', 'proprietary.json');
+const ENGINEERING_PATH = path.join(ROOT, 'config', 'engineering.json');
 const UPSTREAM_URL = 'https://github.com/mattpocock/skills.git';
 
 // 重命名映射：上游已重命名，本地旧名需迁移
@@ -22,6 +23,15 @@ async function loadProprietary() {
     return new Set(JSON.parse(raw));
   } catch {
     return new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test']);
+  }
+}
+
+async function loadEngineering() {
+  try {
+    const raw = await readFile(ENGINEERING_PATH, 'utf8');
+    return new Set(JSON.parse(raw));
+  } catch {
+    return new Set(['ask-matt','code-review','codebase-design','diagnosing-bugs','domain-modeling','grill-with-docs','implement','improve-codebase-architecture','prototype','research','resolving-merge-conflicts','setup-matt-pocock-skills','tdd','to-spec','to-tickets','triage','wayfinder','wizard']);
   }
 }
 
@@ -103,12 +113,19 @@ async function collectLocalSkills(proprietary) {
   return map;
 }
 
-export async function compare({ upstreamUrl, tmpDir, ref } = {}) {
+export async function compare({ upstreamUrl, tmpDir, ref, onlyProgramming = true } = {}) {
   const proprietary = await loadProprietary();
+  const engineering = await loadEngineering();
   const fetched = await fetchUpstream({ tmpDir, upstreamUrl, ref });
   const upstreamRoot = fetched.dest;
-  const upstreamMap = await collectUpstreamSkills(upstreamRoot);
-  const localMap = await collectLocalSkills(proprietary);
+  const upstreamMapFull = await collectUpstreamSkills(upstreamRoot);
+  const localMapFull = await collectLocalSkills(proprietary);
+  // 编程子集：engineering 桶即编程（默认），--all 则含 productivity
+  const upstreamMap = onlyProgramming
+    ? new Map([...upstreamMapFull.entries()].filter(([, v]) => v.bucket === 'engineering'))
+    : upstreamMapFull;
+  const localMap = localMapFull;
+  const isEngineering = (name) => engineering.has(name);
 
   const added = [];
   const updated = [];
@@ -118,27 +135,28 @@ export async function compare({ upstreamUrl, tmpDir, ref } = {}) {
 
   // 检测重命名：本地旧名存在且上游新名存在，且本地旧名不在上游
   for (const [oldName, newName] of Object.entries(RENAMES)) {
-    if (localMap.has(oldName) && upstreamMap.has(newName) && !upstreamMap.has(oldName)) {
-      renamed.push({ from: oldName, to: newName });
+    if (onlyProgramming) {
+      if (localMap.has(oldName) && upstreamMap.has(newName) && !upstreamMap.has(oldName)) {
+        renamed.push({ from: oldName, to: newName });
+      }
+    } else {
+      if (localMap.has(oldName) && upstreamMapFull.has(newName) && !upstreamMapFull.has(oldName)) {
+        renamed.push({ from: oldName, to: newName });
+      }
     }
   }
   const renamedFrom = new Set(renamed.map((r) => r.from));
   const renamedTo = new Set(renamed.map((r) => r.to));
 
   for (const [name, u] of upstreamMap.entries()) {
-    if (renamedTo.has(name)) continue; // 重命名的新名单独处理
+    if (renamedTo.has(name)) continue;
     const local = localMap.get(name);
-    if (!local) {
-      added.push(name);
-    } else if (local.hash !== u.hash) {
-      updated.push(name);
-    } else {
-      same.push(name);
-    }
+    if (!local) added.push(name);
+    else if (local.hash !== u.hash) updated.push(name);
+    else same.push(name);
   }
-  // 重命名的也算 updated（需迁移）
   for (const r of renamed) {
-    const u = upstreamMap.get(r.to);
+    const u = upstreamMap.get(r.to) || upstreamMapFull.get(r.to);
     const local = localMap.get(r.from);
     if (local && u && local.hash !== u.hash) updated.push(`${r.from}→${r.to}`);
     else if (!local) added.push(r.to);
@@ -147,35 +165,46 @@ export async function compare({ upstreamUrl, tmpDir, ref } = {}) {
 
   for (const name of localMap.keys()) {
     if (renamedFrom.has(name)) continue;
-    if (!upstreamMap.has(name) && !renamedTo.has(name)) {
-      removed.push(name);
-    }
+    if (upstreamMap.has(name) || renamedTo.has(name)) continue;
+    // 编程模式下仅报告 engineering 本地技能的删除；productivity/instance-test 等跳过
+    if (onlyProgramming && !isEngineering(name)) continue;
+    // 全量模式下所有本地非独有且不在上游的都视为 removed
+    removed.push(name);
   }
 
+  const localCount = onlyProgramming
+    ? [...localMap.keys()].filter(isEngineering).length
+    : localMap.size;
   return {
     head: fetched.head,
     dest: fetched.dest,
     upstreamMap,
+    upstreamMapFull,
     localMap,
+    localMapFull,
     proprietary: [...proprietary],
+    engineering: [...engineering],
+    onlyProgramming,
     result: { added: added.sort(), updated: updated.sort(), same: same.sort(), removed: removed.sort(), renamed },
-    counts: { upstream: upstreamMap.size, local: localMap.size },
+    counts: { upstream: upstreamMap.size, local: localCount, upstreamFull: upstreamMapFull.size, localFull: localMapFull.size },
   };
 }
 
-export async function applySync({ upstreamUrl, tmpDir, ref, dryRun = false, force = false } = {}) {
+export async function applySync({ upstreamUrl, tmpDir, ref, dryRun = false, force = false, onlyProgramming = true } = {}) {
   const proprietary = await loadProprietary();
-  const cmp = await compare({ upstreamUrl, tmpDir, ref });
-  const { dest, head, upstreamMap, result } = cmp;
+  const cmp = await compare({ upstreamUrl, tmpDir, ref, onlyProgramming });
+  const { dest, head, upstreamMap, upstreamMapFull, result } = cmp;
+  const effectiveMap = onlyProgramming ? upstreamMap : upstreamMapFull;
   const actions = [];
 
   if (dryRun) {
     return { ...cmp, actions, dryRun: true };
   }
 
-  // 处理重命名：删除旧目录，复制新目录
+  // 处理重命名
   for (const r of result.renamed) {
-    const src = upstreamMap.get(r.to).dir;
+    const src = effectiveMap.get(r.to)?.dir || upstreamMapFull.get(r.to)?.dir;
+    if (!src) continue;
     const dst = path.join(LOCAL_SKILLS_DIR, r.to);
     const oldDst = path.join(LOCAL_SKILLS_DIR, r.from);
     await rm(oldDst, { recursive: true, force: true });
@@ -184,21 +213,18 @@ export async function applySync({ upstreamUrl, tmpDir, ref, dryRun = false, forc
     actions.push(`rename ${r.from} → ${r.to}`);
   }
 
-  // 新增
   for (const name of result.added) {
-    // 跳过已通过重命名处理的新名
     if (result.renamed.some((r) => r.to === name)) continue;
-    const src = upstreamMap.get(name)?.dir;
+    const src = effectiveMap.get(name)?.dir || upstreamMapFull.get(name)?.dir;
     if (!src) continue;
     const dst = path.join(LOCAL_SKILLS_DIR, name);
     await cp(src, dst, { recursive: true, force: true });
     actions.push(`add ${name}`);
   }
 
-  // 更新
   for (const name of result.updated) {
-    if (name.includes('→')) continue; // 已处理
-    const src = upstreamMap.get(name)?.dir;
+    if (name.includes('→')) continue;
+    const src = effectiveMap.get(name)?.dir || upstreamMapFull.get(name)?.dir;
     if (!src) continue;
     const dst = path.join(LOCAL_SKILLS_DIR, name);
     await rm(dst, { recursive: true, force: true });
@@ -206,10 +232,8 @@ export async function applySync({ upstreamUrl, tmpDir, ref, dryRun = false, forc
     actions.push(`update ${name}`);
   }
 
-  // 删除（上游已删且非独有）
   for (const name of result.removed) {
     const dst = path.join(LOCAL_SKILLS_DIR, name);
-    // 仅当非独有且上游确实不存在时删除；默认执行，需 --force 才删？按自动覆盖策略直接删
     await rm(dst, { recursive: true, force: true });
     actions.push(`remove ${name}`);
   }
@@ -219,12 +243,12 @@ export async function applySync({ upstreamUrl, tmpDir, ref, dryRun = false, forc
 
   return { ...cmp, dest: null, actions, head };
 }
-
 function formatTable(cmp) {
-  const { result, counts, head } = cmp;
+  const { result, counts, head, onlyProgramming } = cmp;
   const lines = [];
   lines.push(`上游 HEAD: ${head}`);
-  lines.push(`本地非独有: ${counts.local}  上游: ${counts.upstream}`);
+  const modeHint = onlyProgramming ? '（仅编程，engineering）' : '（全量，含 productivity）';
+  lines.push(`本地非独有: ${counts.local}  上游: ${counts.upstream} ${modeHint}`);
   lines.push('');
   const totalDiff = result.added.length + result.updated.length + result.removed.length + result.renamed.length;
   if (totalDiff === 0) {
@@ -248,24 +272,26 @@ async function main() {
     check: args.includes('--check'),
     apply: args.includes('--apply') || args.includes('--update'),
     verbose: args.includes('--verbose') || args.includes('-v'),
+    all: args.includes('--all'),
   };
+  const onlyProgramming = !opts.all;
   const upstreamIdx = args.indexOf('--upstream');
   const upstreamUrl = upstreamIdx !== -1 ? args[upstreamIdx + 1] : undefined;
   const refIdx = args.indexOf('--ref');
   const ref = refIdx !== -1 ? args[refIdx + 1] : undefined;
   const tmpIdx = args.indexOf('--tmp');
   const tmpDir = tmpIdx !== -1 ? args[tmpIdx + 1] : undefined;
-
   if (args.includes('--help') || args.includes('-h') || args.length === 0) {
     process.stdout.write(`sync-upstream — 对比/同步 mattpocock/skills 上游技能
 
 Usage:
-  node scripts/sync-upstream.js --check [--json] [--upstream <url>] [--ref <ref>]
-  node scripts/sync-upstream.js --apply [--dry-run] [--force] [--upstream <url>] [--ref <ref>]
+  node scripts/sync-upstream.js --check [--all] [--json] [--upstream <url>] [--ref <ref>]
+  node scripts/sync-upstream.js --apply [--all] [--dry-run] [--force] [--upstream <url>] [--ref <ref>]
 
 Options:
   --check     只对比，不改动文件（默认）
   --apply     应用同步（覆盖 .agents/skills 非独有技能）
+  --all       包含非编程技能（productivity）；默认仅同步编程相关（engineering）
   --dry-run   演练模式，不写文件
   --json      以 JSON 输出结果
   --upstream  上游仓库 URL（默认 https://github.com/mattpocock/skills.git）
@@ -278,9 +304,9 @@ Options:
   }
 
   if (opts.apply) {
-    const res = await applySync({ upstreamUrl, tmpDir, ref, dryRun: opts.dryRun, force: opts.force });
+    const res = await applySync({ upstreamUrl, tmpDir, ref, dryRun: opts.dryRun, force: opts.force, onlyProgramming });
     if (opts.json) {
-      process.stdout.write(JSON.stringify({ head: res.head, result: res.result, actions: res.actions, dryRun: opts.dryRun }, null, 2) + '\n');
+      process.stdout.write(JSON.stringify({ head: res.head, result: res.result, actions: res.actions, dryRun: opts.dryRun, onlyProgramming }, null, 2) + '\n');
     } else {
       process.stdout.write(formatTable(res) + '\n');
       if (res.actions.length) {
@@ -295,9 +321,9 @@ Options:
   }
 
   // 默认 --check
-  const cmp = await compare({ upstreamUrl, tmpDir, ref });
+  const cmp = await compare({ upstreamUrl, tmpDir, ref, onlyProgramming });
   if (opts.json) {
-    process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result }, null, 2) + '\n');
+    process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
   } else {
     process.stdout.write(formatTable(cmp) + '\n');
   }

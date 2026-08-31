@@ -12,6 +12,7 @@
     ".agents/skills/",
     "scripts/sync-upstream.js",
     "config/proprietary.json",
+    "config/engineering.json",
     "README.md"
   ],
   "scripts": {

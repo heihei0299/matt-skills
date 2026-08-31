@@ -45,4 +45,3 @@ description: "TDD seam red-green loop: use when the user provides a spec/ticket 
 - Commit 门禁：[commit-check](.agents/skills/commit-check/SKILL.md)
 - 单线详规：[stages.md](references/stages.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)
-- Issue tracker 约定：[issue-tracker.md](../../docs/agents/issue-tracker.md)

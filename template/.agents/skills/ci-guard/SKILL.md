@@ -30,8 +30,6 @@ description: "Guard the GitHub Actions release pipeline: orchestrate workflow fl
 - `jobs` 依赖：`publish.needs: [build, verify]`，**禁止** `needs: build` 单依赖。门禁失效的直接原因就是 `verify` 红仍发包
 - `permissions` 最小化：`verify`/`build` 只需 `contents: read`，仅 `publish` 保留 `contents: write` + `packages: write`（或 `id-token: write` 若用 OIDC）
 - `concurrency`：`group: ci-${{ github.ref }}` + `cancel-in-progress: true`，避免同分支并行互踩
-- `cache`：`rust-cache` 或 `actions/cache` 缓存 `~/.cargo` + `target`，`actions/setup-node` 加 `cache: npm`，避免每次 `npm install` 重装
-- `find changed Rust files`：`git diff origin/main...HEAD` 在 tag 事件下为空，改为 `git diff --name-only HEAD~1...HEAD` 或直接全量 `cargo fmt --check` / `clippy`，避免误跳过
 
 **完成条件**：
 - [ ] `git diff HEAD -- .github/workflows/ci.yml` 显示 `on.push.branches` 存在
@@ -40,23 +38,26 @@ description: "Guard the GitHub Actions release pipeline: orchestrate workflow fl
 
 ---
 
-### ② 预发布 gate —— 在写盘之前变红
+### ② 预发布 gate —— 测试 GitHub Action 流程
 
-本段是**硬门槛**，顺序固定：`fmt → clippy → test → build`，任一步红即阻断 `publish`。
+本段是**硬门槛**，顺序固定：`action lint → workflow dry-run → dispatch 验证`，任一步红即阻断 `publish`。
 
-**fmt / clippy**：
-- `rustfmt --check` 与 `cargo clippy --all-targets -- -D warnings` 必须与本地一致（`rust-toolchain.toml` 锁定 `stable` 版本）
-- 允许的 `-A` 必须显式列出（如本仓 `-A clippy::manual_checked_ops` 等 4 项），不批量 `-A clippy::all`
+**action lint**：
+- `actionlint` 校验 `.github/workflows/ci.yml` 语法与 `on/needs/permissions` 完整性
+- `yamllint` 检查缩进与重复键
 
-**test（关键）**：
-- 落盘测试（如 `web::tests` 直写 `config.json` / `models.json`）**必须**测试隔离：`config_dir()` / `pi_dir()` / `models_path()` 在 `#[cfg(test)]` 下重定向到 `temp/pi-switch-test-<pid>`（参考 `src-rust/proxy.rs:115 init_test_state_dir()`，`config.rs:460` 为未隔离反例；曾用 `PI_SWITCH_CONFIG_DIR` 环境覆盖后被 `20f6f86` 误删，即回归）
-- 若暂未隔离，CI 侧以 `cargo test --release --lib -- --test-threads=1` 串行化为**过渡**（`2d68f62` 方案，322/322 稳定），并在代码侧记录 `TODO(ci-guard): 恢复 config_dir 测试隔离后去掉 --test-threads=1`
-- `verify` 必须跑 `cargo test --lib`（或 `--release --lib` 与发布一致），不跳过；`build` 矩阵 5 目标仅验编译，不代验测试
+**workflow dry-run**：
+- `act --dry-run` 或 `gh workflow view` 模拟 `verify/build/publish` 三 job 依赖与 `if` 条件
+- 校验 `publish.needs` 含 `verify` 且 `workflow_dispatch` 可手动触发
+
+**dispatch 验证**：
+- 通过 `gh workflow run ci.yml --ref main -f dry_run=true` 触发试运行，观察 `verify` 日志与产物上传
+- 失败即阻断 `publish`，日志留存于 Actions
 
 **完成条件**：
-- [ ] 本地 `cargo test --lib -- --test-threads=1` 322/322 且 `cargo test --lib`（并行）亦 322/322 或已记录隔离 TODO
-- [ ] `cargo clippy --all-targets` 0 warning
-- [ ] `npm run build:webui` 在 `verify` 与 `build` 均执行（本仓 WebUI 缺失会导致 `publish` 产物不一致）
+- [ ] `actionlint` 0 error
+- [ ] `act --dry-run` 三 job 依赖正确
+- [ ] `workflow_dispatch` 试运行通过
 
 ---
 
@@ -82,7 +83,6 @@ description: "Guard the GitHub Actions release pipeline: orchestrate workflow fl
 
 - **单依赖 publish**：`needs: build` 是本仓 7 次带病发布的根因
 - **仅 tag 触发**：`push.branches` 缺失导致主干修复无 CI
-- **真实落盘并行测试**：无 `#[cfg(test)]` 隔离的 `config_dir` 直写是偶发红的根因，`--test-threads=1` 只是止血
 - **静默发布**：`publish` 失败不建 issue / 不删 tag，下次 `409` 叠加
 - **`-A clippy::all`**：掩盖真实告警
 
@@ -92,13 +92,3 @@ description: "Guard the GitHub Actions release pipeline: orchestrate workflow fl
 - 修复：`2d68f62 fix(ci): gate publish on verify and serialize Rust tests`
 - 关联技能：`diagnose-fix`（通用诊断）、`commit-check`（提交前门禁）、`tdd`（测试隔离后的回归）
 
-## 执行清单（粘贴即用）
-
-```markdown
-- [ ] .github/workflows/ci.yml: on.push.branches: [main] 已加
-- [ ] publish.needs: [build, verify]
-- [ ] verify: cargo test --release --lib -- --test-threads=1（或已隔离则去掉该 flag）
-- [ ] config.rs: #[cfg(test)] config_dir/pi_dir → temp（或 TODO 已记录）
-- [ ] workflow_dispatch 可手动触发
-- [ ] npm view 回读 + 失败建 issue
-```

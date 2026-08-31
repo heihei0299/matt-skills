@@ -45,11 +45,37 @@ const SKILL_NAMES = [
   'writing-for-agents',
 ];
 
+// 编程子集：engineering (18) + 核心独有 (3) = 22，默认 list/install 仅此
+const PROGRAMMING_SKILL_NAMES = [
+  'ask-matt',
+  'code-review',
+  'codebase-design',
+  'commit-check',
+  'diagnose-fix',
+  'diagnosing-bugs',
+  'domain-modeling',
+  'grill-to-spec',
+  'grill-with-docs',
+  'implement',
+  'improve-codebase-architecture',
+  'prototype',
+  'research',
+  'resolving-merge-conflicts',
+  'setup-matt-pocock-skills',
+  'tdd',
+  'tdd-implement',
+  'to-spec',
+  'to-tickets',
+  'triage',
+  'wayfinder',
+  'wizard',
+];
+
 // Literal lines copied from the skills' SKILL.md frontmatter, including
 // quoted, colon-containing, and non-ASCII descriptions.
 const SAMPLE_LINES = [
   'tdd — Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.',
-  'grill-to-spec — Router：编排 grill-with-docs → to-spec，把模糊想法打磨成可执行 Spec。Use when the user asks to grill/design/polish an idea into a spec——只产出领域文档与 spec，不写代码。',
+  'diagnosing-bugs — Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow.',
   'resolving-merge-conflicts — Use when you need to resolve an in-progress git merge/rebase conflict.',
 ];
 
@@ -65,8 +91,17 @@ function runCli(args, cwd = REPO_ROOT, opts = {}) {
   });
 }
 
-test('`list` exits 0 and prints all 32 skills with their names', () => {
+test('`list` exits 0 and prints 22 programming skills by default', () => {
   const { status, stdout, stderr } = runCli(['list']);
+  assert.equal(status, 0, stderr);
+  const lines = stdout.trim().split('\n').filter(Boolean);
+  assert.equal(lines.length, 22);
+  const names = lines.map((line) => line.split(' — ')[0]);
+  assert.deepEqual([...names].sort(), [...PROGRAMMING_SKILL_NAMES].sort());
+});
+
+test('`list --all` prints all 32 skills', () => {
+  const { status, stdout, stderr } = runCli(['list', '--all']);
   assert.equal(status, 0, stderr);
   const lines = stdout.trim().split('\n').filter(Boolean);
   assert.equal(lines.length, 32);
@@ -82,18 +117,29 @@ test('`list` prints each skill description from its frontmatter', () => {
   }
 });
 
-test('`list --json` emits a JSON array with all 32 skills', () => {
+test('`list --json` emits a JSON array with 22 programming skills by default', () => {
   const { status, stdout, stderr } = runCli(['list', '--json']);
+  assert.equal(status, 0, stderr);
+  const skills = JSON.parse(stdout);
+  assert.equal(skills.length, 22);
+  assert.deepEqual(
+    skills.map((s) => s.name).sort(),
+    [...PROGRAMMING_SKILL_NAMES].sort(),
+  );
+  assert.deepEqual(
+    skills.find((s) => s.name === 'tdd'),
+    { name: 'tdd', description: TDD_DESCRIPTION },
+  );
+});
+
+test('`list --all --json` emits all 32 skills', () => {
+  const { status, stdout, stderr } = runCli(['list', '--all', '--json']);
   assert.equal(status, 0, stderr);
   const skills = JSON.parse(stdout);
   assert.equal(skills.length, 32);
   assert.deepEqual(
     skills.map((s) => s.name).sort(),
     [...SKILL_NAMES].sort(),
-  );
-  assert.deepEqual(
-    skills.find((s) => s.name === 'tdd'),
-    { name: 'tdd', description: TDD_DESCRIPTION },
   );
 });
 
@@ -102,12 +148,11 @@ test('`list` works from any working directory (temp dir)', () => {
   try {
     const { status, stdout, stderr } = runCli(['list'], tmp);
     assert.equal(status, 0, stderr);
-    assert.equal(stdout.trim().split('\n').filter(Boolean).length, 32);
+    assert.equal(stdout.trim().split('\n').filter(Boolean).length, 22);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
-
 test('no arguments prints help and exits 0', () => {
   const { status, stdout, stderr } = runCli([]);
   assert.equal(status, 0, stderr);

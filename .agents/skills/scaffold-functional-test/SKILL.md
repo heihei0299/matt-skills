@@ -66,8 +66,6 @@ description: "Scaffold a repo-specific functional-test skill from spec — use w
 
 - 不替代 `tdd`/`tdd-implement` 的红绿循环与 `commit-check` 门禁
 - 不自动织入每次 `tdd-implement` 或 `commit-check`；仅 `tdd-implement --with-functional` 显式 opt-in
-- 不支持并行执行与 `docker` 隔离
-- 不处理超出混合推导锚点范围的源码静态分析隐式行为挖掘
 
 ## 引用
 
