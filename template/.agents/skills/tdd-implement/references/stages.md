@@ -1,6 +1,6 @@
 # 阶段详细定义
 
-单线 ①→⑦ 的详细定义；多 issue 编排见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
+单线 ①→⑦ 的详细定义；多 issue 编排主过程见 [SKILL.md](../SKILL.md#多-issue-编排按依赖分层并行)，详规见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
 
 ## 目录
 
@@ -255,7 +255,7 @@
 3. **小任务**：Todo——seam 内可独立验证、可勾选的执行单元（T1/T2/T3…）
 4. **执行步**：Subtodo——Todo 内的串行步骤（红 → 绿 → typecheck），回合内逐步勾选推进
 
-> 编排模式新增一层见 [orchestration.md](orchestration.md)：**编排层** Feature——`.scratch/<feature>/` 下全部 issues，按 `Blocked by` 分层；每层一组并行子代理，每子代理一个 issue 的完整 ①→⑦。
+> 编排模式新增一层见 [SKILL.md](../SKILL.md#多-issue-编排按依赖分层并行) 主过程与 [orchestration.md](orchestration.md) 详规：**编排层** Feature——`.scratch/<feature>/` 下全部 issues，按 `Blocked by` 分层；每层一组并行子代理，每子代理一个 issue 的完整 ①→⑦。
 
 ### Todo 清单格式
 
@@ -307,5 +307,5 @@ pending → in-progress → done
 | ⑤ Code Review | seams 遗漏 | → ② 补充 seams |
 | ⑤ Code Review | 需求偏差 | → ① 澄清需求 |
 
-编排模式回退见 [orchestration.md#A5](orchestration.md#a5-回退与冲突)：子代理内回退按上表在子代理内闭环；编排器层收敛失败（全量测试失败 / 目录不干净）→ 定位到失败 issue 所在层重派对应子代理。
+编排模式回退主过程见 [SKILL.md](../SKILL.md#多-issue-编排按依赖分层并行) A5，详规见 [orchestration.md#A5](orchestration.md#a5-回退与冲突)：子代理内回退按上表在子代理内闭环；编排器层收敛失败（全量测试失败 / 目录不干净）→ 定位到失败 issue 所在层重派对应子代理。
 

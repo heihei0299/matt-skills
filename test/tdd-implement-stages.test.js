@@ -9,9 +9,7 @@ import { fileURLToPath } from 'node:url';
 // so the model ended its turn at "announce next step" points (red→green gap,
 // seam→seam gap). Fix: a positive "回合连续性" rule + 3c says go immediately.
 // These tests guard against a future refactor silently deleting that rule.
-// After writing-great-skills optimization, SKILL.md is Steps-only (progressive disclosure):
-// detailed reference lives in stages.md (single-line) and orchestration.md (multi-issue branch).
-
+// After writing-great-skills optimization, SKILL.md held Steps-only; now SKILL.md holds condensed orchestration front (A0-A5要点) at top + Steps, detailed reference lives in stages.md (single-line) and orchestration.md (full).
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const stagesPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'references', 'stages.md');
 const skillPath = path.join(dir, '.agents', 'skills', 'tdd-implement', 'SKILL.md');
@@ -194,8 +192,7 @@ test('stage ⑥ embeds the commit-check gate before commit', () => {
 });
 
 // ---- 多 issue 编排（按依赖分层并行） ----
-// Progressive disclosure: SKILL holds branch pointer, orchestration.md holds A0-A5 detail
-
+// Progressive disclosure: SKILL holds condensed front (A0-A5要点) + branch pointer, orchestration.md holds full A0-A5 detail (全量保留)
 test('SKILL.md has multi-issue orchestration pointer (branch, layered parallel)', () => {
   assert.match(skill, /多 issue 编排/);
   assert.match(skill, /按依赖分层并行/);
@@ -211,7 +208,7 @@ test('SKILL.md has multi-issue orchestration pointer (branch, layered parallel)'
 test('SKILL.md orchestration: trigger and single-issue fallback', () => {
   assert.match(skill, /\.scratch\/<feature>\/issues\//);
   assert.match(skill, /orchestration\.md/);
-  assert.match(stages, /单线 ①→⑦|多 issue 编排见/);
+  assert.match(stages, /单线 ①→⑦|多 issue 编排/);
   assert.match(orchestration, /单 issue \/ 单 spec 不走本文件/);
 });
 
@@ -282,7 +279,7 @@ test('orchestration defers TDD semantics, does not re-rewrite', () => {
 });
 
 test('stages points to orchestration for multi-issue, orchestration handles single-issue guard', () => {
-  assert.match(stages, /多 issue 编排见.*orchestration\.md/);
+  assert.match(stages, /多 issue 编排.*orchestration\.md/);
   assert.match(orchestration, /单 issue \/ 单 spec 不走本文件/);
 });
 
@@ -399,14 +396,30 @@ test('commit-check ③ forbids destructive git for clean', () => {
 // ---- writing-great-skills optimized hierarchy checks ----
 
 test('SKILL.md is Steps-only with progressive disclosure (no sprawl)', () => {
-  // SKILL should be thin and delegate to references, not duplicate full appendix
+  // SKILL holds condensed orchestration front (精简主过程) + Steps, full appendix stays in orchestration.md
   assert.doesNotMatch(skill, /附录.*多 issue 编排/);
-  assert.doesNotMatch(skill, /A0.*依赖图构建/);
-  // SKILL should not contain the full Todo state machine verbatim (lives in stages)
+  // Condensed front contains A0 key but not the full Todo state machine (lives in stages)
+  assert.match(skill, /A0.*依赖图/);
+  assert.match(skill, /多 issue 编排.*按依赖分层并行/);
   assert.doesNotMatch(skill, /pending → in-progress → done/);
-  // SKILL should point to orchestration and stages
+  // SKILL should point to orchestration and stages (plus local anchor)
   assert.match(skill, /\[stages\.md\]\(references\/stages\.md\)/);
   assert.match(skill, /\[orchestration\.md\]\(references\/orchestration\.md\)/);
+});
+test('SKILL.md condensed orchestration front contains A0-A5 key constraints (actual)', () => {
+  assert.match(skill, /## 多 issue 编排/);
+  assert.match(skill, /A0.*依赖图/);
+  assert.match(skill, /A1.*Kahn/);
+  assert.match(skill, /A2.*分层调度/);
+  assert.match(skill, /A3.*子代理契约/);
+  assert.match(skill, /A4.*全量收敛/);
+  assert.match(skill, /A5.*回退与冲突/);
+  assert.match(skill, /Kahn/);
+  assert.match(skill, /L1.*入度/);
+  assert.match(skill, /回执卡片/);
+  assert.match(skill, /BASE_HEAD/);
+  assert.match(skill, /打回重派/);
+  assert.match(skill, /全量保留/);
 });
 
 test('SKILL.md description is slim with leading word and branch triggers', () => {
