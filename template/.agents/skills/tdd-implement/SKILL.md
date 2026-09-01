@@ -25,7 +25,7 @@ description: "TDD seam red-green loop: use when the user provides a spec/ticket 
   - **主代理验收（5 项，任一不过打回重派）**：①落盘（`git log` 含 `#NN` + issue 文件 `resolved`+总结）②抽检（相关测试/`tsc --noEmit`）③改动边界（`git diff <base>..HEAD --name-only` 无跨改）④卫生（无 `[DEBUG-...]` 残留）⑤提交关联（message 含 `#NN` 且一致）；子代理同样 `BASE_HEAD`+回合计 Chunk/历史保护与单线一致。
 - **A4 全量收敛**：全部层验收后编排器执行唯一全量测试 + `merge-base --is-ancestor $BASE_HEAD HEAD` 历史校验（失败经 `reflog` 恢复）+ `git status` 卫生（含禁令）+ 会话汇总回执关键信息（不另写汇总文件）。
 - **A5 回退与冲突**：子代理内按 `stages.md` 回退表闭环；层收敛失败→该 issue 保持原 Status、不进下一层、修复后重派；全量失败→定位归属 issue 重派；文件冲突→后完成者 rebase 解决后重跑 typecheck+相关测试，禁丢弃提交、必校验 `merge-base` 与 `git log` 全含；环依赖→A0 即终止。
-- **出口/边界**：全部 issue `Status: resolved`+`## 实施总结` 落盘 + 全量测试通过 + 工作区干净；单 issue 不走本节、子代理不跨改、编排器不替写代码、汇总只对话输出、TDD 语义以 `tdd` 技能为唯一事实源。
+- **出口/边界**：全部 issue `Status: resolved`+`## 实施总结` 落盘 + 全量测试通过 + 工作区干净；单 issue 不走本节、子代理不跨改、编排器不替写代码、汇总只对话输出；**必须先编排子代理计划（输出依赖图/DAG/Kahn 分层 `L1..Ln` 并确认）后才派子代理，禁止跳过计划直接派发导致重复调度**；TDD 语义以 `tdd` 技能为唯一事实源。
 ## Steps
 
 按序执行，每步达到完成条件才进入下一步；进入任一步前先读取其在 [stages.md](references/stages.md) 的定义。

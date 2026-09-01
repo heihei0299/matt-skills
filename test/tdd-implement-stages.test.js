@@ -421,6 +421,15 @@ test('SKILL.md condensed orchestration front contains A0-A5 key constraints (act
   assert.match(skill, /打回重派/);
   assert.match(skill, /全量保留/);
 });
+test('SKILL.md and orchestration enforce plan-before-dispatch boundary (no direct dispatch)', () => {
+  assert.match(skill, /必须先编排子代理计划/);
+  assert.match(skill, /禁止跳过计划直接派发/);
+  assert.match(skill, /重复调度/);
+  assert.match(orchestration, /必须先编排子代理计划/);
+  assert.match(orchestration, /禁止跳过计划直接派发/);
+  assert.match(skill, /Kahn 分层.*L1.*Ln.*并确认.*后才派/);
+  assert.match(orchestration, /分层结果在编排开始前一次性展示给用户确认/);
+});
 
 test('SKILL.md description is slim with leading word and branch triggers', () => {
   // Front-loads seam/red-green leading word, one trigger per branch
