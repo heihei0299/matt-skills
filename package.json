@@ -1,6 +1,6 @@
 {
   "name": "@heihei0299/matt-skills",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "description": "Agent skills + 项目配置模板：一条命令初始化 opencode / pi-agent 项目（含 mattpocock/skills 上游技能）",
   "type": "module",
   "bin": {
