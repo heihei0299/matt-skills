@@ -4,10 +4,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Guard commit-check: the generic pre-commit gate (review docs, align README,
-// keep the directory clean, write a clear commit message). It must stay
-// generic — no repo-specific wording — so it ships to any target repository.
-
+// Guard commit-check: the pre-commit gate (review docs, align README,
+// keep the directory clean, write a clear commit message). Since 1.5.4 it
+// prioritizes README + matt-skills flow files (AGENTS/CONTEXT/template).
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillPath = path.join(dir, '.agents', 'skills', 'commit-check', 'SKILL.md');
 const scanPath = path.join(dir, '.agents', 'skills', 'commit-check', 'scripts', 'scan-sensitive.sh');
@@ -55,12 +54,13 @@ test('executes serially within one turn until all four pass', () => {
   assert.match(skill, /全部通过才 commit/);
 });
 
-test('stays generic: no repo-specific wording', () => {
-  // No repo name, no target-repository framing, no template-sync references.
-  // Skill references (tdd-implement etc.) are legitimate links, not repo specifics.
-  assert.doesNotMatch(skill, /matt-skills/i);
-  assert.doesNotMatch(skill, /目标仓库/);
-  assert.doesNotMatch(skill, /template-sync/);
+test('focuses on README and matt-skills flow files', () => {
+  // Per 1.5.4+ requirement: commit-check prioritizes README + matt-skills flow files (AGENTS/CONTEXT/template/skills)
+  assert.match(skill, /matt-skills/i);
+  assert.match(skill, /README/);
+  assert.match(skill, /AGENTS\.md/);
+  assert.match(skill, /CONTEXT\.md/);
+  assert.match(skill, /template\//);
 });
 
 test('defers review semantics to the code-review skill (single source of truth)', () => {

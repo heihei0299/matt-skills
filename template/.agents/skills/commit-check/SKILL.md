@@ -17,6 +17,7 @@ description: "Run the pre-commit gate before any commit: verify docs match the i
 - 发现不一致 → 先修文档（或更新实现），再进入下一步
 - 改动涉及项目结构、分发文件、技能/命令清单时，检查 README 中对应的结构说明、映射表、清单是否同步
 - 改动涉及用法/CLI/配置/示例时，检查 README 对应描述与实际一致
+- **重点聚焦（README + matt-skills 流程）**：本次门禁优先对齐 `README.md` 与 matt-skills 流程相关文件——`AGENTS.md`（路由）、`CONTEXT.md`（术语）、`docs/agents/*`（`skill-design.md`/`runtime-discipline.md`/`issue-tracker.md`/`triage-labels.md`/`domain.md`）、`template/` 镜像（含 `.agents/skills` 全量、`AGENTS.md`、`CONTEXT.md`、`docs/agents`）、`.agents/skills/*`（技能正文与 `references/`）、`config/*` 与 `scripts/build-template.js`；改动触及上述任一文件时，逐项核对 README 的结构说明/清单/映射表与模板镜像是否同步，未同步先修复再 commit
 - 存在模板镜像/分发副本时，确认源文件与副本同步（如有守护测试，跑一遍确认）
 - **特例**：`AGENTS.md` 的 `tdd-implement ↔ implement` 路由行 + 技能文件 + `.gitignore` 的 `.pi/` 忽略，且存在 `AGENTS.md.bak` 时，视为模板同步预期增量，不回滚
 ### ② 保持目录卫生
