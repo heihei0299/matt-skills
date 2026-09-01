@@ -22,3 +22,4 @@ spec/
 *.bak
 .opencode.bak/
 .pi.bak/
+.scratch/
