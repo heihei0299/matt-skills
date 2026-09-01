@@ -26,24 +26,24 @@ test('无参 help 也不列 update（init/sync/list 仍在）', () => {
   assert.ok(!stdout.includes('update'), `HELP should not contain "update", got:\n${stdout}`);
 });
 
-// Seam 2: matt-skills update 提示已合并到 sync --apply 且 exit 1
-test('`update` 提示已合并到 sync --apply 且 exit 1', () => {
+// Seam 2: matt-skills update 提示已合并到 sync 且 exit 1
+test('`update` 提示已合并到 sync 且 exit 1', () => {
   const { status, stdout, stderr } = runCli(['update']);
   assert.equal(status, 1, `expected exit 1, got ${status} stdout:${stdout} stderr:${stderr}`);
   const combined = `${stdout}${stderr}`;
-  assert.ok(combined.includes('update 已合并到 sync --apply'), `stderr should contain 'update 已合并到 sync --apply', got stdout:${stdout} stderr:${stderr}`);
+  assert.ok(combined.includes('update 已合并到 sync'), `stderr should contain 'update 已合并到 sync', got stdout:${stdout} stderr:${stderr}`);
   // 必须走 stderr
-  assert.ok(stderr.includes('update 已合并到 sync --apply'), `should be on stderr, got stderr:${stderr}`);
+  assert.ok(stderr.includes('update 已合并到 sync'), `should be on stderr, got stderr:${stderr}`);
 });
 
 test('`update --dry-run` 同样提示已合并', () => {
   const { status, stderr } = runCli(['update', '--dry-run']);
   assert.equal(status, 1);
-  assert.ok(stderr.includes('update 已合并到 sync --apply'));
+  assert.ok(stderr.includes('update 已合并到 sync'));
 });
 
 test('`update --force` 同样提示已合并', () => {
   const { status, stderr } = runCli(['update', '--force']);
   assert.equal(status, 1);
-  assert.ok(stderr.includes('update 已合并到 sync --apply'));
+  assert.ok(stderr.includes('update 已合并到 sync'));
 });

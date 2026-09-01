@@ -32,37 +32,83 @@ process.stdout.on('error', (err) => {
   throw err;
 });
 
-const HELP = `matt-skills — install and manage this skill collection
+const HELP_GLOBAL = `matt-skills — install and manage this skill collection
 
 Usage:
   matt-skills init [options]                   Initialize a project: template + skills (.agents/skills)
-  matt-skills sync [--apply|--force] [--all] [--dest <path>] [--upstream <url>] [--ref <ref>] [--json]   Sync existing project to latest template + skills
+  matt-skills sync [--all|--force|--dry-run] [--dest <path>]   Sync existing project to latest template + skills
   matt-skills list [--all] [--json]            List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
   matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
                                               Check if upstream skills are up to date (read-only)
-  matt-skills --help                          Show this help
+  matt-skills --help | -h                     Show this help
+  matt-skills --version | -v                  Show version
+`;
+
+const HELP_INIT = `matt-skills init [options] — Initialize a project: template + skills (.agents/skills)
+
+Usage:
+  matt-skills init [options]
 
 Init options:
   --dest <path>   Target directory (default: current directory)
   --force         Overwrite existing files
   --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + default proprietary 4 → 22)
+  --help, -h      Show this help
+
+提示：matt-skills --help 查看全量
+`;
+
+const HELP_SYNC = `matt-skills sync — Sync existing project to latest template + skills
+
+Usage:
+  matt-skills sync [--all|--force|--dry-run] [--dest <path>]
+
 Sync options:
-  --apply         Apply changes (safe incremental, respects custom AGENTS.md)
-  --force         Hard overwrite (backup .bak + full sync)
-  --all           Include non-programming and optional proprietary; default only core programming (22)
+  --all           范围：含非编程与可选独有（默认仅编程 22）
+  --force         力度：硬盖（备份 .bak + 删多余，全量 add/update/remove）
+  --dry-run       预演：只比对不写盘
   --dest <path>   Target directory (default: current directory)
-  --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
-  --ref <ref>     Upstream ref (default: HEAD)
+  --help, -h      Show this help
+
+说明：默认不带参即安全增量同步默认技能（22）；--all 与 --force 互斥。
+
+提示：matt-skills --help 查看全量
+`;
+
+const HELP_LIST = `matt-skills list — List available skills
+
+Usage:
+  matt-skills list [--all] [--json]
+
+List options:
+  --all           List all skills (default only core programming 22)
   --json          Output as JSON
+  --help, -h      Show this help
+
+提示：matt-skills --help 查看全量
+`;
+
+const HELP_CHECK = `matt-skills check — Check if upstream skills are up to date (read-only)
+
+Usage:
+  matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
+
 Check options:
   --all           Include non-programming and optional proprietary; default only core programming (22)
   --json          Output as JSON
   --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
   --ref <ref>     Upstream ref (default: HEAD)
-List options:
-  --all           List all skills (default only core programming 22)
-  --json          Output as JSON
+  --help, -h      Show this help
+
+提示：matt-skills --help 查看全量
+`;
+
+const HELP_INSTALL = `matt-skills install — Install skills (interactive by default)
+
+Usage:
+  matt-skills install [options]
+
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection — 共享技能统一指向 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义
   --all           Install all skills (default only core programming 22); skips skill selection
@@ -70,7 +116,12 @@ Install options:
   --global        Install to the user's global skill directories
   --project       Install to project skill directories (default)
   --dest <path>   Install everything into a single custom directory (overrides --tools)
+  --help, -h      Show this help
+
+提示：matt-skills --help 查看全量
 `;
+
+const HELP = HELP_GLOBAL;
 
 function parseFrontmatter(text) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -280,25 +331,22 @@ async function initCommand({ dest, force, all }) {
   }
   process.stdout.write(`目标路径：${target}\n`);
 }
-async function syncCommand({ dest, force, apply, upstreamUrl, ref, json, all }) {
+async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref }) {
   const onlyProgramming = !all;
-  // 默认：仅对比不写盘 (check 模式)，--apply / --force 显式写盘
-  const doApply = apply || force;
-  if (!doApply) {
+  if (dryRun) {
     const { compare } = await import('../scripts/sync-upstream.js');
     const cmp = await compare({ upstreamUrl, ref, onlyProgramming });
     if (json) {
       process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
     } else {
+      const modeHint = onlyProgramming ? '（仅编程）' : '（全量）';
       const lines = [];
       lines.push(`上游 HEAD: ${cmp.head}`);
-      const modeHint = onlyProgramming ? '（仅编程）' : '（全量）';
       lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream} ${modeHint}`);
       lines.push('');
       const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
-      if (totalDiff === 0) {
-        lines.push('✅ 已是最新，无差异');
-      } else {
+      if (totalDiff === 0) lines.push('✅ 已是最新，无差异');
+      else {
         if (cmp.result.added.length) lines.push(`新增 (${cmp.result.added.length}): ${cmp.result.added.join(', ')}`);
         if (cmp.result.updated.length) lines.push(`更新 (${cmp.result.updated.length}): ${cmp.result.updated.join(', ')}`);
         if (cmp.result.renamed.length) lines.push(`重命名 (${cmp.result.renamed.length}): ${cmp.result.renamed.map((r) => `${r.from}→${r.to}`).join(', ')}`);
@@ -309,8 +357,8 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json, all }) 
     }
     const { rm } = await import('node:fs/promises');
     await rm(cmp.dest, { recursive: true, force: true });
-    const hasDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length > 0;
-    if (hasDiff) process.exitCode = 1;
+    const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
+    if (totalDiff > 0) process.exitCode = 1;
     return;
   }
 
@@ -341,22 +389,16 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json, all }) 
   }
   if (!(await pathExists(marker))) {
     process.stdout.write('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
-    if (onlyProgramming) {
-      await copyTemplateFiltered();
-    } else {
-      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    }
+    if (onlyProgramming) await copyTemplateFiltered();
+    else await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
     process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
   } else if (force) {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
     await backupIfExists(path.join(target, 'AGENTS.md'));
-    if (onlyProgramming) {
-      await copyTemplateFiltered();
-    } else {
-      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    }
+    if (onlyProgramming) await copyTemplateFiltered();
+    else await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
     process.stdout.write('模板：已覆盖（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
-  } else if (apply) {
+  } else {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
     let skipAgents = false;
     try {
@@ -382,21 +424,10 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json, all }) 
       }
       process.stdout.write('模板：已同步（AGENTS.md 跳过，已含定制）\n');
     } else {
-      if (onlyProgramming) {
-        await copyTemplateFiltered();
-      } else {
-        await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-      }
+      if (onlyProgramming) await copyTemplateFiltered();
+      else await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
       process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
-  } else {
-    process.stdout.write('同步：检测到现有项目，将增量更新\n');
-    if (onlyProgramming) {
-      await copyTemplateFiltered();
-    } else {
-      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    }
-    process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
   }
   // 技能同步：按编程过滤（默认仅编程，--all 全量）
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
@@ -428,7 +459,7 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json, all }) 
     }
   }
   // --force 时删除多余；仅编程模式下多余指不在编程集合中的，--all 模式下多余指不在全量中的
-  // 默认 --apply 保留多余（不删除），符合“默认保留、--force 删除”
+  // 默认安全增量保留多余（不删除），符合“默认保留、--force 删除”
   if (force) {
     let localEntries = [];
     try {
@@ -478,25 +509,55 @@ async function syncCommand({ dest, force, apply, upstreamUrl, ref, json, all }) 
 function parseInitArgs(args) {
   let dest;
   let force = false;
-  let apply = false;
-  let json = false;
   let all = false;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--dest') {
+      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--dest' requires a value`);
+      dest = args[++i];
+    } else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
+    else if (arg === '--force') force = true;
+    else if (arg === '--all') all = true;
+    else if (arg === '--help' || arg === '-h') {} // handled at main level, ignore here
+    else if (arg.startsWith('-')) throw new Error(`unknown option '${arg}' for command 'init'`);
+    else throw new Error(`unknown argument '${arg}' for command 'init'`);
+  }
+  return { dest, force, all };
+}
+
+function parseSyncArgs(args) {
+  let dest;
+  let force = false;
+  let all = false;
+  let dryRun = false;
+  let json = false;
   let upstreamUrl;
   let ref;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--dest') dest = args[++i];
-    else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
+    if (arg === '--dest') {
+      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--dest' requires a value`);
+      dest = args[++i];
+    } else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
     else if (arg === '--force') force = true;
-    else if (arg === '--apply') apply = true;
     else if (arg === '--all') all = true;
+    else if (arg === '--dry-run') dryRun = true;
     else if (arg === '--json') json = true;
-    else if (arg === '--upstream') upstreamUrl = args[++i];
-    else if (arg.startsWith('--upstream=')) upstreamUrl = arg.slice('--upstream='.length);
-    else if (arg === '--ref') ref = args[++i];
-    else if (arg.startsWith('--ref=')) ref = arg.slice('--ref='.length);
+    else if (arg === '--upstream') {
+      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--upstream' requires a value`);
+      upstreamUrl = args[++i];
+    } else if (arg.startsWith('--upstream=')) upstreamUrl = arg.slice('--upstream='.length);
+    else if (arg === '--ref') {
+      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--ref' requires a value`);
+      ref = args[++i];
+    } else if (arg.startsWith('--ref=')) ref = arg.slice('--ref='.length);
+    else if (arg === '--help' || arg === '-h') {} // handled at main
+    else if (arg === '--apply') {} // deprecated alias, same as default safe incremental
+    else if (arg.startsWith('-')) throw new Error(`unknown option '${arg}' for command 'sync'`);
+    else throw new Error(`unknown argument '${arg}' for command 'sync'`);
   }
-  return { dest, force, apply, json, all, upstreamUrl, ref };
+  if (all && force) throw new Error(`--all and --force are mutually exclusive, choose one`);
+  return { dest, force, all, dryRun, json, upstreamUrl, ref };
 }
 
 function parseInstallArgs(args) {
@@ -507,14 +568,21 @@ function parseInstallArgs(args) {
   let toolsArg;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--dest') dest = args[++i];
-    else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
+    if (arg === '--dest') {
+      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--dest' requires a value`);
+      dest = args[++i];
+    } else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
     else if (arg === '--all') all = true;
     else if (arg === '--force') force = true;
-    else if (arg === '--tools') toolsArg = args[++i];
-    else if (arg.startsWith('--tools=')) toolsArg = arg.slice('--tools='.length);
+    else if (arg === '--tools') {
+      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--tools' requires a value`);
+      toolsArg = args[++i];
+    } else if (arg.startsWith('--tools=')) toolsArg = arg.slice('--tools='.length);
     else if (arg === '--global') global = true;
     else if (arg === '--project') global = false;
+    else if (arg === '--help' || arg === '-h') {} // handled at main
+    else if (arg.startsWith('-')) throw new Error(`unknown option '${arg}' for command 'install'`);
+    else throw new Error(`unknown argument '${arg}' for command 'install'`);
   }
   const tools = toolsArg
     ? toolsArg.split(',').map((t) => t.trim()).filter(Boolean)
@@ -559,12 +627,49 @@ async function checkCommand(args) {
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-    process.stdout.write(HELP);
+  // -v/--version highest priority, anywhere
+  if (args.includes('-v') || args.includes('--version')) {
+    try {
+      const pkgRaw = await readFile(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8');
+      const pkg = JSON.parse(pkgRaw);
+      process.stdout.write(`${pkg.version}\n`);
+    } catch {
+      process.stdout.write('unknown\n');
+    }
+    return;
+  }
+  // -h/--help suffix handling (global vs per-command)
+  if (args.includes('-h') || args.includes('--help')) {
+    const known = ['init', 'sync', 'list', 'install', 'check'];
+    const first = args[0];
+    const cmd = known.includes(first) ? first : null;
+    if (cmd === 'init') { process.stdout.write(HELP_INIT); return; }
+    if (cmd === 'sync') { process.stdout.write(HELP_SYNC); return; }
+    if (cmd === 'list') { process.stdout.write(HELP_LIST); return; }
+    if (cmd === 'check') { process.stdout.write(HELP_CHECK); return; }
+    if (cmd === 'install') { process.stdout.write(HELP_INSTALL); return; }
+    process.stdout.write(HELP_GLOBAL);
+    return;
+  }
+  if (args.length === 0) {
+    process.stdout.write(HELP_GLOBAL);
     return;
   }
   const [command, ...rest] = args;
+  const knownCommands = new Set(['list', 'init', 'sync', 'install', 'check', 'update']);
+  if (!knownCommands.has(command)) {
+    process.stderr.write(`error: unknown command '${command}'\n`);
+    process.stderr.write(`Run 'matt-skills --help' for usage.\n`);
+    process.exitCode = 1;
+    return;
+  }
   if (command === 'list') {
+    // list strict: only --all/--json/--help allowed, rest handled via parse but we keep simple
+    for (const a of rest) {
+      if (a === '--all' || a === '--json' || a === '--help' || a === '-h') continue;
+      if (a.startsWith('-')) { process.stderr.write(`error: unknown option '${a}' for command 'list'\n`); process.stderr.write(`Run 'matt-skills list --help' for usage.\n`); process.exitCode = 1; return; }
+      process.stderr.write(`error: unknown argument '${a}' for command 'list'\n`); process.stderr.write(`Run 'matt-skills list --help' for usage.\n`); process.exitCode = 1; return;
+    }
     const onlyProgramming = !rest.includes('--all');
     const skills = await listSkills({ onlyProgramming });
     if (rest.includes('--json')) {
@@ -581,7 +686,7 @@ async function main() {
     return;
   }
   if (command === 'sync') {
-    await syncCommand(parseInitArgs(rest));
+    await syncCommand(parseSyncArgs(rest));
     return;
   }
   if (command === 'install') {
@@ -589,16 +694,22 @@ async function main() {
     return;
   }
   if (command === 'check') {
+    // check strict: allow --all/--json/--upstream/--ref/--help
+    for (const a of rest) {
+      if (a === '--all' || a === '--json' || a === '--help' || a === '-h') continue;
+      if (a === '--upstream' || a.startsWith('--upstream=')) continue;
+      if (a === '--ref' || a.startsWith('--ref=')) continue;
+      if (a.startsWith('-')) { process.stderr.write(`error: unknown option '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 1; return; }
+      process.stderr.write(`error: unknown argument '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 1; return;
+    }
     await checkCommand(rest);
     return;
   }
   if (command === 'update') {
-    process.stderr.write('update 已合并到 sync --apply\n');
+    process.stderr.write('update 已合并到 sync（默认即增量同步）\n');
     process.exitCode = 1;
     return;
   }
-  process.stderr.write(HELP);
-  process.exitCode = 1;
 }
 main().catch((error) => {
   process.stderr.write(`error: ${error.message}\n`);

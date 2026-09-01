@@ -65,18 +65,18 @@ function createDestWithCustomAgents(content = 'LOCAL EDIT tdd-implement') {
   return dest;
 }
 
-// Seam 1: sync 默认只对比不写盘，打印表格，exitCode 语义，--json 可解析
-test('sync 默认不写盘，仅打印对比表格（不产生 git diff）', () => {
+// Seam 1: sync --dry-run 只对比不写盘，打印表格，exitCode 语义，--json 可解析（sync 默认已改为安全增量）
+test('sync --dry-run 不写盘，仅打印对比表格（不产生 git diff）', () => {
   const dest = createDestWithCustomAgents('LOCAL EDIT tdd-implement');
   const upstream = createFakeUpstream();
   try {
-    const { status, stdout, stderr } = runCli(['sync', '--dest', dest, '--upstream', upstream]);
+    const { status, stdout, stderr } = runCli(['sync', '--dry-run', '--dest', dest, '--upstream', upstream]);
     // 应该打印上游 HEAD 与本地非独有对比表
     assert.match(stdout, /上游 HEAD:/, 'missing 上游 HEAD');
     assert.match(stdout, /本地非独有:/, `stdout:\n${stdout}\nstderr:\n${stderr}`);
     // 不应执行写盘提示
-    assert.doesNotMatch(stdout, /模板：已/, 'sync 默认不应写盘');
-    assert.doesNotMatch(stdout, /上游技能：新增/, 'sync 默认不应打印“上游技能：新增”');
+    assert.doesNotMatch(stdout, /模板：已/, 'sync --dry-run 不应写盘');
+    assert.doesNotMatch(stdout, /上游技能：新增/, 'sync --dry-run 不应打印“上游技能：新增”');
     // AGENTS.md 不应被改动
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT tdd-implement');
     assert.ok(!fs.existsSync(path.join(dest, 'AGENTS.md.bak')), '.bak 不应产生');
@@ -88,11 +88,11 @@ test('sync 默认不写盘，仅打印对比表格（不产生 git diff）', () 
   }
 });
 
-test('sync 默认有差异时 exit 1 且打印新增/更新等分类', () => {
+test('sync --dry-run 有差异时 exit 1 且打印新增/更新等分类', () => {
   const dest = createDestWithCustomAgents('LOCAL EDIT tdd-implement');
   const upstream = createFakeUpstream({ extraSkill: 'extra-sync-test-skill' });
   try {
-    const { status, stdout } = runCli(['sync', '--dest', dest, '--upstream', upstream]);
+    const { status, stdout } = runCli(['sync', '--dry-run', '--dest', dest, '--upstream', upstream]);
     assert.match(stdout, /上游 HEAD:/);
     assert.match(stdout, /新增 \(1\):.*extra-sync-test-skill/s);
     assert.equal(status, 1, `expected exit 1 when diff exists, got ${status}`);
@@ -103,19 +103,19 @@ test('sync 默认有差异时 exit 1 且打印新增/更新等分类', () => {
   }
 });
 
-test('sync --json 可解析，包含 head/counts/result 且 exitCode 语义保持', () => {
+test('sync --dry-run --json 可解析，包含 head/counts/result 且 exitCode 语义保持', () => {
   const dest = createDestWithCustomAgents('LOCAL EDIT tdd-implement');
   const upstreamWithDiff = createFakeUpstream({ extraSkill: 'extra-json-skill' });
   const upstreamNoDiff = createFakeUpstream();
   try {
-    const r1 = runCli(['sync', '--json', '--dest', dest, '--upstream', upstreamWithDiff]);
+    const r1 = runCli(['sync', '--dry-run', '--json', '--dest', dest, '--upstream', upstreamWithDiff]);
     const j1 = JSON.parse(r1.stdout);
     assert.ok(typeof j1.head === 'string' && j1.head.length >= 7, 'head should be git sha');
     assert.ok(j1.counts && typeof j1.counts.local === 'number' && typeof j1.counts.upstream === 'number');
     assert.ok(j1.result && Array.isArray(j1.result.added) && Array.isArray(j1.result.updated));
     assert.equal(r1.status, 1, 'json diff should exit 1');
 
-    const r2 = runCli(['sync', '--json', '--dest', dest, '--upstream', upstreamNoDiff]);
+    const r2 = runCli(['sync', '--dry-run', '--json', '--dest', dest, '--upstream', upstreamNoDiff]);
     const j2 = JSON.parse(r2.stdout);
     assert.ok(j2.head);
     assert.equal(r2.status, 0, 'json no diff should exit 0');
@@ -126,10 +126,12 @@ test('sync --json 可解析，包含 head/counts/result 且 exitCode 语义保�
   }
 });
 
-test('sync --help 与 HELP 包含 --apply/--force/--json/--upstream/--ref 说明', () => {
+test('sync --help 与 HELP 包含 --all/--force/--dry-run 说明（--apply 已退役）', () => {
   const { stdout } = runCli(['--help']);
-  assert.match(stdout, /sync.*--apply.*--force/s, 'HELP sync usage should mention --apply|--force');
-  assert.match(stdout, /--upstream/, 'HELP should mention --upstream');
-  assert.match(stdout, /--ref/, 'HELP should mention --ref');
-  assert.match(stdout, /--json/, 'HELP should mention --json');
+  assert.match(stdout, /sync.*--all.*--force.*--dry-run/s, 'HELP sync usage should mention --all|--force|--dry-run');
+  assert.doesNotMatch(stdout, /--apply/, 'HELP should not contain deprecated --apply');
+  const { stdout: syncHelp } = runCli(['sync', '--help']);
+  assert.match(syncHelp, /--dry-run/, 'sync --help should mention --dry-run');
+  assert.match(syncHelp, /--all.*范围/, 'sync help should explain --all');
+  assert.match(syncHelp, /--force.*力度/, 'sync help should explain --force');
 });
