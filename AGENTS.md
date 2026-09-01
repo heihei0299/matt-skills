@@ -32,7 +32,7 @@
 
 - 探索/定位/理解代码库 → 有 `.codegraph/` 索引：`codegraph explore`（CLI）优先；无索引用 explore 子代理
 - 后台调研 → research；原型验证 → prototype
-- 实现（有 spec）→ implement（无 spec 先 to-spec）；测试先行 → tdd
+- 实现（有 spec 且要求 TDD/测试先行）→ tdd-implement（seam red-green）；实现（有 spec 不要求 TDD）→ implement（无 spec 先 to-spec）；测试先行 → tdd
 - 设计打磨 → grilling；达成共识→spec → grill-to-spec（grilling→domain-modeling→to-spec）
 - 领域术语/ADR → domain-modeling；模块接口 → codebase-design；巨型规划 → wayfinder
 - 诊断 → diagnose-fix（编排 diagnosing-bugs + tdd，硬门槛）；审查 → code-review；合并冲突 → resolving-merge-conflicts；提交前 → commit-check（文档一致性 → 目录卫生 → commit message，三项）
