@@ -38,20 +38,21 @@ Ln = 最后一层
 ```
 
 每层内节点互无依赖，可并行；层间有依赖，必须串行。分层结果在编排开始前一次性展示给用户确认（合规交互点），确认后才派发。
-
+若两 issue 在阶段②已声明预期改动同一文件，编排器在 A0 后提示建议追加 `Blocked by` 使其串行（轻提示，不强制）；主要仍靠 A2 串行错峰自然错峰。
 ### A2. 分层调度
 
 ```
 for each 层 Li in L1..Ln:
   并行派发：为 Li 中每个 issue 启动一个子代理（single 模式，共享 working tree，禁止 parallel tasks 数组；N>1 时串行错峰派发）
   等待：阻塞直到 Li 全部子代理返回回执卡片
-  验收：编排器按 A3 验收清单逐 issue 验收（只认回执卡片的关键信息 + 抽检验证，不消费全量日志）
+  验收：编排器按 A3 验收清单逐 issue 验收（只认回执卡片的关键信息 + 抽检验证在最新 HEAD 上执行，不消费全量日志）
   层收敛验证：验收全通过进入全量验证（完成条件 4 项，全部通过才进下一层，任一失败按 A5 最小重派该 issue）：①该层全部 issue 验收通过 ②相关测试套件通过（全量仅在 A4） ③`git status` 卫生（仅删本次临时产物，正向；护栏：禁止 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked`）④历史校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 通过；验收不通过或相关/卫生/历史任一失败按 A5 重派该 issue
 全部层层收敛通过后进入 A4 全量收敛
 ```
 
 - **派发纪律**：与阶段⑤双轴审查一致——逐个 `subagent` 派发，禁止 `parallel tasks` 数组（同因：中文报告截断）。
 - **等待语义**：层内任一子代理失败不取消同层其他子代理；待层内全部返回后统一按 A5 最小重派处理。
+- **冲突判定（Q1/Q2）**：同文件即冲突，以 `HEAD` 已移动（`git log` 已含先完成者 `#NN`）为准判定慢者前后不一致；不在工作区瞬时覆盖时判定。
 - **回合连续性**：编排器在层间不结束回合——一层收敛后立即派发下一层，直到全部层完成或外部阻塞；预告下一层后立即执行。
 - **Git 历史保护（正向：仅追加；护栏：禁改写）**：编排器在分层调度前记录 `BASE_HEAD=$(git rev-parse HEAD)`，每层收敛后校验 `git merge-base --is-ancestor $BASE_HEAD HEAD`，失败即经 `git reflog` 恢复；为达 `git status` 干净仅删本次产生的 `[DEBUG-...]`临时产物（正向），护栏：禁止 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked`/`git push --force` 等（需显式确认）。
 ### A3. 子代理契约（单 issue 单代理）
@@ -117,7 +118,7 @@ for each 层 Li in L1..Ln:
 - **子代理内回退（最小单元）**：按 [stages.md 回退路由](stages.md#回退路由) 精确回退——`typecheck 失败→③`、`测试失败→③`、`review Standards 味→⑤重构`、`review Spec 偏离→①`、`review seams 遗漏→②补 seams`、`commit-check 文档/卫生/message 失败→⑥/⑦ 对应阶段`。失败点之前的已 `done` seam/Todo 永不回退，仅重跑失败阶段及下游；`seams 清单` 与已绿 seam 默认复用，仅 `seams 遗漏/需求偏差` 两类才回到 `②/①` 重确认。
 - **层收敛失败（最小重派）**：层内任一子代理未达到 `resolved`（含验收 5 项、相关测试、卫生、历史校验任一不过）→ 该 issue 保持原 `Status`，编排器在层等待结束后报告失败清单，不自动进入下一层；待修复后仅重派失败节点，同层其他已通过不受影响。层原子语义保持：`Li` 未全 `resolved` 不派 `L_{i+1}`。
 - **全量收敛失败（精确定位）**：A4 全量测试失败 → 以测试文件路径/报错栈精确定位到单 issue 单 seam，回到其所在层仅重派该 issue 的失败 seam + 相关测试，全量由编排器在重派后再次 A4 统一验证；无法精确定位时退化到层级重派，不重跑无关联 issue。
-- **文件冲突**：同层子代理若触及同一文件，后完成者 rebase 解决冲突后重跑 typecheck + 相关测试；跨层天然串行无冲突。冲突解决禁止使用 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked` 丢弃对方提交，rebase 后必校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 且 `git log --oneline` 含全部层提交；冲突检测以 `git` 合并结果为准，编排器不做静态预判。
+- **文件冲突（Q1-Q4）**：同文件即冲突（Q1 慢者因 `HEAD` 已移动致前后不一致）；慢者完成当前 seam 的 `红→绿→typecheck` 后再以新 HEAD 为基线 rebase，仅重做该冲突文件关联的 seam（其余已绿复用，Q3/Q4 最小化）；后完成者 rebase 解决冲突后重跑 typecheck + 相关测试；跨层天然串行无冲突。冲突解决禁止使用 `git reset --hard`/`git checkout .`/`git clean -fd`/`git stash push --include-untracked` 丢弃对方提交，rebase 后必校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 且 `git log --oneline` 含全部层提交；冲突检测以 `git` 合并结果（`HEAD` 已移动）为准，编排器不做静态文件监听预判。
 - **环依赖**：A0 检测到环即报错终止，不派发任何子代理。
 
 ### 出口条件
