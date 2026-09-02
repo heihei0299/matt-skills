@@ -16,7 +16,7 @@ description: "TDD seam red-green loop: use when the user provides a spec/ticket 
 
 ## 多 issue 编排（按依赖分层并行）
 
-触发见 [orchestration.md](references/orchestration.md)；`.scratch/<feature>/issues/` 下多文件且部分含 `Blocked by` 时触发，主过程 A0 依赖图 → A1 Kahn 分层 L1入度0→L2→Ln → A2 分层调度（层内 `N>1` 时每 issue 独立 `git worktree` + `wt/<feature>-#NN` 分支隔离、按序 `merge --no-ff` 归集，`N==1` 复用主 worktree 但仍逐个 subagent single 派发，禁止主会话直做） → A3 子代理契约 → A4 全量收敛 → A5 回退与冲突（最小重派：按失败点精确回退、失败分支增量 fix、精确定位单 issue 单 seam，全量保留为详规真相源）。必须先编排子代理计划（输出依赖图/DAG 与 Kahn 分层 `L1..Ln` 并确认）后才派发，禁止跳过计划直接派发导致重复调度；编排模式下所有 issue 的 `①→⑦` 必须经子代理执行、主会话仅编排与验收，禁止任何“为省开销/效率”在主会话直做；层收敛 4 项（验收/相关测试/`git status`仅删`[DEBUG-...]`/ `BASE_HEAD`历史校验 `git merge-base --is-ancestor`）与子代理回执卡片（≤30行、缺字段视为不通过）、打回重派（重建全新 worktree 最小 fix）、merge 冲突显式化等可执行约束全量见 orchestration.md。
+触发见 [orchestration.md](references/orchestration.md)；`.scratch/<feature>/issues/` 下多文件且部分含 `Blocked by` 时触发，主过程 A0 依赖图 → A1 Kahn 分层 L1入度0→L2→Ln → A2 分层调度（逐个 subagent single 派发、共享 working tree，禁止主会话直做；`N>1` 时串行错峰派发以减同文件竞写，文件冲突由后完成者 rebase 解决） → A3 子代理契约 → A4 全量收敛 → A5 回退与冲突（最小重派：按失败点精确回退、精确定位单 issue 单 seam，全量保留为详规真相源）。必须先编排子代理计划（输出依赖图/DAG 与 Kahn 分层 `L1..Ln` 并确认）后才派发，禁止跳过计划直接派发导致重复调度；编排模式下所有 issue 的 `①→⑦` 必须经子代理执行、主会话仅编排与验收，禁止任何“为省开销/效率”在主会话直做；层收敛 4 项（验收/相关测试/`git status`仅删`[DEBUG-...]`/ `BASE_HEAD`历史校验 `git merge-base --is-ancestor`）与子代理回执卡片（≤30行、缺字段视为不通过）、打回重派、rebase 冲突处理等可执行约束全量见 orchestration.md。
 
 ## Steps
 
