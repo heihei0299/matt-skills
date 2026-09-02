@@ -15,7 +15,7 @@
 
 1. 读 `CONTEXT.md`（术语）——没有则跳过
 2. 按行为路由表行动；未命中用 ask-matt 或直接澄清
-3. 探索代码库：优先 codegraph CLI（`codegraph explore`），无索引时派 explore 子代理
+3. 探索代码库：直接使用 `codegraph explore`（`codegrafh CLI`）；若无 `.codegraph/` 索引先执行 `codegraph init` 初始化，再 `explore`
 
 ## 执行原则
 
@@ -30,7 +30,7 @@
 
 命中即行动，回复中简短声明所用技能与原因。
 
-- 探索/定位/理解代码库 → 有 `.codegraph/` 索引：`codegraph explore`（CLI）优先；无索引用 explore 子代理
+- 探索/定位/理解代码库 → 直接使用 `codegraph explore`（`codegrafh CLI`）；若无 `.codegraph/` 索引先 `codegraph init` 初始化，再 `explore`（Q1 硬判定，Q2 意图文+文件锚点，Q3 仅完整源码免读，Q4 跨仓才传 projectPath，Q5 研调链用 research 另行触发）
 - 后台调研 → research；原型验证 → prototype
 - 实现（有 spec 且要求 TDD/测试先行）→ tdd-implement（seam red-green）；实现（有 spec 不要求 TDD）→ implement（无 spec 先 to-spec）；测试先行 → tdd
 - 设计打磨 → grilling；达成共识→spec → grill-to-spec（grilling→domain-modeling→to-spec）
@@ -49,8 +49,10 @@
 
 ## CodeGraph
 
-仓库被 CodeGraph 索引（根目录存在 `.codegraph/`）时，理解/定位代码**优先于** grep/find/读文件——一次调用拿到相关符号源码与调用路径：
+理解/定位代码**必须**使用 `codegrafh CLI`，直接优于 grep/find/读文件——一次调用拿到相关符号逐字源码与调用路径：
 
-- **CLI**：`codegraph explore "<符号名或问题>"` 一次回答大部分代码问题——相关符号的逐字源码 + 调用路径（含 grep 追不上的动态分派跳转）。在 query 中指名文件/符号即可读取其带行号的当前源码。
-
-没有 `.codegraph/` 目录则完全跳过 CodeGraph——是否建立索引由用户决定。
+- **CLI**：`codegraph explore "<符号名或问题>"` 一次回答大部分代码问题——相关符号的逐字源码 + 调用路径（含 grep 追不上的动态分派跳转）。在 query 中指名文件/符号即可读取其带行号的当前源码，默认 `maxFiles: 12` 覆盖跨 5-8 文件调用链。
+- **初始化**：若根目录无 `.codegraph/`，先执行 `codegraph init` 初始化索引，再 `explore`；已有索引直接 `explore`（硬判定，不回退 explore 子代理）。
+- **已读等价**：返回体含完整源码块的文件视为已 `Read`，不再重复 `read`；仅返回调用路径片段时补一次带行号 `read`。
+- **跨仓/子项目**：仅当探索第二代码库或 monorepo 子项目（根无索引但子目录有）时显式传 `projectPath`。
+与 `research`（后台调研产出 Markdown 文件）分工：`codegraph explore` 为代码定位唯一首选，`research` 仅用于需产出调研文档的后台任务。
