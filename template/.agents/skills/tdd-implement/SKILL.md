@@ -11,13 +11,11 @@ description: "TDD seam red-green loop: use when the user provides a spec/ticket 
 
 ## 分支
 
-- **单线**：单 spec / 单 issue，走下节 Steps ①→⑦（详规见 [stages.md](references/stages.md)）。
-- **多 issue 编排**：`.scratch/<feature>/issues/` 下多文件且含 `Blocked by` 时走编排模式——见下节与 [orchestration.md](references/orchestration.md)。
+- **入口**：单 `spec` 文件（`.scratch/<feature>/spec.md` 或等价）/ `Type: task` 的 `issue`（`wayfinder`/`to-tickets` 产出）均视同单 `task`，走下节 Steps ①→⑦；`Type: research/prototype/grilling` 分流至对应技能。
+- **多 issue 编排**：`.scratch/<feature>/issues/` 下多 `task` 时走编排模式——见上节与 [orchestration.md](references/orchestration.md)。
+## 多 issue 编排（按依赖串行，主代理直接执行）
 
-## 多 issue 编排（按依赖分层并行）
-
-触发见 [orchestration.md](references/orchestration.md)；`.scratch/<feature>/issues/` 下多文件且部分含 `Blocked by` 时触发，主过程 A0 依赖图 → A1 Kahn 分层 L1入度0→L2→Ln → A2 分层调度（逐个 subagent single 派发、共享 working tree，禁止主会话直做；`N>1` 时串行错峰派发以减同文件竞写，文件冲突由后完成者 rebase 解决） → A3 子代理契约 → A4 全量收敛 → A5 回退与冲突（最小重派：按失败点精确回退、精确定位单 issue 单 seam，全量保留为详规真相源）。必须先编排子代理计划（输出依赖图/DAG 与 Kahn 分层 `L1..Ln` 并确认）后才派发，禁止跳过计划直接派发导致重复调度；编排模式下所有 issue 的 `①→⑦` 必须经子代理执行、主会话仅编排与验收，禁止任何“为省开销/效率”在主会话直做；层收敛 4 项（验收/相关测试/`git status`仅删`[DEBUG-...]`/ `BASE_HEAD`历史校验 `git merge-base --is-ancestor`）与子代理回执卡片（≤30行、缺字段视为不通过）、打回重派、rebase 冲突处理等可执行约束全量见 orchestration.md。
-
+触发见 [orchestration.md](references/orchestration.md)；`.scratch/<feature>/issues/` 下多文件时触发，主过程 A0 依赖图 → A1 Kahn 分层 L1入度0→L2→Ln → A2 主代理串行调度（按层串行、层内亦串行，主代理直接执行完整 ①→⑦，禁止子代理派发；每 issue 单独 `commit`，绿后即 `code-review` + `commit-check` 双门禁） → A3 层收敛 → A4 全量收敛。`Blocked by` 仍为排序输入，三入口（单 `spec` / `Type: task` issue / `wayfinder task`）同构。
 ## Steps
 
 按序执行，每步达到完成条件才进入下一步；进入任一步前先读取其在 [stages.md](references/stages.md) 的定义。
@@ -32,12 +30,12 @@ description: "TDD seam red-green loop: use when the user provides a spec/ticket 
 | ⑥ Commit | 跑 [commit-check](.agents/skills/commit-check/SKILL.md) 门禁四项后提交 | commit 完成且历史校验通过 | [stages.md#阶段-⑥](references/stages.md#阶段-⑥commit) |
 | ⑦ 收尾 | 文档对齐 → issue 状态与实施总结 → 目录卫生 | 文档已对齐、issue 已 `resolved`+总结落盘、工作区干净 | [stages.md#阶段-⑦](references/stages.md#阶段-⑦收尾文档对齐--issue-状态--实施总结) |
 
-子代理内部仍走上表 ①→⑦（其中 ④ 为相关测试口径，全量由编排器收敛）。
+主代理串行时每 `task` 仍走上表 ①→⑦（每 issue 单独 `commit`，`code-review` + `commit-check` 双门禁逐 issue，全量由 A4 收敛）。
 
 ### 阶段间流转
 
 - 正常流转：出口条件满足即进入下一阶段，不在阶段间停顿。
-- 回退路由：见 [stages.md#回退路由](references/stages.md#回退路由)；编排模式回退见 [orchestration.md#A5](references/orchestration.md#a5-回退与冲突)。
+- 回退路由：见 [stages.md#回退路由](references/stages.md#回退路由)；编排模式回退见 [orchestration.md](references/orchestration.md)。
 - 回合连续性与任务分解：见 [stages.md ③-3e/3f](references/stages.md#阶段-③tdd-开发循环)（红→绿→typecheck→下一 seam 一个回合内串行完成，直至阶段出口；预告下一步后立即执行；write>150 行/replace>5 处拆小步）。
 
 ## 引用
@@ -47,4 +45,4 @@ description: "TDD seam red-green loop: use when the user provides a spec/ticket 
 - Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
 - Commit 门禁：[commit-check](.agents/skills/commit-check/SKILL.md)
 - 单线详规：[stages.md](references/stages.md)
-- 多 issue 编排详规：[orchestration.md](references/orchestration.md)（全量保留）
+- 多 issue 编排详规：[orchestration.md](references/orchestration.md)（A0-A1 排序 + 主代理串行，不含子代理）

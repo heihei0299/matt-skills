@@ -1,7 +1,6 @@
 # 阶段详细定义
 
-单线 ①→⑦ 的详细定义；多 issue 编排主过程见 [SKILL.md](../SKILL.md#多-issue-编排按依赖分层并行)，详规见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
-
+单 `spec` / 单 `task` 与多 `task`（按 `Blocked by` 依赖分层串行、主代理直接执行）共用下表 ①→⑦；多 issue 编排（A0-A1 排序 + 主代理串行）见 [SKILL.md](../SKILL.md) 与 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
 ## 目录
 
 - [阶段 ①：理解需求](#阶段-①理解需求)
@@ -20,11 +19,11 @@
 
 ### 入口条件
 
-- 用户提供了 spec 或一组 ticket
+- 用户提供了单 `spec` 文件（`.scratch/<feature>/spec.md` 或等价）或一个 `Type: task` 的 ticket（`wayfinder`/`to-tickets` 产出，含 `Blocked by`/`Status`）；`Type: research/prototype/grilling` 分流至对应技能，不进本技能
 
 ### 操作
 
-1. 完整读取 spec/ticket 内容
+1. 完整读取入口（`spec` 或 `issue`）内容
 2. 若存在 `CONTEXT.md` 和 `docs/adr/`，先阅读，确保术语和 ADR 决策不被违背
 3. 如有歧义，先向用户澄清再继续
 
@@ -35,8 +34,8 @@
 
 ### 边界
 
-
----
+- `CONTEXT` 术语冲突时以 `CONTEXT` 为准，必要时先 `domain-modeling` 纠偏
+- 单 `spec` 与单 `task` 同构，均走 ①→⑦；多 `task` 由 [orchestration.md](orchestration.md) A0-A1 排序后主代理串行，不经子代理
 
 ## 阶段 ②：确认 Seams（测试接缝）
 
@@ -140,7 +139,7 @@
 
 ### 操作
 
-1. 运行仓库的完整测试套件（单线模式的唯一全量；多 issue 子代理此步仅相关，全量由 A4 统一执行）
+1. 运行仓库的完整测试套件（仅该 issue 相关 + typecheck 已在阶段③完成，全量由多 issue 时的 A4 统一执行；单 issue / 单 spec 场景此步即全量）
 2. 检查所有测试是否通过
 
 ### 出口条件
@@ -148,7 +147,6 @@
 - 全部测试通过
 
 ### 边界
-
 - 测试失败时回到阶段 ③ 修复，修复后重新运行完整套件——进入 review 前必须全绿
 
 ---
@@ -161,11 +159,11 @@
 
 ### 操作
 
-1. 调用 [code-review 技能](.agents/skills/code-review/SKILL.md) 按**双轴**审查当前所有改动：
+1. 调用 [code-review 技能](.agents/skills/code-review/SKILL.md) 按**双轴**审查当前 issue 的改动：
    - **Standards 轴**：改动是否符合仓库文档化的编码标准（含 smell baseline 判断）
    - **Spec 轴**：改动是否忠实实现来源 spec/issue（逐条对照验收要求）
    - 两轴独立报告、**互不掩盖**——一轴通过另一轴失败时仍须修复后重审
-2. **派发方式（强制）**：两轴必须用 subagent **single 模式**（`agent`+`task`）或 `subagent_consult` 逐个派发；**禁止 parallel `tasks` 数组**——pi-subagents 对 parallel 结果只保留前 160 字节摘要（`truncateUtf8(summary, 160)`），中文/多行报告必被截断（标记 `… [truncated by pi-subagents]`）。需要更完整输出时，要求子代理把报告写入临时文件，主代理再读取
+2. **逐 issue 触发**：每 issue 绿后即审查，未通过则当 issue 打回重做（→③/②/①），不进入下一 issue
 3. 审查发现的问题按 [回退路由](#回退路由) 处理
 
 ### 出口条件
@@ -178,8 +176,6 @@
 - review 通过后才进入 commit
 - 审查结果只在对话输出，不生成书面审查报告（不落盘 `review-*.md` 类文件）
 
----
-
 ## 阶段 ⑥：Commit
 
 ### 入口条件
@@ -190,7 +186,7 @@
 
 1. 调用 [commit-check 技能](.agents/skills/commit-check/SKILL.md) 执行提交门禁——四项检查：①审查文档 ②对齐 README ③保持目录卫生 ④规范 commit message
 2. **历史校验**：commit 前执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`，若为 false 说明历史被改写，立即经 `git reflog` 恢复 `BASE_HEAD` 后的提交，校验通过才继续
-3. 四项**全部通过才 commit**（含历史校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 通过）：将工作提交到当前分支，附清晰的 commit message
+3. 四项**全部通过才 commit**（含历史校验通过）：将工作提交到当前分支，附清晰的 commit message（单 issue 单提交，如 `feat(<feature>): <issue title> (#NN)`）；多 issue 时每 issue 独立提交后才取下一 issue
 
 ### 出口条件
 
@@ -199,8 +195,7 @@
 ### 边界
 
 - Commit message 格式与内容由 commit-check ④ 把关（描述变更内容而非过程）
-
----
+- 每 issue 独立提交，主代理串行时一 issue 一 commit 后再进入下一 issue 的 ①
 
 ## 阶段 ⑦：收尾（文档对齐 + issue 状态 + 实施总结）
 
@@ -246,7 +241,7 @@
 
 ## Todo 规定
 
-本节复用 `tdd`/`implement` 的 Todo 规定，`tdd-implement` 仅做多 issue 编排与串联，不再重写层次细节。
+本节复用 `tdd`/`implement` 的 Todo 规定，`tdd-implement` 仅做多 issue 串行（主代理按依赖顺序）与单 issue 闭环，不再重写层次细节。
 
 ### 拆分层级（大小任务层次）
 
@@ -255,7 +250,7 @@
 3. **小任务**：Todo——seam 内可独立验证、可勾选的执行单元（T1/T2/T3…）
 4. **执行步**：Subtodo——Todo 内的串行步骤（红 → 绿 → typecheck），回合内逐步勾选推进
 
-> 编排模式新增一层见 [SKILL.md](../SKILL.md#多-issue-编排按依赖分层并行) 主过程与 [orchestration.md](orchestration.md) 详规：**编排层** Feature——`.scratch/<feature>/` 下全部 issues，按 `Blocked by` 分层；每层一组并行子代理，每子代理一个 issue 的完整 ①→⑦。
+> 多 issue（串行）新增一层见 [SKILL.md](../SKILL.md#多-issue-编排按依赖串行主代理直接执行) 与 [orchestration.md](orchestration.md)：**编排层** Feature——`.scratch/<feature>/` 下全部 issues，按 `Blocked by` 分层；主代理按层串行、层内亦串行，每 issue 完整 ①→⑦ 并单独提交。
 
 ### Todo 清单格式
 
@@ -267,7 +262,7 @@
 - 完成标准（DoD）：该 seam 测试全绿 + typecheck 通过 + 既有测试不受影响
 - 执行步（Subtodo）：`T1-R` 红（写失败测试）→ `T1-G` 绿（最小实现）→ `T1-T` typecheck
 
-编排模式下 Todo 清单为**分层清单**：`L1: [01, 02] → L2: [03, 04] → L3: [05]`，每层内 issue 并行，层间串行；每 issue 的 DoD 为 `Status: resolved` + 独立 commit + 实施总结已落盘。
+编排模式下 Todo 清单为**分层清单**：`L1: [01, 02] → L2: [03, 04] → L3: [05]`，每层按依赖串行（不再并行）；每 issue 的 DoD 为 `Status: resolved` + 独立 commit + 实施总结已落盘。
 
 ### Todo 状态机
 
@@ -277,7 +272,7 @@ pending → in-progress → done
 ```
 
 - Subtodo 不单独设 `blocked`——阻塞状态归父 Todo，Subtodo 跟随父状态
-- 编排模式下 issue 粒度状态机：`pending → in-progress(子代理已派发) → done(Status: resolved)`；`blocked` 表示 `Blocked by` 依赖未满足，待前层全 `resolved` 后自动解阻。
+- 编排模式下 issue 粒度状态机：`pending → in-progress(主代理执行中) → done(Status: resolved)`；`blocked` 表示 `Blocked by` 依赖未满足，待前层全 `resolved` 后自动解阻。
 
 ### 粒度与回合归属
 
@@ -287,13 +282,13 @@ pending → in-progress → done
 - 每完成一个 todo 立即更新其状态，再进入下一个
 - todo 状态只按实际推进更新（pending → in-progress → done），不基于旧快照重写整个清单；已完成项（done）永不回退
 - 全部 todo 为 done 才进入阶段④
-- 编排模式下：每层全部 issue `done` 才进入下一层；全部层 `done` 后编排器做全量收敛验证。
+- 编排模式下：前层全部 issue `done` 才进入下一层；全部层 `done` 后执行全量收敛（A4）。
 
 ### 阻塞处理
 
 - 外部阻塞（权限拒绝、缺失授权、依赖不可用）→ 标记 `blocked`，记录所需授权或替代路径
 - 不静默停止；恢复后回到 `in-progress` 继续
-- 编排模式下：`Blocked by` 依赖阻塞由编排器自动管理——前层未全 `resolved` 时后层 `blocked`，前层收敛后自动解阻派发；不需人工确认依赖满足。
+- 编排模式下：`Blocked by` 依赖阻塞由主代理按层自动管理——前层未全 `resolved` 时后层 `blocked`，前层提交后自动解阻；不需人工确认依赖满足。
 
 ---
 
@@ -307,5 +302,4 @@ pending → in-progress → done
 | ⑤ Code Review | seams 遗漏 | → ② 补充 seams |
 | ⑤ Code Review | 需求偏差 | → ① 澄清需求 |
 
-编排模式回退主过程见 [SKILL.md](../SKILL.md#多-issue-编排按依赖分层并行) A5，详规见 [orchestration.md#A5](orchestration.md#a5-回退与冲突)：子代理内回退按上表在子代理内闭环；编排器层收敛失败（全量测试失败 / 目录不干净）→ 定位到失败 issue 所在层重派对应子代理。
-
+编排模式回退见 [orchestration.md](orchestration.md)：单 issue 内回退按上表在当 issue 内闭环；层收敛/全量失败定位到失败 issue 所在层重做该 issue 的失败 seam。
