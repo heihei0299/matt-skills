@@ -26,7 +26,7 @@
    - 无法解析的行 → 视为无依赖，并在编排总结中注明告警
 2. 以 issue 编号为节点、`Blocked by` 为有向边构建 DAG；若检测到环，立即报错并列出环上节点，不进入调度。
 3. 读取 `spec.md`（若存在）作为共享上下文；同时读取 `CONTEXT.md` 与 `docs/adr/` 供一致性校验。
-
+4. **强制初始化 `progress.md`**：在 `.scratch/<feature>/progress.md` 落 `## DAG` + `## Layers (Kahn L1..Ln)` + `## Progress` 空表（`| NN | Status | Commit | Review | Tests |`），作为编排态唯一派生视图（真相源仍为 `spec` + `issues/*.md`）。
 ### A1. 拓扑分层
 
 对 DAG 做 Kahn 分层（BFS 拓扑）：
@@ -47,8 +47,8 @@ for each 层 Li in L1..Ln:
   for each issue in Li（按编号顺序）:
     主代理直接执行该 issue 的完整 ①→⑦：
       ①理解需求 → ②确认 seams → ③红-绿循环（每 cycle 后 typecheck）→ ④相关测试 → ⑤code-review（双轴，逐 issue）→ ⑥commit-check + 单独 commit → ⑦收尾（Status: resolved + ## 实施总结 + map.md 指针如为 wayfinder 产物 + 目录卫生）
-    产回执卡片（改动文件/测试结果/commit hash）并回写该 issue 文件后再取下一 issue
-  层收敛：该层全部 issue `Status: resolved` 且各自独立 commit 已落盘、相关测试通过、`git status` 卫生、历史校验通过，才进下一层
+    产回执卡片（改动文件/测试结果/commit hash）并回写该 issue 文件后**强制更新 `progress.md` 该行**（`Status`/`Commit`/`Review`/`Tests`）后再取下一 issue
+  层收敛：该层全部 issue `Status: resolved` 且 `progress.md` 同步为 `done`、各自独立 commit 已落盘、相关测试通过、`git status` 卫生、历史校验通过，才进下一层
 全部层串行完成后进入 A4
 ```
 
@@ -59,7 +59,7 @@ for each 层 Li in L1..Ln:
 ### A3. 层收敛
 
 每层全部 issue 串行完成后，主代理执行层收敛 4 项（全部通过才进下一层）：
-1. 该层全部 issue `Status: resolved` 且 `## 实施总结` 已落盘
+1. 该层全部 issue `Status: resolved` 且 `## 实施总结` 已落盘且 `progress.md` 同步为 `done`
 2. 相关测试通过（该层 issue 相关；全量仅在 A4）
 3. `git status` 卫生（仅删本次临时产物）
 4. 历史校验 `git merge-base --is-ancestor $BASE_HEAD HEAD` 通过
@@ -76,9 +76,9 @@ for each 层 Li in L1..Ln:
 
 ### 出口条件
 
-- 全部 issue `Status: resolved` + 各自 `## 实施总结` 已落盘
+- 全部 issue `Status: resolved` + 各自 `## 实施总结` 已落盘且 `progress.md` 同步为 `done`
 - 全量测试套件通过
-- 工作区干净
+- 工作区干净且 `progress.md` 与 `issues/*.md` 一致（不一致时以 `issues/*.md` 为准，`progress.md` 为派生可重算）
 
 ### 边界
 

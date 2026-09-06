@@ -411,6 +411,24 @@ test('SKILL.md description is slim with leading word and branch triggers', () =>
   assert.doesNotMatch(skill, /then typecheck, review, commit/);
 });
 
+
+test('orchestration maintains progress.md as derived view', () => {
+  assert.match(orchestration, /progress\.md/);
+  assert.match(orchestration, /DAG.*Layers|Layers.*DAG/s);
+  assert.match(orchestration, /派生视图/);
+  assert.match(orchestration, /真相源.*spec.*issues/);
+  assert.match(orchestration, /强制.*progress\.md|progress\.md.*强制/);
+});
+
+test('stages ⑦ forces progress.md update after each task', () => {
+  assert.match(stages, /progress\.md/);
+  assert.match(stages, /Status.*Commit.*Review/);
+});
+
+test('SKILL.md mentions progress.md', () => {
+  assert.match(skill, /progress\.md/);
+});
+
 test('stages.md no longer duplicates orchestration appendix (single source of truth)', () => {
   assert.doesNotMatch(stages, /附录.*多 issue 编排/);
   assert.doesNotMatch(stages, /A0.*依赖图构建/);

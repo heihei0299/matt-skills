@@ -15,7 +15,7 @@ description: "Multi-task orchestrator: use when the user provides a spec/ticket 
 - **多 issue 编排**：`.scratch/<feature>/issues/` 下多 `task` 时走编排模式——见上节与 [orchestration.md](references/orchestration.md)。
 ## 多 issue 编排（按依赖串行，主代理直接执行）
 
-触发见 [orchestration.md](references/orchestration.md)；`.scratch/<feature>/issues/` 下多文件时触发，主过程 A0 依赖图 → A1 Kahn 分层 L1入度0→L2→Ln → A2 主代理串行调度（按层串行、层内亦串行，主代理直接执行完整 ①→⑦，禁止子代理派发；每 issue 单独 `commit`，绿后即 `code-review` + `commit-check` 双门禁） → A3 层收敛 → A4 全量收敛。`Blocked by` 仍为排序输入，三入口（单 `spec` / `Type: task` issue / `wayfinder task`）同构。
+触发见 [orchestration.md](references/orchestration.md)；`.scratch/<feature>/issues/` 下多文件时触发，主过程 A0 依赖图 → A1 Kahn 分层 L1入度0→L2→Ln → A2 主代理串行调度（按层串行、层内亦串行，主代理直接执行完整 ①→⑦，禁止子代理派发；每 issue 单独 `commit`，绿后即 `code-review` + `commit-check` 双门禁） → A3 层收敛 → A4 全量收敛。`Blocked by` 仍为排序输入，三入口（单 `spec` / `Type: task` issue / `wayfinder task`）同构。强制维护 `.scratch/<feature>/progress.md`（`DAG` + `Layers` + `Progress` 表，派生视图，真相源为 `spec` + `issues/*.md`）。
 ## Steps
 
 按序执行，每步达到完成条件才进入下一步；进入任一步前先读取其在 [stages.md](references/stages.md) 的定义。
