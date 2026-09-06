@@ -33,7 +33,7 @@ The one-time action of setting up a Target Repository: copying `template/` into 
 _Avoid_: inherit, bootstrap
 
 **Sync** (同步):
-`matt-skills sync` 同步 Target Repository 的模板与技能：默认仅对比不写盘（`check`），`--apply` 为安全增量（`AGENTS.md` 有定制如 `tdd-implement` 则跳过，`.agents/skills` 全量 `rm+cp` 强制覆盖但 `force` 外不 `remove` 多余技能，`template/.agents/.opencode/.pi` 增量 `add/update`，旧镜像 `.pi/skills` + `.opencode/skills` 中残留的共享技能自动清理但保留项目自定义）、`--force` 为硬盖（`AGENTS.md` 备份 `.bak` 后强制覆盖，技能与模板全量 `add/update/remove`，含多余技能删除与旧镜像清理）。`update` 已合并到 `sync` 并删除。
+`matt-skills sync` 同步 Target Repository 的模板与技能：`--dry-run` 仅对比不写盘（`check`，`--json` 可解析，有差异 `exit 1`），默认安全增量（`AGENTS.md` 有定制如 `tdd-implement` 则跳过，`.agents/skills` 按默认范围 23 `rm+cp` 覆盖但不删多余技能，`template/.opencode/.pi` 增量 `add/update`，旧镜像 `.pi/skills` + `.opencode/skills` 中残留的共享技能自动清理但保留项目自定义）、`--all` 仅更新同名技能内容（存在则覆盖，不存在则新增）并更新 `AGENTS.md`（不跳过定制），不删多余技能。`update` 已合并到 `sync` 并删除。
 _Avoid_: update, force sync
 
 ## Skill Design

@@ -126,12 +126,13 @@ test('sync --dry-run --json 可解析，包含 head/counts/result 且 exitCode �
   }
 });
 
-test('sync --help 与 HELP 包含 --all/--force/--dry-run 说明（--apply 已退役）', () => {
+test('sync --help 与 HELP 包含 --all/--dry-run 说明（--force 已移除，--apply 已退役）', () => {
   const { stdout } = runCli(['--help']);
-  assert.match(stdout, /sync.*--all.*--force.*--dry-run/s, 'HELP sync usage should mention --all|--force|--dry-run');
+  assert.match(stdout, /sync.*--all.*--dry-run/s, 'HELP sync usage should mention --all and --dry-run');
+  assert.doesNotMatch(stdout, /--force/, 'HELP should not contain --force');
   assert.doesNotMatch(stdout, /--apply/, 'HELP should not contain deprecated --apply');
   const { stdout: syncHelp } = runCli(['sync', '--help']);
   assert.match(syncHelp, /--dry-run/, 'sync --help should mention --dry-run');
-  assert.match(syncHelp, /--all.*范围/, 'sync help should explain --all');
-  assert.match(syncHelp, /--force.*力度/, 'sync help should explain --force');
+  assert.match(syncHelp, /--all.*仅更新同名/, 'sync help should explain --all as same-name upsert');
+  assert.doesNotMatch(syncHelp, /--force/, 'sync help should not mention --force');
 });

@@ -35,20 +35,17 @@ npx @heihei0299/matt-skills init --all       # 安装全量 32（含 productivit
 
 `init` 做一件事：复制 `template/` 快照（`AGENTS.md`、`.agents/skills/`、`.opencode/`、`.pi/`）到当前目录；模板全量 32，默认仅安装默认范围 23（engineering 18 + 独有所需 1 + 核心独有 4，见 config/engineering.json 与 config/required.json），`--all` 展开全量，无需二次拉取上游。
 
-选项：`--dest <path>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件（直接覆盖，`AGENTS.md` 会备份到 `.bak`）（默认跳过）；`--all` 包含非编程技能（productivity，默认编程 23：engineering 18 + 独有所需 1 + 核心独有 4）。
+选项：`--dest <path>` 指定目标目录（默认当前目录）；`--all` 包含非编程技能（productivity，默认编程 23：engineering 18 + 独有所需 1 + 核心独有 4）（默认跳过已存在）。
 **增量同步（已有项目）**：已有项目更新到最新模板与技能：
 
 ```sh
-npx @heihei0299/matt-skills sync                                 # 默认仅对比不写盘（check），有差异 exit 1，--json 可解析（默认范围）
-npx @heihei0299/matt-skills sync --all --json                  # 全量对比
-npx @heihei0299/matt-skills sync --apply                         # 安全增量：AGENTS.md 定制跳过，编程技能 rm+cp，不删多余 productivity（默认保留）
-npx @heihei0299/matt-skills sync --apply --all                  # 安全增量全量
-npx @heihei0299/matt-skills sync --force                         # 硬盖编程：AGENTS.md 备份后硬盖，编程技能全量 add/update/remove（含 productivity 删除与旧镜像清理）
-npx @heihei0299/matt-skills sync --force --all                  # 硬盖全量
-npx @heihei0299/matt-skills sync --apply --dest <path> --upstream <url> --ref <ref> --json  # 选项可组合
+npx @heihei0299/matt-skills sync                                 # 默认安全增量：AGENTS.md 有定制则跳过，默认技能 23 rm+cp（不删多余）
+npx @heihei0299/matt-skills sync --all                           # 仅更新同名技能内容（存在则覆盖，不存在则新增）并更新 AGENTS.md（不跳过定制），不删多余
+npx @heihei0299/matt-skills sync --dry-run --json                # 预演：只比对不写盘（默认范围，--all 全量可透传）
+npx @heihei0299/matt-skills sync --dest <path> --upstream <url> --ref <ref> --json  # 选项可组合
 ```
 
-`sync` 专为已有项目设计，三档语义：默认 `check` 仅对比不写盘（默认范围 engineering + 独有所需，`--all` 展开全量，打印“上游 HEAD / 本地非独有 vs 上游 / 新增/更新/删除/一致”表，`--json` 可解析，有差异 `exit 1`）；`--apply` 安全增量写盘（默认模式：`AGENTS.md` 若含独有路由如 `tdd-implement` 则跳过，`.agents/skills` 按默认子集 `rm+cp force` 覆盖但不 `remove` 范围外 productivity，`template/.agents/.opencode/.pi` 按过滤增量 `add/update`，旧镜像 `.pi/skills` + `.opencode/skills` 中残留的共享技能自动清理但保留项目自定义；`--all` 则全量）；`--force` 硬盖（默认模式：`AGENTS.md` 备份 `.bak` 后强制覆盖，默认技能 `add/update/remove` 全做（含范围外 productivity 删除与旧镜像清理）；`--all` 则全量硬盖）。`--dest`、`--upstream`、`--ref`、`--json`、`--all` 在三档均可透传。
+`sync` 专为已有项目设计，两档语义：`--dry-run` 仅对比不写盘（默认范围 engineering + 独有所需，`--all` 展开全量同名集合，打印“上游 HEAD / 本地非独有 vs 上游 / 新增/更新/删除/一致”表，`--json` 可解析，有差异 `exit 1`）；默认安全增量写盘（`AGENTS.md` 若含 `tdd-implement` 则跳过，`.agents/skills` 按默认范围 23 `rm+cp` 覆盖但不删多余，`template/.opencode/.pi` 增量 `add/update`，旧镜像 `.pi/skills` + `.opencode/skills` 中残留共享技能自动清理但保留项目自定义）；`--all` 仅更新同名技能内容（存在则覆盖，不存在则新增）并更新 `AGENTS.md`（不跳过定制），不删多余。`--dest`、`--upstream`、`--ref`、`--json`、`--all`、`--dry-run` 可透传。
 目标仓库会话即自动加载共享技能（`.agents/skills/` 单一源，默认编程 23，`--all` 全量 32）与项目级全局配置（行为路由表、分文件约定）；项目自定义技能可按需放入 `.pi/skills/` 或 `.opencode/skills/`（按 harness 自动发现）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；9 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
 **pi-agent 用户**：初始化命令完全相同。pi 从 `.agents/skills/` 自动发现全部共享技能，无需额外指向；`.pi/skills/` 仅用于项目自定义。首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
 
@@ -118,16 +115,16 @@ pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边
 仓库内提供安装管理 CLI（`bin/cli.js`，依赖 `prompts`，见 `package.json`），同时作为 npm 包 `@heihei0299/matt-skills` 分发（`npx @heihei0299/matt-skills <command>`）：
 
 ```sh
-node bin/cli.js init [--dest <dir>] [--force] [--all]                               # 初始化项目：template 全量 32，默认编程 23
-node bin/cli.js sync [--apply|--force] [--all] [--dest <path>] [--upstream <url>] [--ref <ref>] [--json]  # 同步已有项目到最新（默认编程）
+node bin/cli.js init [--dest <dir>] [--all]                               # 初始化项目：template 全量 32，默认编程 23
+node bin/cli.js sync [--all] [--dry-run] [--dest <path>] [--upstream <url>] [--ref <ref>] [--json]  # 同步已有项目到最新（默认编程，--all 仅同名 upsert + AGENTS.md）
 node bin/cli.js list [--json] [--all]                                            # 列出技能（默认编程）
 node bin/cli.js install [选项]                                                 # 把技能复制到目标工具目录（交互式选择，默认编程）
-node bin/cli.js check [--json] [--all] [--upstream <url>] [--ref <ref>]          # 只读检查上游技能是否最新（等价 sync 默认，默认范围）
+node bin/cli.js check [--json] [--all] [--upstream <url>] [--ref <ref>]          # 只读检查上游技能是否最新（等价 sync --dry-run，默认范围）
 ```
 
-`init` 选项：`--dest <path>` 指定目标目录（默认当前目录）；`--force` 覆盖已存在的文件（直接覆盖，`AGENTS.md` 会备份到 `.bak`）（默认跳过）；`--all` 包含非编程（productivity，默认编程 23：engineering 18 + 独有所需 1 + 核心独有 4），见「初始化」。
-`sync` 选项：`--apply` 安全增量（默认模式：`AGENTS.md` 定制跳过、默认技能不删范围外 productivity，旧镜像清理保留项目自定义；`--all` 全量），`--force` 硬盖（默认模式：`AGENTS.md` 备份后硬盖、默认技能与模板全量 `remove` 含范围外 productivity 删除与旧镜像清理；`--all` 全量）；`--all` 展开全量；`--dest <path>` 目标目录；`--upstream <url>` 上游地址；`--ref <ref>` 上游分支；`--json` JSON 输出；默认无参等价 `check` 仅对比不写盘（默认范围，`--all` 全量），`--json` 可解析，有差异 `exit 1`。
-`check` 选项：`--json`、`--all`（默认范围：engineering + 独有所需）、`--upstream <url>`、`--ref <ref>`（等价 `sync` 默认 `check`）。
+`init` 选项：`--dest <path>` 指定目标目录（默认当前目录）；`--all` 包含非编程（productivity，默认编程 23：engineering 18 + 独有所需 1 + 核心独有 4），见「初始化」。
+`sync` 选项：`--all` 仅更新同名技能内容（存在则覆盖，不存在则新增）并更新 `AGENTS.md`（不跳过定制），不删多余；`--dry-run` 预演（只比对不写盘，`--json` 可解析，有差异 `exit 1`）；`--all` 展开同名全量；`--dest <path>` 目标目录；`--upstream <url>` 上游地址；`--ref <ref>` 上游分支；`--json` JSON 输出；默认即安全增量（`AGENTS.md` 有定制则跳过）。
+`check` 选项：`--json`、`--all`（默认范围：engineering + 独有所需）、`--upstream <url>`、`--ref <ref>`（等价 `sync --dry-run`）。
 
 `install` 选项：
 
@@ -141,14 +138,12 @@ node bin/cli.js check [--json] [--all] [--upstream <url>] [--ref <ref>]         
 
 本仓库的 `.agents/skills/` 中 **非独有技能** 来自 `mattpocock/skills` 上游。已实现双通道自动同步：
 
-- **本地 CLI**：`matt-skills sync` 三档——默认 `check` 只读比对（等价 `matt-skills check`，有差异 `exit 1`，`--json` 可解析）、`matt-skills sync --apply` 安全增量、`matt-skills sync --force` 硬盖；`matt-skills check [--json] [--upstream <url>] [--ref <ref>]` 仍保留为只读别名；`matt-skills update` 已合并到 `sync --apply`（执行提示 `update 已合并到 sync --apply` 且 `exit 1`）
-- **GitHub Actions**：`.github/workflows/sync-upstream.yml` 每周一 02:00 UTC 自动 `check`，有差异则 `apply` 并提 PR（`upstream-sync/<short-sha>`），支持 `workflow_dispatch` 手动触发（`ref`/`dry_run` 参数）
-
+- **本地 CLI**：`matt-skills sync` 两档——`--dry-run` 只读比对（有差异 `exit 1`，`--json` 可解析）、默认安全增量与 `sync --all` 仅同名 upsert + `AGENTS.md`；`matt-skills check [--json] [--upstream <url>] [--ref <ref>]` 为只读别名（等价 `sync --dry-run`）；`matt-skills update` 已合并到 `sync`（执行提示 `update 已合并到 sync` 且 `exit 1`）
 ```sh
-npx @heihei0299/matt-skills sync --json              # 默认 check 只读检查，JSON 输出：{ head, counts, result: { added, updated, renamed, removed, same } }
-npx @heihei0299/matt-skills sync --apply             # 安全增量写盘
-npx @heihei0299/matt-skills sync --force             # 硬盖写盘
-npx @heihei0299/matt-skills check --json             # 等价 sync 默认 check
+npx @heihei0299/matt-skills sync --dry-run --json              # 预演只读检查，JSON 输出：{ head, counts, result: { added, updated, renamed, removed, same } }
+npx @heihei0299/matt-skills sync                               # 默认安全增量（AGENTS.md 定制跳过，默认技能 23）
+npx @heihei0299/matt-skills sync --all                         # 仅同名 upsert + AGENTS.md
+npx @heihei0299/matt-skills check --json             # 等价 sync --dry-run
 node scripts/sync-upstream.js --check               # 等价底层脚本（CLI sync/check 的实现）
 node scripts/sync-upstream.js --apply --dry-run
 ```

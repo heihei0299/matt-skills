@@ -56,12 +56,15 @@ test('matt-skills sync --dest missing value exits 1', () => {
   assert.match(r.stderr, /unknown option.*--dest.*requires a value|error/);
 });
 
-test('matt-skills sync default safe, --all/--force, --all --force mutual exclusive', () => {
+test('matt-skills sync --all 更新同名且 --force 已移除', () => {
   const { stdout: h } = runCli(['sync', '--help']);
   assert.match(h, /--all/);
-  assert.match(h, /--force/);
+  assert.doesNotMatch(h, /--force/);
   assert.match(h, /--dry-run/);
-  const r = runCli(['sync', '--all', '--force']);
+  const r = runCli(['sync', '--force']);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /--all and --force are mutually exclusive/);
+  assert.match(r.stderr, /unknown option '--force'/);
+  const r2 = runCli(['sync', '--all', '--force']);
+  assert.equal(r2.status, 1);
+  assert.match(r2.stderr, /unknown option '--force'/);
 });

@@ -48,7 +48,7 @@ const HELP_GLOBAL = `matt-skills — install and manage this skill collection
 
 Usage:
   matt-skills init [options]                   Initialize a project: template + skills (.agents/skills)
-  matt-skills sync [--all|--force|--dry-run] [--dest <path>]   Sync existing project to latest template + skills
+  matt-skills sync [--all|--dry-run] [--dest <path>]   Sync existing project to latest template + skills
   matt-skills list [--all] [--json]            List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
   matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
@@ -64,7 +64,6 @@ Usage:
 
 Init options:
   --dest <path>   Target directory (default: current directory)
-  --force         Overwrite existing files
   --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + required 1 + default proprietary 4 → 23)
   --help, -h      Show this help
 
@@ -74,16 +73,15 @@ Init options:
 const HELP_SYNC = `matt-skills sync — Sync existing project to latest template + skills
 
 Usage:
-  matt-skills sync [--all|--force|--dry-run] [--dest <path>]
+  matt-skills sync [--all|--dry-run] [--dest <path>]
 
 Sync options:
-  --all           范围：含非编程与可选独有（默认编程 23：engineering 18 + 独有所需 1 + 核心独有 4）
-  --force         力度：硬盖（备份 .bak + 删多余，全量 add/update/remove）
+  --all           仅更新同名技能内容（存在则覆盖，不存在则新增）并更新 AGENTS.md
   --dry-run       预演：只比对不写盘
   --dest <path>   Target directory (default: current directory)
   --help, -h      Show this help
 
-说明：默认不带参即安全增量同步默认技能（23）；--all 与 --force 互斥。
+说明：默认不带 --all 仅增量同步默认技能（23）且 AGENTS.md 有定制则跳过；--all 时对同名技能 upsert 并强制更新 AGENTS.md。
 
 提示：matt-skills --help 查看全量
 `;
@@ -183,14 +181,6 @@ async function pathExists(p) {
     return false;
   }
 }
-
-async function backupIfExists(p) {
-  if (!(await pathExists(p))) return null;
-  const bak = `${p}.bak`;
-  await cp(p, bak, { recursive: true, force: true });
-  return bak;
-}
-
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
 
 // 统一源：共享技能全部在 .agents/skills，harness 的 .pi/skills/.opencode/skills 仅用于项目自定义
@@ -289,22 +279,15 @@ async function installCommand({ dest, all, force, tools, global }) {
   }
 }
 
-async function initCommand({ dest, force, all }) {
+async function initCommand({ dest, all }) {
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
   const onlyProgramming = !all;
-  if (!force && (await pathExists(marker))) {
-    process.stdout.write('模板已存在（AGENTS.md），跳过；用 --force 覆盖\n');
+  if (await pathExists(marker)) {
+    process.stdout.write('模板已存在（AGENTS.md），跳过\n');
   } else {
-    if (force && (await pathExists(marker))) {
-      const cur = path.join(target, 'AGENTS.md');
-      if (await pathExists(cur)) await backupIfExists(cur);
-      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-      process.stdout.write('模板：已覆盖（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
-    } else {
-      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-      process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
-    }
+    await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+    process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     // 默认范围（engineering + 独有所需 + 默认独有），--all 才保留其余 productivity
     if (onlyProgramming && path.resolve(target) !== path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), '..'))) {
       const engineering = await loadEngineeringSkills();
@@ -348,7 +331,7 @@ async function initCommand({ dest, force, all }) {
   }
   process.stdout.write(`目标路径：${target}\n`);
 }
-async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref }) {
+async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   const onlyProgramming = !all;
   if (dryRun) {
     const { compare } = await import('../scripts/sync-upstream.js');
@@ -409,19 +392,16 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
     if (onlyProgramming) await copyTemplateFiltered();
     else await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
     process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
-  } else if (force) {
-    process.stdout.write('同步：检测到现有项目，将增量更新\n');
-    await backupIfExists(path.join(target, 'AGENTS.md'));
-    if (onlyProgramming) await copyTemplateFiltered();
-    else await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
-    process.stdout.write('模板：已覆盖（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
   } else {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
     let skipAgents = false;
-    try {
-      const content = await readFile(path.join(target, 'AGENTS.md'), 'utf8');
-      if (content.includes('tdd-implement')) skipAgents = true;
-    } catch {}
+    // --all 时强制更新 AGENTS.md，不跳过
+    if (!all) {
+      try {
+        const content = await readFile(path.join(target, 'AGENTS.md'), 'utf8');
+        if (content.includes('tdd-implement')) skipAgents = true;
+      } catch {}
+    }
     if (skipAgents) {
       if (onlyProgramming) {
         await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
@@ -446,7 +426,7 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
       process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
   }
-  // 技能同步：按默认范围过滤（engineering + 独有所需 + 默认独有，--all 全量）
+  // 技能同步：--all 仅更新同名技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围 23，--all 时按全量同名集合处理，不删多余
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const allNames = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== 'skill-creator' && e.name !== '.git').map((e) => e.name);
   let allSkills = allNames.sort();
@@ -474,22 +454,6 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
     } else {
       await cp(src, dst, { recursive: true, force: true });
       installed++;
-    }
-  }
-  // --force 时删除多余；默认模式下多余指不在默认集合中的，--all 模式下多余指不在全量中的
-  // 默认安全增量保留多余（不删除），符合“默认保留、--force 删除”
-  if (force) {
-    let localEntries = [];
-    try {
-      localEntries = await readdir(skillsDir, { withFileTypes: true });
-    } catch {}
-    for (const e of localEntries) {
-      if (!e.isDirectory()) continue;
-      if (e.name.endsWith('.bak')) continue;
-      if (e.name === '.git') continue;
-      if (e.name === 'skill-creator') continue;
-      if (allSkills.includes(e.name)) continue;
-      await rm(path.join(skillsDir, e.name), { recursive: true, force: true });
     }
   }
   // 旧镜像自动清理：.pi/skills 与 .opencode/skills 中残留的共享技能一律删除，保留项目自定义
@@ -526,7 +490,6 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
 
 function parseInitArgs(args) {
   let dest;
-  let force = false;
   let all = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -534,18 +497,16 @@ function parseInitArgs(args) {
       if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--dest' requires a value`);
       dest = args[++i];
     } else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
-    else if (arg === '--force') force = true;
     else if (arg === '--all') all = true;
     else if (arg === '--help' || arg === '-h') {} // handled at main level, ignore here
     else if (arg.startsWith('-')) throw new Error(`unknown option '${arg}' for command 'init'`);
     else throw new Error(`unknown argument '${arg}' for command 'init'`);
   }
-  return { dest, force, all };
+  return { dest, all };
 }
 
 function parseSyncArgs(args) {
   let dest;
-  let force = false;
   let all = false;
   let dryRun = false;
   let json = false;
@@ -557,7 +518,6 @@ function parseSyncArgs(args) {
       if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--dest' requires a value`);
       dest = args[++i];
     } else if (arg.startsWith('--dest=')) dest = arg.slice('--dest='.length);
-    else if (arg === '--force') force = true;
     else if (arg === '--all') all = true;
     else if (arg === '--dry-run') dryRun = true;
     else if (arg === '--json') json = true;
@@ -574,8 +534,7 @@ function parseSyncArgs(args) {
     else if (arg.startsWith('-')) throw new Error(`unknown option '${arg}' for command 'sync'`);
     else throw new Error(`unknown argument '${arg}' for command 'sync'`);
   }
-  if (all && force) throw new Error(`--all and --force are mutually exclusive, choose one`);
-  return { dest, force, all, dryRun, json, upstreamUrl, ref };
+  return { dest, all, dryRun, json, upstreamUrl, ref };
 }
 
 function parseInstallArgs(args) {

@@ -208,37 +208,29 @@ test('`init` on an already-initialized project skips without overwriting', () =>
   }
 });
 
-test('`init --force` overwrites an existing project (default 23)', () => {
+test('`init --force` is rejected (no hard overwrite)', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const first = runCli(['init', '--dest', dest]);
     assert.equal(first.status, 0, first.stderr);
     fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL EDIT');
-    const { status, stdout, stderr } = runCli(['init', '--dest', dest, '--force']);
-    assert.equal(status, 0, stderr);
-    assert.match(stdout, /模板：已(复制|备份|覆盖)/);
-    const installed = listDir(path.join(dest, '.agents', 'skills'));
-    assert.deepEqual(installed, [...PROGRAMMING_SKILL_NAMES].sort());
-    const source = fs.readFileSync(path.join(REPO_ROOT, 'template', 'AGENTS.md'), 'utf8');
-    assert.equal(
-      fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'),
-      source,
-      'AGENTS.md should be restored from the template by --force',
-    );
+    const { status, stderr } = runCli(['init', '--dest', dest, '--force']);
+    assert.equal(status, 1);
+    assert.match(stderr, /unknown option '--force'/);
+    assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
 });
 
-test('`init --force --all` overwrites with all 32', () => {
+test('`init --force --all` is rejected', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const first = runCli(['init', '--dest', dest]);
     assert.equal(first.status, 0, first.stderr);
-    const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest, '--force']);
-    assert.equal(status, 0, stderr);
-    const installed = listDir(path.join(dest, '.agents', 'skills'));
-    assert.deepEqual(installed, [...SKILL_NAMES].sort());
+    const { status, stderr } = runCli(['init', '--all', '--dest', dest, '--force']);
+    assert.equal(status, 1);
+    assert.match(stderr, /unknown option '--force'/);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
