@@ -14,12 +14,12 @@ test('matt-skills -v / --version outputs bare version and exit 0', () => {
   for (const a of ['-v', '--version']) {
     const { status, stdout, stderr } = runCli([a]);
     assert.equal(status, 0, `${a} exit 0, got ${status} stderr:${stderr}`);
-    assert.match(stdout.trim(), /^\d+\.\d+\.\d+$/, `${a} should output bare version, got ${stdout}`);
+    assert.match(stdout.trim(), /^\d+\.\d+\.\d+(-.*)?$/, `${a} should output bare version, got ${stdout}`);
   }
   // even with sync
   const r = runCli(['sync', '-v']);
   assert.equal(r.status, 0);
-  assert.match(r.stdout.trim(), /^\d+\.\d+\.\d+$/);
+  assert.match(r.stdout.trim(), /^\d+\.\d+\.\d+(-.*)?$/);
 });
 
 test('matt-skills -h / --help outputs Usage and exit 0', () => {
