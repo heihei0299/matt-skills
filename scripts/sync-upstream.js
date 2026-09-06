@@ -23,7 +23,7 @@ async function loadProprietary() {
     const raw = await readFile(PROPRIETARY_PATH, 'utf8');
     return new Set(JSON.parse(raw));
   } catch {
-    return new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test']);
+    return new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test', 'show-me']);
   }
 }
 
@@ -40,7 +40,7 @@ async function loadRequired() {
     const raw = await readFile(REQUIRED_PATH, 'utf8');
     return new Set(JSON.parse(raw));
   } catch {
-    return new Set(['grilling']);
+    return new Set(['grilling', 'grill-me', 'handoff']);
   }
 }
 

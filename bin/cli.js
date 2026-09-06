@@ -7,8 +7,8 @@ import prompts from 'prompts';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
-const PROPRIETARY_SKILLS = new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test']);
-const PROPRIETARY_DEFAULT = new Set(['tdd-implement', 'diagnose-fix', 'commit-check', 'grill-to-spec']); // 默认仅装核心 3，--all 才装全部 6
+const PROPRIETARY_SKILLS = new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test', 'show-me']);
+const PROPRIETARY_DEFAULT = new Set(['tdd-implement', 'diagnose-fix', 'commit-check', 'grill-to-spec', 'show-me']); // 默认仅装核心 4 + show-me，--all 才装全部 7
 const ENGINEERING_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'engineering.json');
 const REQUIRED_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'required.json');
 let ENGINEERING_SKILLS = null;
@@ -29,7 +29,7 @@ async function loadRequiredSkills() {
     const raw = await readFile(REQUIRED_PATH, 'utf8');
     REQUIRED_SKILLS = new Set(JSON.parse(raw));
   } catch {
-    REQUIRED_SKILLS = new Set(['grilling']);
+    REQUIRED_SKILLS = new Set(['grilling', 'grill-me', 'handoff']);
   }
   return REQUIRED_SKILLS;
 }
@@ -64,7 +64,7 @@ Usage:
 
 Init options:
   --dest <path>   Target directory (default: current directory)
-  --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + required 1 + default proprietary 4 → 23)
+  --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + required 4 + default proprietary 4 → 26)
   --help, -h      Show this help
 
 提示：matt-skills --help 查看全量
@@ -81,7 +81,7 @@ Sync options:
   --dest <path>   Target directory (default: current directory)
   --help, -h      Show this help
 
-说明：默认不带 --all 仅增量同步默认技能（23）且 AGENTS.md 有定制则跳过；--all 时对同名技能 upsert 并强制更新 AGENTS.md。
+说明：默认不带 --all 仅增量同步默认技能（26）且 AGENTS.md 有定制则跳过；--all 时对同名技能 upsert 并强制更新 AGENTS.md。
 
 提示：matt-skills --help 查看全量
 `;
@@ -92,7 +92,7 @@ Usage:
   matt-skills list [--all] [--json]
 
 List options:
-  --all           List all skills (default only core programming 23)
+  --all           List all skills (default only core programming 26)
   --json          Output as JSON
   --help, -h      Show this help
 
@@ -105,7 +105,7 @@ Usage:
   matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
 
 Check options:
-  --all           Include non-programming and optional proprietary; default only core programming (23: engineering 18 + required 1 + default proprietary 4)
+  --all           Include non-programming and optional proprietary; default only core programming (26: engineering 18 + required 4 + default proprietary 4)
   --json          Output as JSON
   --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
   --ref <ref>     Upstream ref (default: HEAD)
@@ -121,7 +121,7 @@ Usage:
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection — 共享技能统一指向 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义
-  --all           Install all skills (default only core programming 23); skips skill selection
+  --all           Install all skills (default only core programming 26); skips skill selection
   --force         Overwrite existing skills
   --global        Install to the user's global skill directories
   --project       Install to project skill directories (default)
@@ -426,7 +426,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
   }
-  // 技能同步：--all 仅更新同名技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围 23，--all 时按全量同名集合处理，不删多余
+  // 技能同步：--all 仅更新同名技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围 26，--all 时按全量同名集合处理，不删多余
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const allNames = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== 'skill-creator' && e.name !== '.git').map((e) => e.name);
   let allSkills = allNames.sort();

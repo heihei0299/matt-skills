@@ -9,7 +9,7 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-// Independent literal: the 32 skills shipped in this repo.
+// Independent literal: the 33 skills shipped in this repo.
 const SKILL_NAMES = [
   'ask-matt',
   'ci-guard',
@@ -32,6 +32,7 @@ const SKILL_NAMES = [
   'resolving-merge-conflicts',
   'scaffold-functional-test',
   'setup-matt-pocock-skills',
+  'show-me',
   'tdd',
   'tdd-implement',
   'teach',
@@ -45,7 +46,7 @@ const SKILL_NAMES = [
   'writing-for-agents',
 ];
 
-const PROPRIETARY = ['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test'];
+const PROPRIETARY = ['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test', 'show-me'];
 
 const PROGRAMMING_SKILL_NAMES = [
   'ask-matt',
@@ -55,15 +56,18 @@ const PROGRAMMING_SKILL_NAMES = [
   'diagnose-fix',
   'diagnosing-bugs',
   'domain-modeling',
+  'grill-me',
   'grill-to-spec',
   'grill-with-docs',
   'grilling',
+  'handoff',
   'implement',
   'improve-codebase-architecture',
   'prototype',
   'research',
   'resolving-merge-conflicts',
   'setup-matt-pocock-skills',
+  'show-me',
   'tdd',
   'tdd-implement',
   'to-spec',
@@ -117,7 +121,7 @@ function listDir(dir) {
     .sort();
 }
 
-test('`init` copies the programming template (default 23) into the target', () => {
+test('`init` copies the programming template (default 26) into the target', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
@@ -127,7 +131,7 @@ test('`init` copies the programming template (default 23) into the target', () =
     for (const rel of TEMPLATE_FILES_PROGRAMMING) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
-    // 独有所需 grilling 默认安装，其余 productivity 默认不装
+    // 独有所需 grilling/grill-me/handoff/show-me 默认安装，其余 productivity 默认不装
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')), '独有所需 grilling should be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/teach/SKILL.md')), 'productivity teach should NOT be installed by default');
   } finally {
@@ -135,7 +139,7 @@ test('`init` copies the programming template (default 23) into the target', () =
   }
 });
 
-test('`init --all` copies all 32 skills', () => {
+test('`init --all` copies all 33 skills', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
@@ -148,7 +152,7 @@ test('`init --all` copies all 32 skills', () => {
   }
 });
 
-test('`init` copies default skills (23) into .agents/skills/ by default', () => {
+test('`init` copies default skills (26) into .agents/skills/ by default', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
@@ -175,7 +179,7 @@ test('`init` copies default skills (23) into .agents/skills/ by default', () => 
   }
 });
 
-test('`init --all` copies all 32 skills into .agents/skills/', () => {
+test('`init --all` copies all 33 skills into .agents/skills/', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);

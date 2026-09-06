@@ -91,15 +91,15 @@ test('check 默认能发现独有所需的更新：productivity 桶的 grilling 
   }
 });
 
-test('非独有所需的 productivity 默认不纳入：handoff 变更默认无感、--all 才报', () => {
+test('非独有所需的 productivity 默认不纳入：teach 变更默认无感、--all 才报', () => {
   const required = new Set(readJson('config/required.json'));
-  assert.ok(!required.has('handoff'), 'handoff 不应在独有所需名单中');
-  const upstream = createBucketedUpstream({ modifySkill: 'handoff', modifyBucket: 'productivity' });
+  assert.ok(!required.has('teach'), 'teach 不应在独有所需名单中');
+  const upstream = createBucketedUpstream({ modifySkill: 'teach', modifyBucket: 'productivity' });
   try {
     const r1 = runCli(['check', '--upstream', upstream]);
     assert.equal(r1.status, 0, `默认应无差异，got ${r1.status} stdout:\n${r1.stdout}`);
     const r2 = runCli(['check', '--all', '--upstream', upstream]);
-    assert.match(r2.stdout, /更新 \(1\):.*handoff/s, `--all 应报告 handoff 更新:\n${r2.stdout}`);
+    assert.match(r2.stdout, /更新 \(1\):.*teach/s, `--all 应报告 teach 更新:\n${r2.stdout}`);
     assert.equal(r2.status, 1, `expected exit 1, got ${r2.status}`);
   } finally {
     fs.rmSync(upstream, { recursive: true, force: true });

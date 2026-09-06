@@ -4,5 +4,6 @@
   "grill-to-spec",
   "diagnose-fix",
   "commit-check",
-  "scaffold-functional-test"
+  "scaffold-functional-test",
+  "show-me"
 ]
