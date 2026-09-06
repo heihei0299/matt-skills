@@ -70,16 +70,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify tag is on main
+      - name: Verify tag is on main or test prerelease
         run: |
           TAG_COMMIT=$(git rev-list -n 1 "$GITHUB_REF")
-          if ! git branch -a --contains "$TAG_COMMIT" | grep -qE "main|origin/main"; then
-            echo "Tag $GITHUB_REF is not on main branch, abort"
-            git branch -a --contains "$TAG_COMMIT" || true
-            exit 1
+          TAG=${GITHUB_REF#refs/tags/v}
+          if [[ "$TAG" == *"-"* ]]; then
+            echo "Prerelease tag $GITHUB_REF ($TAG) — allow not on main (test channel)"
+          else
+            if ! git branch -a --contains "$TAG_COMMIT" | grep -qE "main|origin/main"; then
+              echo "Tag $GITHUB_REF is not on main branch, abort"
+              git branch -a --contains "$TAG_COMMIT" || true
+              exit 1
+            fi
+            echo "Tag $GITHUB_REF is on main, proceeding"
           fi
-          echo "Tag $GITHUB_REF is on main, proceeding"
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -97,8 +101,16 @@ jobs:
           npm version "$TAG" --no-git-tag-version --allow-same-version
           echo "package.json version is now $(node -p "require('./package.json').version")"
 
-      - name: Publish to npm
-        run: npm publish --access public
+      - name: Publish to npm (test channel for prerelease)
+        run: |
+          TAG=${GITHUB_REF#refs/tags/v}
+          if [[ "$TAG" == *"-"* ]]; then
+            NPM_TAG="test"
+          else
+            NPM_TAG="latest"
+          fi
+          echo "Publishing $TAG with npm tag $NPM_TAG"
+          npm publish --tag "$NPM_TAG" --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
