@@ -1,6 +1,6 @@
 ---
 name: tdd-implement
-description: "TDD seam red-green loop: use when the user provides a spec/ticket for test-first implementation or asks for red-green loop through typecheck/review/commit. For non-TDD implementation use implement; for technique alone use tdd."
+description: "Multi-task orchestrator: use when the user provides a spec/ticket or Type:task issues (wayfinder/to-tickets/single spec) for test-first implementation. Main agent executes tasks sequentially by Blocked-by Kahn order, each task full ①→⑦ implement (seam red-green → typecheck → code-review → commit-check → single commit). For non-TDD use implement; for technique alone use tdd."
 ---
 
 # TDD Implement
