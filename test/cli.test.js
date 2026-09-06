@@ -45,7 +45,7 @@ const SKILL_NAMES = [
   'writing-for-agents',
 ];
 
-// 编程子集：engineering (18) + 核心独有 (3) = 22，默认 list/install 仅此
+// 默认子集：engineering (18) + 独有所需 (1) + 核心独有 (4) = 23，默认 list/install 仅此
 const PROGRAMMING_SKILL_NAMES = [
   'ask-matt',
   'code-review',
@@ -56,6 +56,7 @@ const PROGRAMMING_SKILL_NAMES = [
   'domain-modeling',
   'grill-to-spec',
   'grill-with-docs',
+  'grilling',
   'implement',
   'improve-codebase-architecture',
   'prototype',
@@ -91,11 +92,11 @@ function runCli(args, cwd = REPO_ROOT, opts = {}) {
   });
 }
 
-test('`list` exits 0 and prints 22 programming skills by default', () => {
+test('`list` exits 0 and prints 23 default skills by default', () => {
   const { status, stdout, stderr } = runCli(['list']);
   assert.equal(status, 0, stderr);
   const lines = stdout.trim().split('\n').filter(Boolean);
-  assert.equal(lines.length, 22);
+  assert.equal(lines.length, 23);
   const names = lines.map((line) => line.split(' — ')[0]);
   assert.deepEqual([...names].sort(), [...PROGRAMMING_SKILL_NAMES].sort());
 });
@@ -117,11 +118,11 @@ test('`list` prints each skill description from its frontmatter', () => {
   }
 });
 
-test('`list --json` emits a JSON array with 22 programming skills by default', () => {
+test('`list --json` emits a JSON array with 23 default skills by default', () => {
   const { status, stdout, stderr } = runCli(['list', '--json']);
   assert.equal(status, 0, stderr);
   const skills = JSON.parse(stdout);
-  assert.equal(skills.length, 22);
+  assert.equal(skills.length, 23);
   assert.deepEqual(
     skills.map((s) => s.name).sort(),
     [...PROGRAMMING_SKILL_NAMES].sort(),
@@ -148,7 +149,7 @@ test('`list` works from any working directory (temp dir)', () => {
   try {
     const { status, stdout, stderr } = runCli(['list'], tmp);
     assert.equal(status, 0, stderr);
-    assert.equal(stdout.trim().split('\n').filter(Boolean).length, 22);
+    assert.equal(stdout.trim().split('\n').filter(Boolean).length, 23);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

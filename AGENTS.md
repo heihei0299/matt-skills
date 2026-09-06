@@ -26,7 +26,7 @@
 
 以全局 AGENTS.md 安全铁律为准，本仓库无附加差异。
 
-## 行为路由（默认 22 自动发现，`--all` 展开至 32）
+## 行为路由（默认 23 自动发现，`--all` 展开至 32）
 
 命中即行动，回复中简短声明所用技能与原因。
 
@@ -37,10 +37,10 @@
 - 领域术语/ADR → domain-modeling；模块接口 → codebase-design；巨型规划 → wayfinder
 - 诊断 → diagnose-fix（编排 diagnosing-bugs + tdd，硬门槛）；审查 → code-review；合并冲突 → resolving-merge-conflicts；提交前 → commit-check（文档一致性 → 目录卫生 → commit message，三项）
 - 分诊 → triage；架构扫描 → improve-codebase-architecture；综合 spec → to-spec；拆票 → to-tickets
-- 可选（需 `--all` 才发现）：grill-me / grilling / handoff / teach / to-questionnaire / wait-what / writing-for-agents / ci-guard / scaffold-functional-test / instance-test
+- 可选（需 `--all` 才发现）：grill-me / handoff / teach / to-questionnaire / wait-what / writing-for-agents / ci-guard / scaffold-functional-test / instance-test
 - 兜底 → ask-matt；模板维护 → README.md
 
-显式触发（须用户 `/` 发起，默认 22 中仅 grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture 为默认；其余 teach/handoff/writing-for-agents 需 `--all`）：grill-to-spec、wayfinder、to-spec、to-tickets、triage、improve-codebase-architecture、teach、handoff、writing-for-agents
+显式触发（须用户 `/` 发起，默认 23 中仅 grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture 为默认；其余 teach/handoff/writing-for-agents 需 `--all`）：grill-to-spec、wayfinder、to-spec、to-tickets、triage、improve-codebase-architecture、teach、handoff、writing-for-agents
 
 ## 分文件
 

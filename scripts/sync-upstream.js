@@ -10,6 +10,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_SKILLS_DIR = path.join(ROOT, '.agents', 'skills');
 const PROPRIETARY_PATH = path.join(ROOT, 'config', 'proprietary.json');
 const ENGINEERING_PATH = path.join(ROOT, 'config', 'engineering.json');
+const REQUIRED_PATH = path.join(ROOT, 'config', 'required.json');
 const UPSTREAM_URL = 'https://github.com/mattpocock/skills.git';
 
 // 重命名映射：上游已重命名，本地旧名需迁移
@@ -32,6 +33,14 @@ async function loadEngineering() {
     return new Set(JSON.parse(raw));
   } catch {
     return new Set(['ask-matt','code-review','codebase-design','diagnosing-bugs','domain-modeling','grill-with-docs','implement','improve-codebase-architecture','prototype','research','resolving-merge-conflicts','setup-matt-pocock-skills','tdd','to-spec','to-tickets','triage','wayfinder','wizard']);
+  }
+}
+async function loadRequired() {
+  try {
+    const raw = await readFile(REQUIRED_PATH, 'utf8');
+    return new Set(JSON.parse(raw));
+  } catch {
+    return new Set(['grilling']);
   }
 }
 
@@ -120,12 +129,14 @@ export async function compare({ upstreamUrl, tmpDir, ref, onlyProgramming = true
   const upstreamRoot = fetched.dest;
   const upstreamMapFull = await collectUpstreamSkills(upstreamRoot);
   const localMapFull = await collectLocalSkills(proprietary);
-  // 编程子集：engineering 桶即编程（默认），--all 则含 productivity
+  // 默认范围：engineering 桶（编程）+ 独有所需（config/required.json，如 grill-to-spec 经 grill-with-docs 所需的 grilling）；--all 则含全部 productivity
+  const required = await loadRequired();
   const upstreamMap = onlyProgramming
-    ? new Map([...upstreamMapFull.entries()].filter(([, v]) => v.bucket === 'engineering'))
+    ? new Map([...upstreamMapFull.entries()].filter(([name, v]) => v.bucket === 'engineering' || required.has(name)))
     : upstreamMapFull;
   const localMap = localMapFull;
   const isEngineering = (name) => engineering.has(name);
+  const isDefault = (name) => engineering.has(name) || required.has(name);
 
   const added = [];
   const updated = [];
@@ -166,14 +177,14 @@ export async function compare({ upstreamUrl, tmpDir, ref, onlyProgramming = true
   for (const name of localMap.keys()) {
     if (renamedFrom.has(name)) continue;
     if (upstreamMap.has(name) || renamedTo.has(name)) continue;
-    // 编程模式下仅报告 engineering 本地技能的删除；productivity/instance-test 等跳过
-    if (onlyProgramming && !isEngineering(name)) continue;
+    // 默认模式下仅报告默认范围（engineering + 独有所需）内本地技能的删除；其余 productivity/instance-test 等跳过
+    if (onlyProgramming && !isDefault(name)) continue;
     // 全量模式下所有本地非独有且不在上游的都视为 removed
     removed.push(name);
   }
 
   const localCount = onlyProgramming
-    ? [...localMap.keys()].filter(isEngineering).length
+    ? [...localMap.keys()].filter((n) => isDefault(n)).length
     : localMap.size;
   return {
     head: fetched.head,
@@ -184,6 +195,7 @@ export async function compare({ upstreamUrl, tmpDir, ref, onlyProgramming = true
     localMapFull,
     proprietary: [...proprietary],
     engineering: [...engineering],
+    required: [...required],
     onlyProgramming,
     result: { added: added.sort(), updated: updated.sort(), same: same.sort(), removed: removed.sort(), renamed },
     counts: { upstream: upstreamMap.size, local: localCount, upstreamFull: upstreamMapFull.size, localFull: localMapFull.size },
@@ -247,7 +259,7 @@ function formatTable(cmp) {
   const { result, counts, head, onlyProgramming } = cmp;
   const lines = [];
   lines.push(`上游 HEAD: ${head}`);
-  const modeHint = onlyProgramming ? '（仅编程，engineering）' : '（全量，含 productivity）';
+  const modeHint = onlyProgramming ? '（默认，engineering + 独有所需）' : '（全量，含 productivity）';
   lines.push(`本地非独有: ${counts.local}  上游: ${counts.upstream} ${modeHint}`);
   lines.push('');
   const totalDiff = result.added.length + result.updated.length + result.removed.length + result.renamed.length;
@@ -291,7 +303,7 @@ Usage:
 Options:
   --check     只对比，不改动文件（默认）
   --apply     应用同步（覆盖 .agents/skills 非独有技能）
-  --all       包含非编程技能（productivity）；默认仅同步编程相关（engineering）
+  --all       包含全部非编程技能（productivity）；默认同步编程相关（engineering）+ 独有所需（config/required.json）
   --dry-run   演练模式，不写文件
   --json      以 JSON 输出结果
   --upstream  上游仓库 URL（默认 https://github.com/mattpocock/skills.git）

@@ -10,6 +10,7 @@ const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..
 const PROPRIETARY_SKILLS = new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test']);
 const PROPRIETARY_DEFAULT = new Set(['tdd-implement', 'diagnose-fix', 'commit-check', 'grill-to-spec']); // 默认仅装核心 3，--all 才装全部 6
 const ENGINEERING_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'engineering.json');
+const REQUIRED_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'required.json');
 let ENGINEERING_SKILLS = null;
 async function loadEngineeringSkills() {
   if (ENGINEERING_SKILLS) return ENGINEERING_SKILLS;
@@ -21,8 +22,19 @@ async function loadEngineeringSkills() {
   }
   return ENGINEERING_SKILLS;
 }
-function isProgrammingSkill(name, engineering) {
-  return PROPRIETARY_DEFAULT.has(name) || engineering.has(name);
+let REQUIRED_SKILLS = null;
+async function loadRequiredSkills() {
+  if (REQUIRED_SKILLS) return REQUIRED_SKILLS;
+  try {
+    const raw = await readFile(REQUIRED_PATH, 'utf8');
+    REQUIRED_SKILLS = new Set(JSON.parse(raw));
+  } catch {
+    REQUIRED_SKILLS = new Set(['grilling']);
+  }
+  return REQUIRED_SKILLS;
+}
+function isProgrammingSkill(name, engineering, required) {
+  return PROPRIETARY_DEFAULT.has(name) || engineering.has(name) || (required && required.has(name));
 }
 function isProgrammingAll(name, engineering) {
   return PROPRIETARY_SKILLS.has(name) || engineering.has(name);
@@ -53,7 +65,7 @@ Usage:
 Init options:
   --dest <path>   Target directory (default: current directory)
   --force         Overwrite existing files
-  --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + default proprietary 4 → 22)
+  --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + required 1 + default proprietary 4 → 23)
   --help, -h      Show this help
 
 提示：matt-skills --help 查看全量
@@ -65,13 +77,13 @@ Usage:
   matt-skills sync [--all|--force|--dry-run] [--dest <path>]
 
 Sync options:
-  --all           范围：含非编程与可选独有（默认仅编程 22）
+  --all           范围：含非编程与可选独有（默认编程 23：engineering 18 + 独有所需 1 + 核心独有 4）
   --force         力度：硬盖（备份 .bak + 删多余，全量 add/update/remove）
   --dry-run       预演：只比对不写盘
   --dest <path>   Target directory (default: current directory)
   --help, -h      Show this help
 
-说明：默认不带参即安全增量同步默认技能（22）；--all 与 --force 互斥。
+说明：默认不带参即安全增量同步默认技能（23）；--all 与 --force 互斥。
 
 提示：matt-skills --help 查看全量
 `;
@@ -82,7 +94,7 @@ Usage:
   matt-skills list [--all] [--json]
 
 List options:
-  --all           List all skills (default only core programming 22)
+  --all           List all skills (default only core programming 23)
   --json          Output as JSON
   --help, -h      Show this help
 
@@ -95,7 +107,7 @@ Usage:
   matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
 
 Check options:
-  --all           Include non-programming and optional proprietary; default only core programming (22)
+  --all           Include non-programming and optional proprietary; default only core programming (23: engineering 18 + required 1 + default proprietary 4)
   --json          Output as JSON
   --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
   --ref <ref>     Upstream ref (default: HEAD)
@@ -111,7 +123,7 @@ Usage:
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection — 共享技能统一指向 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义
-  --all           Install all skills (default only core programming 22); skips skill selection
+  --all           Install all skills (default only core programming 23); skips skill selection
   --force         Overwrite existing skills
   --global        Install to the user's global skill directories
   --project       Install to project skill directories (default)
@@ -143,12 +155,14 @@ async function listSkills({ onlyProgramming = false } = {}) {
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const skills = [];
   let engineering = null;
+  let required = null;
   if (onlyProgramming) engineering = await loadEngineeringSkills();
+  if (onlyProgramming) required = await loadRequiredSkills();
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     if (entry.name.endsWith('.bak')) continue;
     if (entry.name === 'skill-creator') continue;
-    if (onlyProgramming && !isProgrammingSkill(entry.name, engineering)) continue;
+    if (onlyProgramming && !isProgrammingSkill(entry.name, engineering, required)) continue;
     let content;
     try {
       content = await readFile(path.join(SKILLS_DIR, entry.name, 'SKILL.md'), 'utf8');
@@ -225,8 +239,9 @@ async function promptSkills(skills) {
 async function installCommand({ dest, all, force, tools, global }) {
   const onlyProgramming = !all;
   const engineering = onlyProgramming ? await loadEngineeringSkills() : null;
+  const required = onlyProgramming ? await loadRequiredSkills() : null;
   const skillsAll = await listSkills({ onlyProgramming: false });
-  const skills = onlyProgramming ? skillsAll.filter(s => isProgrammingSkill(s.name, engineering)) : skillsAll;
+  const skills = onlyProgramming ? skillsAll.filter(s => isProgrammingSkill(s.name, engineering, required)) : skillsAll;
   let targets;
   if (dest) {
     targets = [{ tool: null, dir: path.resolve(process.cwd(), dest) }];
@@ -290,16 +305,17 @@ async function initCommand({ dest, force, all }) {
       await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
       process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
-    // 默认仅编程（engineering + proprietary），--all 才保留 productivity
+    // 默认范围（engineering + 独有所需 + 默认独有），--all 才保留其余 productivity
     if (onlyProgramming && path.resolve(target) !== path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), '..'))) {
       const engineering = await loadEngineeringSkills();
+      const required = await loadRequiredSkills();
       const skillsDirFilter = path.join(target, '.agents', 'skills');
       try {
         const entries = await readdir(skillsDirFilter, { withFileTypes: true });
         for (const e of entries) {
           if (!e.isDirectory()) continue;
           if (e.name.endsWith('.bak') || e.name === '.git' || e.name === 'skill-creator') continue;
-          if (!isProgrammingSkill(e.name, engineering)) {
+          if (!isProgrammingSkill(e.name, engineering, required)) {
             await rm(path.join(skillsDirFilter, e.name), { recursive: true, force: true });
           }
         }
@@ -315,9 +331,10 @@ async function initCommand({ dest, force, all }) {
   } catch {}
   const allSkillsFull = await listSkills({ onlyProgramming: false });
   const engineeringForStats = await loadEngineeringSkills();
-  const programmingCount = allSkillsFull.filter(s => isProgrammingSkill(s.name, engineeringForStats)).length;
+  const requiredForStats = await loadRequiredSkills();
+  const programmingCount = allSkillsFull.filter(s => isProgrammingSkill(s.name, engineeringForStats, requiredForStats)).length;
   const upstreamFull = allSkillsFull.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
-  const upstreamProg = allSkillsFull.filter((s) => !PROPRIETARY_SKILLS.has(s.name) && engineeringForStats.has(s.name)).length;
+  const upstreamProg = allSkillsFull.filter((s) => !PROPRIETARY_SKILLS.has(s.name) && (engineeringForStats.has(s.name) || requiredForStats.has(s.name))).length;
   const displayTotal = onlyProgramming ? programmingCount : allSkillsFull.length;
   const displayUpstream = onlyProgramming ? upstreamProg : upstreamFull;
   if (path.resolve(skillsDir) === path.resolve(SKILLS_DIR)) {
@@ -339,7 +356,7 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
     if (json) {
       process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
     } else {
-      const modeHint = onlyProgramming ? '（仅编程）' : '（全量）';
+      const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量）';
       const lines = [];
       lines.push(`上游 HEAD: ${cmp.head}`);
       lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream} ${modeHint}`);
@@ -364,13 +381,13 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
 
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
-  // 模板同步：仅编程模式下过滤 skills，仅同步 programming 子集
+  // 模板同步：默认模式下过滤 skills，仅同步默认子集
   async function copyTemplateFiltered() {
     if (!onlyProgramming) {
       await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
       return;
     }
-    // 仅编程：分别复制非 skills 部分，skills 由后续 allSkills 循环处理
+    // 默认范围：分别复制非 skills 部分，skills 由后续 allSkills 循环处理
     await cp(path.join(TEMPLATE_DIR, 'AGENTS.md'), path.join(target, 'AGENTS.md'), { force: true });
     await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
     await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
@@ -429,13 +446,14 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
       process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
   }
-  // 技能同步：按编程过滤（默认仅编程，--all 全量）
+  // 技能同步：按默认范围过滤（engineering + 独有所需 + 默认独有，--all 全量）
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const allNames = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== 'skill-creator' && e.name !== '.git').map((e) => e.name);
   let allSkills = allNames.sort();
   if (onlyProgramming) {
     const engineering = await loadEngineeringSkills();
-    allSkills = allSkills.filter(n => isProgrammingSkill(n, engineering));
+    const required = await loadRequiredSkills();
+    allSkills = allSkills.filter(n => isProgrammingSkill(n, engineering, required));
   }
   const skillsDir = path.join(target, '.agents', 'skills');
   await mkdir(skillsDir, { recursive: true });
@@ -458,7 +476,7 @@ async function syncCommand({ dest, force, all, dryRun, json, upstreamUrl, ref })
       installed++;
     }
   }
-  // --force 时删除多余；仅编程模式下多余指不在编程集合中的，--all 模式下多余指不在全量中的
+  // --force 时删除多余；默认模式下多余指不在默认集合中的，--all 模式下多余指不在全量中的
   // 默认安全增量保留多余（不删除），符合“默认保留、--force 删除”
   if (force) {
     let localEntries = [];
@@ -595,16 +613,18 @@ async function checkCommand(args) {
   const json = args.includes('--json');
   const onlyProgramming = !args.includes('--all');
   const upstreamIdx = args.indexOf('--upstream');
-  const upstreamUrl = upstreamIdx !== -1 ? args[upstreamIdx + 1] : undefined;
+  const upstreamEq = args.find((x) => x.startsWith('--upstream='));
+  const upstreamUrl = upstreamIdx !== -1 ? args[upstreamIdx + 1] : (upstreamEq ? upstreamEq.slice('--upstream='.length) : undefined);
   const refIdx = args.indexOf('--ref');
-  const ref = refIdx !== -1 ? args[refIdx + 1] : undefined;
+  const refEq = args.find((x) => x.startsWith('--ref='));
+  const ref = refIdx !== -1 ? args[refIdx + 1] : (refEq ? refEq.slice('--ref='.length) : undefined);
   const cmp = await compare({ upstreamUrl, ref, onlyProgramming });
   if (json) {
     process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
   } else {
     const lines = [];
     lines.push(`上游 HEAD: ${cmp.head}`);
-    const modeHint = onlyProgramming ? '（仅编程）' : '（全量）';
+    const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量）';
     lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream} ${modeHint}`);
     lines.push('');
     const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
@@ -695,10 +715,11 @@ async function main() {
   }
   if (command === 'check') {
     // check strict: allow --all/--json/--upstream/--ref/--help
-    for (const a of rest) {
+    for (let i = 0; i < rest.length; i++) {
+      const a = rest[i];
       if (a === '--all' || a === '--json' || a === '--help' || a === '-h') continue;
-      if (a === '--upstream' || a.startsWith('--upstream=')) continue;
-      if (a === '--ref' || a.startsWith('--ref=')) continue;
+      if (a === '--upstream' || a === '--ref') { i++; continue; }
+      if (a.startsWith('--upstream=') || a.startsWith('--ref=')) continue;
       if (a.startsWith('-')) { process.stderr.write(`error: unknown option '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 1; return; }
       process.stderr.write(`error: unknown argument '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 1; return;
     }

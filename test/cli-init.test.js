@@ -57,6 +57,7 @@ const PROGRAMMING_SKILL_NAMES = [
   'domain-modeling',
   'grill-to-spec',
   'grill-with-docs',
+  'grilling',
   'implement',
   'improve-codebase-architecture',
   'prototype',
@@ -72,13 +73,14 @@ const PROGRAMMING_SKILL_NAMES = [
   'wizard',
 ];
 
-// Template files that must land in the target project root (single-source) — 默认仅编程，grilling 为 productivity 仅 --all 时存在
+// Template files that must land in the target project root (single-source) — 默认范围（engineering + 独有所需），grilling 为独有所需默认安装
 const TEMPLATE_FILES_PROGRAMMING = [
   'AGENTS.md',
   '.agents/skills/tdd-implement/SKILL.md',
   '.agents/skills/diagnose-fix/SKILL.md',
   '.agents/skills/commit-check/scripts/scan-sensitive.sh',
   '.agents/skills/tdd/SKILL.md',
+  '.agents/skills/grilling/SKILL.md',
   '.opencode/CONTEXT.md',
   '.opencode/commands/issue-audit.md',
   '.opencode/docs/agents/runtime-discipline.md',
@@ -115,7 +117,7 @@ function listDir(dir) {
     .sort();
 }
 
-test('`init` copies the programming template (default 22) into the target', () => {
+test('`init` copies the programming template (default 23) into the target', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
@@ -125,8 +127,8 @@ test('`init` copies the programming template (default 22) into the target', () =
     for (const rel of TEMPLATE_FILES_PROGRAMMING) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
-    // productivity 默认不装
-    assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')), 'productivity grilling should NOT be installed by default');
+    // 独有所需 grilling 默认安装，其余 productivity 默认不装
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')), '独有所需 grilling should be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/teach/SKILL.md')), 'productivity teach should NOT be installed by default');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -146,7 +148,7 @@ test('`init --all` copies all 32 skills', () => {
   }
 });
 
-test('`init` copies programming skills (21) into .agents/skills/ by default', () => {
+test('`init` copies default skills (23) into .agents/skills/ by default', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
@@ -206,7 +208,7 @@ test('`init` on an already-initialized project skips without overwriting', () =>
   }
 });
 
-test('`init --force` overwrites an existing project (programming 22)', () => {
+test('`init --force` overwrites an existing project (default 23)', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const first = runCli(['init', '--dest', dest]);
@@ -251,7 +253,7 @@ test('`init` without --dest targets the current working directory (programming)'
     assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'tdd-implement', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'diagnose-fix', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'grill-to-spec', 'SKILL.md')), 'grill-to-spec should not be installed by default');
-    assert.ok(!fs.existsSync(path.join(cwd, '.agents', 'skills', 'grilling', 'SKILL.md')), 'grilling should not be installed by default');
+    assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'grilling', 'SKILL.md')), '独有所需 grilling should be installed by default');
     assert.ok(fs.existsSync(path.join(cwd, '.opencode/skills/.gitkeep')));
     assert.match(stdout, new RegExp(`目标路径：${cwd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } finally {
