@@ -1,6 +1,7 @@
 ---
 name: tdd-implement
-description: "Multi-task orchestrator: use when the user provides a spec/ticket or Type:task issues (wayfinder/to-tickets/single spec) for test-first implementation. Main agent executes tasks sequentially by Blocked-by Kahn order, each task full ①→⑦ implement (seam red-green → typecheck → code-review → commit-check → single commit). For non-TDD use implement; for technique alone use tdd."
+description: "完成已确认的 spec/ticket 的 test-first/TDD 交付闭环。"
+disable-model-invocation: true
 ---
 
 # TDD Implement
