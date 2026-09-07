@@ -5,98 +5,45 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MAP_SKILL, normalize } from './mirror-utils.js';
 
-// Regression tests for the "ADR written without explicit user confirmation"
-// hazard. Root cause: the upstream domain-modeling skill only says "offer to
-// create" an ADR — nothing mandates a full-draft review + explicit confirmation
-// before writing, and the inline CONTEXT.md update habit invites the model to
-// treat ADRs like glossary entries. Fix: grill-to-spec (the proprietary
-// orchestrator, the only durable place this repo can carry the rule) mandates
-// draft → confirm → write, no exceptions. These tests guard against a future
-// refactor silently deleting that rule.
-
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const skillPath = path.join(dir, '.agents', 'skills', 'grill-to-spec', 'SKILL.md');
-const tmplPath = path.join(dir, 'template', '.agents', 'skills', 'grill-to-spec', 'SKILL.md');
-const rulesPath = path.join(dir, '.agents', 'skills', 'grill-to-spec', 'references', 'rules.md');
-const tmplRulesPath = path.join(dir, 'template', '.agents', 'skills', 'grill-to-spec', 'references', 'rules.md');
+const root = (file) => path.join(dir, file);
+const skill = readFileSync(root('.agents/skills/grill-to-spec/SKILL.md'), 'utf8');
+const rules = readFileSync(root('.agents/skills/grill-to-spec/references/rules.md'), 'utf8');
 
-const skill = readFileSync(skillPath, 'utf8');
-const rules = readFileSync(rulesPath, 'utf8');
-
-test('SKILL.md mandates explicit user confirmation for ADR writes, no exceptions', () => {
-  assert.match(skill, /写入 ADR 必须由用户显式确认/);
-  assert.match(skill, /无任何例外/);
-  assert.match(skill, /不可撤销/);
+test('grill-to-spec is a thin upstream orchestrator', () => {
+  assert.match(skill, /grill-with-docs/);
+  assert.match(skill, /to-spec/);
+  assert.match(skill, /只做两个上游 skill 的编排/);
+  assert.match(skill, /不写代码、不修改源码或测试/);
+  assert.match(skill, /只确认本次 seam|seam 提案/);
+  assert.ok(skill.split(/\r?\n/).length < 60, 'orchestrator should stay concise');
 });
 
-test('SKILL.md distinguishes ADRs from inline glossary updates', () => {
-  assert.match(skill, /ADR 与 glossary 不对称/);
-  assert.match(skill, /inline/);
-  assert.match(skill, /禁止把 inline 逻辑套用到 ADR/);
+test('grill-to-spec keeps only its durable confirmation gates', () => {
+  assert.match(skill, /ADR 必须先展示完整草稿/);
+  assert.match(skill, /用户明确确认后才写入/);
+  assert.match(skill, /spec 草稿/);
+  assert.match(skill, /一次明确确认/);
+  assert.match(skill, /ready-for-agent/);
+  assert.doesNotMatch(skill, /完整七节模板/);
+  assert.doesNotMatch(skill, /Problem Statement \/ Solution \/ User Stories/);
+  assert.doesNotMatch(skill, /\| Glossary \|.*\| ADR \|.*\| Spec \|/s);
 });
 
-test('stage ① carries the draft → confirm → write sub-flow', () => {
-  assert.match(skill, /ADR 子流转/);
-  assert.match(skill, /完整标题\+正文展示给用户审阅/);
-  assert.match(skill, /「确认\/写入」才落盘/);
-  assert.match(skill, /未确认前不得创建或写入/);
-});
-
-test('template mirror stays in sync with the workspace copy (path-mapped)', () => {
-  assert.equal(normalize(readFileSync(tmplPath, 'utf8'), MAP_SKILL), skill);
-});
-
-test('产出物表 lists exactly the three deliverables with their format sources', () => {
-  assert.match(skill, /## 产出物/);
-  assert.match(skill, /\| Glossary \|/);
-  assert.match(skill, /\| ADR \|/);
-  assert.match(skill, /\| Spec \|/);
-  assert.match(skill, /CONTEXT-FORMAT\.md/);
-  assert.match(skill, /ADR-FORMAT\.md/);
+test('format details stay disclosed in the dedicated reference', () => {
   assert.match(skill, /references\/rules\.md/);
+  assert.match(rules, /Glossary/);
+  assert.match(rules, /ADR/);
+  assert.match(rules, /Spec/);
 });
 
-test('SKILL.md keeps the three non-negotiable ADR rules (single source)', () => {
-  assert.match(skill, /写入 ADR 必须由用户显式确认/);
-  assert.match(skill, /无任何例外/);
-  assert.match(skill, /不可撤销/);
-  assert.match(skill, /ADR 与 glossary 不对称/);
-  assert.match(skill, /禁止把 inline 逻辑套用到 ADR/);
-});
-
-test('Glossary 守则 aligns with CONTEXT-FORMAT.md (references/rules.md)', () => {
-  assert.match(rules, /零实现细节/);
-  assert.match(rules, /WHAT 非 HOW/);
-  assert.match(rules, /通用编程概念不收/);
-  assert.match(rules, /_Avoid_/);
-  assert.match(rules, /懒创建/);
-  assert.match(rules, /inline 更新，不批量/);
-});
-
-test('ADR 守则 aligns with ADR-FORMAT.md (references/rules.md)', () => {
-  assert.match(rules, /`0001-slug\.md` 顺序递增/);
-  assert.match(rules, /扫描最高号 \+1/);
-  assert.match(rules, /标题 \+ 1-3 句正文/);
-  assert.match(rules, /`docs\/adr\/` 懒创建/);
-});
-
-test('Spec 守则 aligns with to-spec template (references/rules.md)', () => {
-  assert.match(rules, /Problem Statement \/ Solution \/ User Stories \/ Implementation Decisions \/ Testing Decisions \/ Out of Scope \/ Further Notes/);
-  assert.match(rules, /`As an <actor>, I want a <feature>, so that <benefit>`/);
-  assert.match(rules, /不含文件路径\/代码片段/);
-  assert.match(rules, /注明来源并裁剪至决策部分/);
-  assert.match(rules, /既有优先于新建、取最高、理想数量 1/);
-  assert.match(rules, /`ready-for-agent`/);
-  assert.match(rules, /`Status:` 行记录/);
-  assert.match(rules, /反模式/);
-});
-
-test('template mirror keeps rules.md in sync with the workspace copy (path-mapped)', () => {
-  assert.equal(normalize(readFileSync(tmplRulesPath, 'utf8'), MAP_SKILL), rules);
-});
-
-test('stage ② shows the spec draft for user confirmation before publishing', () => {
-  assert.match(skill, /展示给用户确认/);
-  assert.match(skill, /不新增采访提问/);
-  assert.match(skill, /\.scratch\/<feature-slug>\/spec\.md/);
+test('grill-to-spec template mirror stays path-mapped and exact', () => {
+  assert.equal(
+    normalize(readFileSync(root('template/.agents/skills/grill-to-spec/SKILL.md'), 'utf8'), MAP_SKILL),
+    skill,
+  );
+  assert.equal(
+    normalize(readFileSync(root('template/.agents/skills/grill-to-spec/references/rules.md'), 'utf8'), MAP_SKILL),
+    rules,
+  );
 });

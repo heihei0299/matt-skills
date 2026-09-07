@@ -1,75 +1,61 @@
 ---
 name: scaffold-functional-test
 disable-model-invocation: false
-description: "Scaffold a repo-specific functional-test skill from spec — use when the user wants to generate a customized functional-test suite/skill from a spec/README/help; not for running tests (use instance-test) nor for TDD (use tdd-implement)"
+description: "Scaffold a repo-specific functional-test skill from spec — use when the user wants to generate a customized functional-test suite/skill from a spec/README/help; not for regular instance execution (use the generated instance-test skill) nor for TDD (use tdd-implement)"
 ---
 
 # Scaffold Functional Test
 
-从本仓库的 spec 自动脚手架出**仓库专属的功能测试 skill**。本技能为**非 Long-Horizon 轻量 skill**（一次性 scaffold，不做多 seam 红绿循环），一次性完成「读 spec → 推导实例 → 落盘 skill → 自验证」闭环。术语定义见 `CONTEXT.md`。
+从仓库 spec 生成仓库专属的功能测试 skill。它是一次性 scaffold，不负责常规实例执行，也不进入 TDD 红绿循环。
 
-## 产出物
+生成物：`.agents/skills/<repo>-functional-test/`，至少包含 `SKILL.md` 与 `references/instances.md`；可按需要包含 runner。实例字段、溯源、指纹和保护段统一遵循 [`references/schema.md`](references/schema.md)。生成物纳入 git，但不复制到 `template/`。
 
-- 定制 skill 目录：`.agents/skills/<repo>-functional-test/`（含 `SKILL.md` + `references/instances.md` + 可选 `scripts/run.sh`）
-- 指纹：`spec hash` + `generatedAt` 写入生成物头部，用于后续执行前校验
-- 保护：`<!-- manual -->` 标记段不被覆盖
+## 流程
 
-生成物纳入 git，可回归复用，不进入 `template/` 再分发（生成器本身才随 Template Snapshot 分发）。
+### ① 采集行为
 
-## Steps
+读取用户指定的 spec，默认 `.scratch/<feature>/spec.md`；同时读取相关 `CONTEXT.md` 与 ADR。以 Acceptance Criteria 固定待覆盖行为清单。
 
-### ① 采集 Spec
+spec 不存在时可从 README 与 `--help` 建立候选清单，但必须把它标为候选并进入下一步确认，不得把推断当成需求。
 
-解析用户传入的 spec 路径，默认 `.scratch/<feature>/spec.md`。
+出口：行为清单的来源、范围和未覆盖项已明确。
 
-- 若 spec 存在：读取 `CONTEXT.md`/`docs/adr/` 相关术语与决策，提取待覆盖行为清单（以验收标准为锚点）。
-- 若 spec 不存在：回退到 `README` + `--help` 输出倒推行为清单，但必须进入 Step ② 的清单确认关卡，不静默臆测。
+### ② 推导并确认实例
 
-完成：待覆盖行为清单已固定，无未澄清歧义。
+按 [`references/schema.md`](references/schema.md) 为每个行为生成实例草案：每个实例必须有溯源，不能用无来源的隐含行为扩张范围。向用户展示实例清单并等待一次确认；确认前不落盘。
 
-### ② 推导实例
+出口：实例清单已确认，每个实例字段完整且可追溯。
 
-按混合推导策略生成实例草案：
+### ③ 生成或更新
 
-- 以验收标准为锚点，需求/接口/边界为补充，可为 spec 未显式写的隐含行为（如 `--help` 文案、错误码、幂等性）补实例，但每条实例必须标注**溯源**（spec 章节/行号或 `README/--help` 来源），无溯源的实例视为幻觉需删除。
-- 每实例声明**受控扩展模型**：必选 `prompt/command/expected files/content/expected stdout phrases/expected exit code`，可选 `setup/env/timeout/type/teardown`，默认 `type: cli`。
-- **强制门禁**：实例清单必须与用户确认后才进入 Step ③；无确认不落盘。
+写入定制 skill 和实例 reference：
 
-完成：实例清单已获用户确认，每实例含溯源与完整四元组。
+- 写入 spec 的 SHA-256 `spec hash` 与 ISO `generatedAt`；
+- 保留 `<!-- manual -->` 保护段；
+- 新建直接生成；更新已有生成物时先展示 diff，用户确认后才覆盖；
+- 不把本次生成物写入 `template/`。
 
-### ③ 脚手架落盘
+出口：文件结构、指纹和人工段均符合 schema。
 
-按受控扩展模型写入定制 skill 目录：
+### ④ 结构验证
 
-- `SKILL.md`：执行语义（见下节「执行语义」）
-- `references/instances.md`：实例集（含溯源、必选+可选字段、头部 `spec hash` + `generatedAt`）
-- 不覆盖 `<!-- manual -->` 保护段；覆盖式更新需经用户确认；重生成时先给出 diff 建议，用户确认后才应用。
+生成后立即做快速、确定性的结构验证：文件存在、schema 字段、实例溯源、spec hash、`generatedAt`、manual 段保护和内部链接均通过后再报告成功。不默认执行完整实例集，不启动服务，不产生功能测试副作用。
 
-完成：定制 skill 目录已落盘，指纹正确，人工段受保护。
+出口：结构验证结果为 `PASS`，失败则报告具体 gap，不回滚生成物。
 
-### ④ 自验证
+## 可选行为验证
 
-落盘后立即按实例执行语义串行执行一轮实例集作自验证：
-
-- `mktemp -d` 隔离（或项目支持的 `git worktree` / `--dest`），单线程串行，不并行。
-- 每实例捕获 stdout/stderr 与 exit code，按 `test -f`/`grep -q`/`diff` 对比判定 `PASS`/`FAIL`，单 FAIL 不阻断后续。
-- 对话内输出 `PASS m/n` + per-instance evidence（`expected vs actual diff` + `run dir`），失败不回滚生成物但给出 gap 供迭代 `regenerate`。
-- 成功默认清理临时目录、失败默认保留（`--keep` 保留全部）；`--report` 显式开启才落盘报告文件。
-
-完成：自验证已执行，对话内汇总完成，证据可复现。
-
-## 执行语义（生成物复用）
-
-生成物本身的执行语义与 `instance-test` 一致：`mktemp -d` 串行、`PASS m/n` 汇总、证据含 `expected vs actual diff` + `run dir`。执行前校验 `spec hash` 指纹：若当前 spec 已变更，提示「spec 已变更，建议重跑 scaffold-functional-test」但不自动覆盖，需用户显式确认才 regenerate。
+仅当用户明确要求运行实例集时，才调用生成的功能测试 skill 执行隔离、串行的实例验证；届时按实例捕获 stdout/stderr、exit code 和 expected-vs-actual evidence，并由执行 skill 报告 `PASS m/n`。这不是 scaffold 的默认步骤。
 
 ## 不做什么
 
-- 不替代 `tdd`/`tdd-implement` 的红绿循环与 `commit-check` 门禁
-- 不自动织入每次 `tdd-implement` 或 `commit-check`；仅 `tdd-implement --with-functional` 显式 opt-in
+- 不替代生成后的功能测试 skill；
+- 不替代 `tdd`、`tdd-implement` 或 `commit-check`；
+- 不覆盖 `<!-- manual -->` 段，不静默重生成，不把 README/`--help` 推断写成无溯源实例。
 
 ## 引用
 
+- 实例 schema：[`references/schema.md`](references/schema.md)
 - 领域术语：`CONTEXT.md`
 - 技能设计规则：`docs/agents/skill-design.md`
-- 示范产物：`.agents/skills/instance-test/`（本仓库专属，见其 SKILL.md）
-- Issue tracker：`docs/agents/issue-tracker.md`
+- 示范产物：`.agents/skills/instance-test/`

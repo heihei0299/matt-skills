@@ -1,60 +1,65 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const root = (p) => path.join(dir, p);
-
+const root = (file) => path.join(dir, file);
 const skillPath = root('.agents/skills/scaffold-functional-test/SKILL.md');
+const schemaPath = root('.agents/skills/scaffold-functional-test/references/schema.md');
 const yamlPath = root('.agents/skills/scaffold-functional-test/agents/openai.yaml');
-const tmplAgents = root('template/.agents/skills/scaffold-functional-test/SKILL.md');
+const templateSkillPath = root('template/.agents/skills/scaffold-functional-test/SKILL.md');
+const templateSchemaPath = root('template/.agents/skills/scaffold-functional-test/references/schema.md');
 const templateSyncPath = root('test/template-sync.test.js');
+const skill = readFileSync(skillPath, 'utf8');
+const schema = readFileSync(schemaPath, 'utf8');
 
-test('scaffold-functional-test skill exists as proprietary skill', () => {
-  assert.ok(existsSync(skillPath), 'workspace skill SKILL.md must exist');
-  assert.ok(existsSync(yamlPath), 'agents/openai.yaml must exist');
-  assert.ok(existsSync(tmplAgents), 'template .agents mirror must exist');
+test('scaffold-functional-test skill and schema exist in workspace and template', () => {
+  for (const file of [skillPath, schemaPath, yamlPath, templateSkillPath, templateSchemaPath]) {
+    assert.ok(existsSync(file), `${file} must exist`);
+  }
 });
 
-test('scaffold-functional-test SKILL.md carries required metadata and steps', () => {
-  const content = readFileSync(skillPath, 'utf8');
-  assert.match(content, /scaffold-functional-test/);
-  assert.match(content, /Scaffold a repo-specific functional-test skill from spec/);
-  assert.match(content, /disable-model-invocation:\s*false/);
-  // 4 steps
-  assert.match(content, /①.*采集/);
-  assert.match(content, /②.*推导/);
-  assert.match(content, /③.*脚手架/);
-  assert.match(content, /④.*自验证/);
-  // mandatory checklist gate
-  assert.match(content, /清单确认/);
-  assert.match(content, /溯源/);
-  assert.match(content, /spec hash/);
-  assert.match(content, /<!-- manual -->/);
-  assert.match(content, /mktemp -d/);
-  assert.match(content, /PASS m\/n/);
-  assert.match(content, /--report/);
+test('scaffold-functional-test keeps a four-step generation flow', () => {
+  assert.match(skill, /Scaffold a repo-specific functional-test skill from spec/);
+  assert.match(skill, /disable-model-invocation:\s*false/);
+  assert.match(skill, /①.*采集/);
+  assert.match(skill, /②.*推导并确认/);
+  assert.match(skill, /③.*生成或更新/);
+  assert.match(skill, /④.*结构验证/);
+  assert.match(skill, /确认前不落盘/);
+  assert.match(skill, /不默认执行完整实例集/);
+  assert.match(skill, /用户明确要求运行实例集/);
 });
 
-test('scaffold-functional-test is non-long-horizon (lightweight scaffold)', () => {
-  const content = readFileSync(skillPath, 'utf8');
-  assert.doesNotMatch(content, /Long-Horizon Skill/);
-  assert.doesNotMatch(content, /回合连续性/);
-  assert.match(content, /非 Long-Horizon/);
+test('scaffold-functional-test validates generated structure instead of running by default', () => {
+  assert.match(skill, /references\/schema\.md/);
+  assert.match(skill, /文件存在、schema 字段、实例溯源、spec hash/);
+  assert.match(skill, /SHA-256/);
+  assert.match(skill, /generatedAt/);
+  assert.match(skill, /manual/);
+  assert.match(skill, /不启动服务/);
+  assert.match(skill, /副作用/);
+  assert.doesNotMatch(skill, /默认.*PASS m\/n/);
 });
 
-test('openai.yaml has correct interface for scaffold-functional-test', () => {
-  const yaml = readFileSync(yamlPath, 'utf8');
-  assert.match(yaml, /display_name/);
-  assert.match(yaml, /Scaffold Functional Test/);
+test('schema centralizes required fields, provenance, fingerprint, and protection', () => {
+  for (const field of ['prompt', 'command', 'expected files/content', 'expected stdout phrases', 'expected exit code', 'source']) {
+    assert.match(schema, new RegExp(field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.match(schema, /SHA-256/);
+  assert.match(schema, /ISO 8601/);
+  assert.match(schema, /<!-- manual -->/);
 });
 
-test('template-sync guards scaffold-functional-test and excludes instance-test', () => {
+test('template-sync keeps the generated scaffold mirror and excludes demo instance skill', () => {
   const syncContent = readFileSync(templateSyncPath, 'utf8');
   assert.match(syncContent, /scaffold-functional-test/);
   assert.doesNotMatch(syncContent, /'instance-test'/);
-  // Proprietary list should contain scaffold-functional-test
-  assert.match(syncContent, /PROPRIETARY_SKILLS.*scaffold-functional-test/s);
+});
+
+test('scaffold-functional-test template mirror stays exact', () => {
+  assert.equal(readFileSync(templateSkillPath, 'utf8'), skill);
+  assert.equal(readFileSync(templateSchemaPath, 'utf8'), schema);
 });
