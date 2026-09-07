@@ -71,7 +71,7 @@ test('Contract performs the required Preflight once', () => {
   assert.match(stages, /test、typecheck、build 命令/);
   assert.match(stages, /subagent model/);
   assert.match(stages, /browser 或 Playwright/);
-  assert.match(stages, /commit-check.*脚本/);
+  assert.match(stages, /敏感信息扫描脚本/);
   assert.match(stages, /真实运行验证方式/);
   assert.match(stages, /验证矩阵已建立/);
 });
@@ -174,8 +174,8 @@ test('Deliver contains docs, staged diff, history, and commit gates', () => {
   assert.match(stages, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
   assert.match(stages, /暂存区只包含当前 issue/);
   assert.match(stages, /独立 commit/);
-  assert.match(stages, /若预设安全扫描脚本不存在/);
-  assert.match(stages, /统一 fallback/);
+  assert.match(stages, /scan-sensitive\.sh/);
+  assert.match(stages, /Git history preservation/);
 });
 
 test('Deliver closes the tracker only after the four stages', () => {
@@ -296,4 +296,12 @@ test('template mirrors the three tdd-implement files', () => {
   assert.equal(normalize(readFileSync(templateSkillPath, 'utf8'), MAP_SKILL), skill);
   assert.equal(normalize(readFileSync(templateStagesPath, 'utf8'), MAP_SKILL), stages);
   assert.equal(normalize(readFileSync(templateOrchestrationPath, 'utf8'), MAP_SKILL), orchestration);
+});
+
+test('tdd-implement owns deliver checks without commit-check skill coupling', () => {
+  assert.doesNotMatch(skill, /commit-check/);
+  assert.doesNotMatch(stages, /\[commit-check\]/);
+  assert.doesNotMatch(orchestration, /commit-check/);
+  assert.match(stages, /scan-sensitive\.sh/);
+  assert.match(stages, /敏感信息扫描脚本/);
 });

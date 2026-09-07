@@ -27,7 +27,7 @@ disable-model-invocation: true
 | ① **Contract** | 读取入口，提取 Acceptance Criteria，建立 Scope Ledger、Preflight、验证矩阵和 Behavior/Seam 边界 | 需求无待决歧义，验证命令已确定；知道做什么、从哪里验证、什么不做 |
 | ② **Red-Green** | 以 Behavior 为粒度执行有效 Red → 最小 Green → formatter/typecheck → 最小相关测试 | 所有 Behaviors 均有有效 Red、实现全绿，formatter/typecheck 和最小相关测试通过 |
 | ③ **Verify** | 运行当前 issue 影响范围测试、必要 build、要求的真实运行验证；执行一次 Standards + Spec Review | 最终 diff 的相关证据通过，真实运行验证完成（如要求），无 blocking finding |
-| ④ **Deliver** | 对齐 docs/README，运行 commit-check，检查 staged diff 和 Git 历史，创建独立 commit，更新 issue/progress.md | commit 已创建，Acceptance Criteria 全部通过，Tracker 与工作区反映真实完成状态 |
+| ④ **Deliver** | 对齐 docs/README，执行敏感信息扫描，检查 staged diff、commit message 和必要的 Git history，创建独立 commit，更新 issue/progress.md | commit 已创建，Acceptance Criteria 全部通过，Tracker 与工作区反映真实完成状态 |
 
 ## 运行时纪律
 
@@ -43,4 +43,3 @@ disable-model-invocation: true
 - Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
 - 四阶段详规：[stages.md](references/stages.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)
-- Commit 门禁：[commit-check](.agents/skills/commit-check/SKILL.md)

@@ -39,7 +39,7 @@
 - 可选（需 `--all` 才发现）：grill-me / handoff / teach / to-questionnaire / wait-what / writing-for-agents / ci-guard / scaffold-functional-test / instance-test
 - 兜底 → ask-matt；模板维护 → README.md
 
-显式触发（须用户 `/` 发起，默认 23 中仅 grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture 为默认；其余 teach/handoff/writing-for-agents 需 `--all`）：grill-to-spec、wayfinder、to-spec、to-tickets、triage、improve-codebase-architecture、teach、handoff、writing-for-agents
+显式触发（须用户 `/` 发起；其中 teach/handoff/writing-for-agents 需 `--all`）：grill-to-spec、wayfinder、to-spec、to-tickets、triage、improve-codebase-architecture、teach、handoff、writing-for-agents、commit-check
 
 ## 分文件
 

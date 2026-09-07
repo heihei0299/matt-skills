@@ -60,7 +60,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通�
    - 可用的 test、typecheck、build 命令；
    - 可用的 subagent model；
    - 可用的 browser 或 Playwright 路径；
-   - commit-check 所需脚本是否存在；
+   - 可用的敏感信息扫描脚本；
    - ticket 要求的真实运行验证方式。
 6. 建立一次验证矩阵，列出 targeted tests、typecheck、全量测试、必要 build、smoke/package/security check 和真实运行验证，并记录各项的触发条件，后续只复用这份矩阵。
 7. 识别公共测试边界和 Behaviors。一个 Seam 是一个公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 Seam 可以包含多个 Behaviors。每个 Behavior 明确输入、可观察输出、对应 Acceptance Criterion 和验证层级。
@@ -189,7 +189,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通�
 9. 确认暂存区只包含当前 issue；
 10. 执行 `git diff --cached`，再创建当前 issue 的独立 commit。
 
-调用 [commit-check](.agents/skills/commit-check/SKILL.md) 完成文档一致性、目录卫生和 commit message 三项门禁。若预设安全扫描脚本不存在，记录统一 fallback 及实际检查方式。
+执行敏感信息扫描脚本（`bash .agents/skills/commit-check/scripts/scan-sensitive.sh --staged-only`），检查 staged diff、commit message 和 Git history preservation，全部通过后创建当前 issue 的独立 commit。
 
 ### Tracker 收尾
 
@@ -264,6 +264,6 @@ Progress: pending | in_progress | done | blocked
 | ① Contract | 需求歧义、验收缺口、范围变化 | → ① 补充契约和验证矩阵 |
 | ② Red-Green | 有效 Red、实现、formatter、typecheck 或相关测试失败 | → ② 修复当前 Behavior |
 | ③ Verify | 测试、build、真实运行或 review finding 失败 | → ② 修复 Behavior；需求偏差 → ① |
-| ④ Deliver | docs、commit-check、staged diff 或 Tracker 信息不完整 | → ①/③ 修复对应证据；仍在 Deliver 前完成 |
+| ④ Deliver | docs、敏感扫描、staged diff、commit message 或 Tracker 信息不完整 | → ①/③ 修复对应证据；仍在 Deliver 前完成 |
 
 多 issue 的层收敛、全量失败、依赖冲突和跨 issue 修改冲突按 [orchestration.md](orchestration.md) A5 回退，不跨 issue 无记录改动。

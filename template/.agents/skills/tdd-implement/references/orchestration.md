@@ -23,7 +23,7 @@
    - 无法解析：按无依赖处理，并在编排总结中记录告警。
 2. 以 issue 编号为节点、`Blocked by` 为有向边构建 DAG；检测到环时列出环上节点并停止调度。
 3. 读取共享 `spec.md`（若存在）、`CONTEXT.md` 和与本次改动有关的 ADR。
-4. 完成编排级 Preflight：记录当前 `HEAD`、工作区状态、`BASE_HEAD=$(git rev-parse HEAD)`、测试/typecheck/build 命令、真实运行路径和 commit-check 脚本可用性。后续只使用已经确认的命令和路径。
+4. 完成编排级 Preflight：记录当前 `HEAD`、工作区状态、`BASE_HEAD=$(git rev-parse HEAD)`、测试/typecheck/build 命令、真实运行路径和敏感信息扫描脚本可用性。后续只使用已经确认的命令和路径。
 5. 强制初始化 `.scratch/<feature>/progress.md`：
 
    ```markdown

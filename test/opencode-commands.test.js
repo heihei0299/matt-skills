@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Guard the opencode commands for the explicitly-invoked skills. AGENTS.md
-// lists nine skills as "显式触发（须用户 / 发起）" — each must ship as a
+// lists ten skills as "显式触发（须用户 / 发起）" — each must ship as a
 // .opencode/commands/<name>.md so opencode users can invoke them via /name.
 // pi needs no commands (its skills auto-discover; issue-audit ships separately
 // as a .pi/prompts/ template).
@@ -23,6 +23,7 @@ const EXPLICIT_SKILLS = [
   'teach',
   'handoff',
   'writing-for-agents',
+  'commit-check',
 ];
 
 function readDirRecursive(dirPath) {

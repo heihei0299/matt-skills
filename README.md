@@ -17,7 +17,7 @@ template/
 └── .opencode/        opencode 项目配置
     ├── skills/       空占位（项目自定义技能，含 .gitkeep + README.md）
     ├── agents/       issue-audit 子代理定义
-    ├── commands/     issue-audit + 9 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents）
+│    ├── commands/     issue-audit + 10 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents/commit-check）
     ├── docs/agents/  5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
     ├── CONTEXT.md    术语表
     ├── package.json  插件依赖清单
@@ -46,7 +46,7 @@ npx @heihei0299/matt-skills sync --dest <path> --upstream <url> --ref <ref> --js
 ```
 
 `sync` 专为已有项目设计，两档语义：`--dry-run` 仅对比不写盘（默认范围 engineering + 独有所需，`--all` 展开全量同名集合，打印“上游 HEAD / 本地非独有 vs 上游 / 新增/更新/删除/一致”表，`--json` 可解析，有差异 `exit 1`）；默认安全增量写盘（`AGENTS.md` 若含 `tdd-implement` 则跳过，`.agents/skills` 按默认范围 26 `rm+cp` 覆盖但不删多余，`template/.opencode/.pi` 增量 `add/update`，旧镜像 `.pi/skills` + `.opencode/skills` 中残留共享技能自动清理但保留项目自定义）；`--all` 仅更新同名技能内容（存在则覆盖，不存在则新增）并更新 `AGENTS.md`（不跳过定制），不删多余。`--dest`、`--upstream`、`--ref`、`--json`、`--all`、`--dry-run` 可透传。
-目标仓库会话即自动加载共享技能（`.agents/skills/` 单一源，默认编程 26，`--all` 全量 33）与项目级全局配置（行为路由表、分文件约定）；项目自定义技能可按需放入 `.pi/skills/` 或 `.opencode/skills/`（按 harness 自动发现）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；9 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
+目标仓库会话即自动加载共享技能（`.agents/skills/` 单一源，默认编程 26，`--all` 全量 33）与项目级全局配置（行为路由表、分文件约定）；项目自定义技能可按需放入 `.pi/skills/` 或 `.opencode/skills/`（按 harness 自动发现）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；10 个显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
 **pi-agent 用户**：初始化命令完全相同。pi 从 `.agents/skills/` 自动发现全部共享技能，无需额外指向；`.pi/skills/` 仅用于项目自定义。首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
 
 **手动方式（备选）**：无 npx 环境时，将 `template/` 整个文件夹复制到目标仓库根目录即可（已含全量技能）：
@@ -69,7 +69,7 @@ git clone --depth 1 https://github.com/mattpocock/skills.git /tmp/mattpocock-ski
 |--------|------|
 | `.agents/skills/`（全部 33 个：上游 26 + 独有 7：ci-guard、tdd-implement、grill-to-spec、diagnose-fix、commit-check、scaffold-functional-test、show-me） | `template/.agents/skills/`（全量快照，单一源） |
 | `.agents/skills/` 的 harness 占位说明 | `template/.pi/skills/.gitkeep` + `README.md`、`template/.opencode/skills/.gitkeep` + `README.md`（空目录占位，供项目自定义） |
-| `.opencode/agents/issue-audit.md`、`commands/*.md`（issue-audit + 9 个显式技能命令）、`.gitignore`、`package.json`、`package-lock.json` | `template/.opencode/` 同名 |
+│   │   ├── commands/     issue-audit + 10 个显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents/commit-check）
 | `.pi/prompts/issue-audit.md`（pi 命令：opencode 版适配，去 subagent frontmatter） | `template/.pi/prompts/issue-audit.md` |
 | `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
 | `CONTEXT.md` | `template/.opencode/CONTEXT.md` + `template/.pi/CONTEXT.md` |
@@ -125,7 +125,7 @@ CODEX_E2E=1 npm run codex:smoke             # 显式运行真实 smoke test
   - `.pi/settings.json` — 已简化为空对象（历史指向 `.opencode/skills` 已移除，共享技能走 `.agents/skills`）
 ### opencode
 
-- **项目**：`.agents/skills/`（共享技能单一源，默认编程 26，`--all` 全量 33）、`.opencode/skills/`（项目自定义技能）、`.opencode/agents/`（子代理）、`.opencode/commands/`（命令：issue-audit + 9 个显式触发技能，`/命令名` 触发）、`.opencode/docs/`（文档）
+- **项目**：`.agents/skills/`（共享技能单一源，默认编程 26，`--all` 全量 33）、`.opencode/skills/`（项目自定义技能）、`.opencode/agents/`（子代理）、`.opencode/commands/`（命令：issue-audit + 10 个显式触发技能，`/命令名` 触发）、`.opencode/docs/`（文档）
 
 同一份技能（Agent Skills 标准）与 `AGENTS.md` 行为路由在两种 harness 下均可加载：pi 与 codex/claude 从 `.agents/skills/` 自动发现；opencode 按本模板约定同样优先读取 `.agents/skills/`（`.opencode/skills/` 仅用于项目自定义）。
 
