@@ -1,306 +1,269 @@
-# 阶段详细定义
+# 四阶段详细定义
 
-单 `spec` / 单 `task` 与多 `task`（按 `Blocked by` 依赖分层串行、主代理直接执行）共用下表 ①→⑦；多 issue 编排（A0-A1 排序 + 主代理串行）见 [SKILL.md](../SKILL.md) 与 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
+单 `spec` / 单 `task` 与多 `task` 共用下表四阶段。多 issue 的依赖图、Kahn 分层、层收敛、全量收敛和回退/冲突处理见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
+
 ## 目录
 
-- [阶段 ①：理解需求](#阶段-①理解需求)
-- [阶段 ②：确认 Seams（测试接缝）](#阶段-②确认-seams测试接缝)
-- [阶段 ③：TDD 开发循环](#阶段-③tdd-开发循环)
-- [阶段 ④：完整测试套件](#阶段-④完整测试套件)
-- [阶段 ⑤：Code Review](#阶段-⑤code-review)
-- [阶段 ⑥：Commit](#阶段-⑥commit)
-- [阶段 ⑦：收尾（文档对齐 + issue 状态 + 实施总结）](#阶段-⑦收尾文档对齐--issue-状态--实施总结)
-- [Todo 规定](#todo-规定)
+- [① Contract：明确交付契约](#阶段-①-contract明确交付契约)
+- [② Red-Green：行为级 TDD](#阶段-②-red-green行为级-tdd)
+- [③ Verify：最终验证与审查](#阶段-③-verify最终验证与审查)
+- [④ Deliver：提交与 Tracker 收尾](#阶段-④-deliver提交与-tracker-收尾)
+- [跨阶段运行纪律](#跨阶段运行纪律)
+- [状态统一](#状态统一)
 - [回退路由](#回退路由)
 
 ---
+## 不可省略的质量门禁
 
-## 阶段 ①：理解需求
+无论单 issue 还是多 issue，以下门禁都必须形成证据：
 
-### 入口条件
+1. 当前 issue 的范围、Acceptance Criteria 和 Out of Scope 明确；
+2. 产品实现之前存在有效 Red；
+3. 最终 diff 对应的相关测试和 typecheck 通过；
+4. ticket 要求真实运行时，真实运行验证已完成；
+5. Standards 与 Spec Review 无 blocking finding；
+6. README/docs 与实现一致；
+7. 每个 issue 形成独立、可追溯的 commit；
+8. Tracker 状态与真实完成度一致。
 
-- 用户提供了单 `spec` 文件（`.scratch/<feature>/spec.md` 或等价）或一个 `Type: task` 的 ticket（`wayfinder`/`to-tickets` 产出，含 `Blocked by`/`Status`）；`Type: research/prototype/grilling` 分流至对应技能，不进本技能
+Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通过，issue 才能标记为 `resolved`。
 
-### 操作
 
-1. 完整读取入口（`spec` 或 `issue`）内容
-2. 使用读取预算：按需读取 `CONTEXT.md` 的相关术语；ADR 只读与 spec、触及符号或失败证据相关的条目，不批量读取无关文档
-3. 使用仓库规定的代码探索入口；探索结果包含完整源码时视为已读，不再次 `read` 同一文件，除非文件发生漂移或只返回调用路径
-4. 如有歧义，先向用户澄清再继续；无歧义时直接进入阶段②
-5. 建立一次验证矩阵：列出 targeted tests、typecheck、全量测试以及 spec 要求的 smoke、package 或 security checks，后续复用证据，避免等价命令重复执行
-
-### 出口条件
-
-- 能用自己的话复述需求
-- 无未澄清的歧义
-- 验证矩阵已建立，且每项命令/检查已有明确触发条件
-
-### 边界
-
-- `CONTEXT` 术语冲突时以 `CONTEXT` 为准，必要时先 `domain-modeling` 纠偏
-- 单 `spec` 与单 `task` 同构，均走 ①→⑦；多 `task` 由 [orchestration.md](orchestration.md) A0-A1 排序后主代理串行，不经子代理
-
-## 阶段 ②：确认 Seams（测试接缝）
+## 阶段 ① Contract：明确交付契约
 
 ### 入口条件
 
-- 需求已澄清，无歧义
+- 用户提供单个 `spec`、等价 spec 或 `Type: task` issue。
+- `research`、`prototype`、`grilling` 等非实现入口已分流。
 
 ### 操作
 
-1. 列出所有将要测试的公共接口（seams）
-2. 每个 seam 包含：名称、输入、预期输出，以及对应的最小验证命令
-3. spec/ticket 已给出明确验收标准时，直接生成 Todo 并展示精简 seam 卡片；不等待用户确认
-4. 仅在歧义、验收缺口、范围变化、破坏性操作或互斥方案时暂停确认
-5. seams 确认门槛满足后生成 todo 清单（每 seam 一个 todo，格式与状态机见 [Todo 规定](#todo-规定)）
+1. 完整读取入口；按需读取 `CONTEXT.md` 的相关术语和与本次 spec、触及符号或失败证据有关的 ADR。
+2. 使用仓库规定的代码探索入口。探索结果含完整源码时视为已读，不再次 `read` 同一文件，除非文件发生漂移或只返回调用路径。
+3. 逐条提取 Acceptance Criteria，并写出本 issue 的 **Scope Ledger**：
 
-### 出口条件
-
-- seams/Todo 已生成，且没有待决的歧义、验收缺口或需要用户选择的方案
-
-### 边界
-
-- 一个 seam 对应一个公共接口上的一个待测行为（输入 + 预期输出）：一个 seam = 一个测试 + 一个最小实现 cycle；同一接口的多个行为拆分为多个 seam，而非内部函数
-
----
-
-## 阶段 ③：TDD 开发循环
-
-### 入口条件
-
-- Seams 已确认
-
-### 操作
-
-#### Git 安全前置（历史保护）
-
-- 进入本阶段前记录 `BASE_HEAD=$(git rev-parse HEAD)`，后续所有 `git` 操作必须满足 `git merge-base --is-ancestor $BASE_HEAD HEAD`（仅追加、不可后退）。若校验失败立即经 `git reflog` 恢复后才继续。
-- 为达 `git status` 干净仅删本次产生的 `[DEBUG-...]`/一次性脚本等未跟踪临时文件，禁止执行 `git reset --hard`、`git checkout .`、`git clean -fd`、`git stash push --include-untracked`、`git push --force`、`git rebase -i` 等（需显式用户确认才可执行；`stash` 如需使用改用 `--keep-index` 并在 `pop` 后校验）。术语与禁令见 `CONTEXT.md` Git History Preservation 与 `docs/agents/skill-design.md` Rule 4。
-
-#### TDD 编排
-
-**读取预算（TDD Reference Cache）**：在阶段③入口加载 tdd 技能的相关规则一次；每个 cycle 仅按当前 seam 定位需要的 [`tdd/tests.md`](.agents/skills/tdd/tests.md) 与 [`tdd/mocking.md`](.agents/skills/tdd/mocking.md) reference，不重复阅读全文。TDD 语义与测试规则以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不再在此重写。
-
-本阶段只执行编排：按阶段②生成的 todo 清单逐条推进（大小任务层次与 Subtodo 格式见 [Todo 规定](#todo-规定)），每完成一个 todo（红-绿 cycle + typecheck）立即更新其状态为 `done`，再进入下一个 todo。
-
-#### 3a/3b. 红-绿（Red-Green）
-
-红-绿循环的执行规则（Red before green、One slice at a time、Anti-patterns、垂直切片）以 tdd 技能为准，见 [tdd/SKILL.md](.agents/skills/tdd/SKILL.md) 与 [tdd/tests.md](.agents/skills/tdd/tests.md)。
-
-#### 3c. 切换 seam
-
-每完成一个 seam 立即进入下一个 seam，同一回合内串行推进，不等用户"继续"。
-
-#### 3d. Typecheck
-
-- 每个 cycle 结束后运行 typecheck
-- 发现问题立即修复，修复后再继续
-
-#### 3e. 回合连续性
-
-- 每个红-绿 cycle 及其 typecheck 必须在一个回合内串行完成：测试 → 分析失败 → 修正 → 重跑 → 全绿，中途不输出、不停止、不等用户"继续"
-- **单个 seam 全绿不是回合终点**：它只是阶段③的内部步骤；阶段③的出口是"所有 seams 红-绿完成 + typecheck 通过"，在出口达成前不停顿、不等待确认，直接进入下一个 seam
-- 预告下一步后立即执行该步骤，回合终点仅为合规交互点、外部阻塞或阶段出口条件满足
-- 进度输出并入工具调用序列，不单独结束回合——输出后继续执行，直到三类终点之一达成
-- 输出只发生在：合规交互点（用户确认）、外部阻塞（明确说明所需授权或替代路径）、阶段出口条件满足时
-- 外部阻塞（如权限拒绝）时明确请求授权或改用不冲突的路径，不静默等待
-
-#### 3f. 任务分解（Chunking）
-
-- 单次 `write` 超过 ~150 行：先写骨架再分批补全
-- 批量 `replace` 超过 ~5 处：分批执行，每批后立即 typecheck 验证
-
-#### 3g. Todo 更新纪律
-
-- 每完成一个红-绿 cycle（含 typecheck），按实际推进更新对应 todo 状态：`in-progress` → `done`
-- 更新基于当前实际状态，不基于旧快照重写整个清单；已完成项（done）永不回退
-
-#### 3h. Git 历史保护（Git History Preservation）
-
-- 阶段出口前必做祖先校验：`git merge-base --is-ancestor $BASE_HEAD HEAD` 若为 false，说明历史被改写（`reset --hard`/`checkout .`/`clean -fd`/`stash --include-untracked` 等导致），立即经 `git reflog` 找回并恢复 `BASE_HEAD` 后的提交，校验通过才算出口条件满足。
-- 为达 `git status` 干净仅删本次产生的 `[DEBUG-...]`/一次性脚本等未跟踪临时文件，禁止用 git 层命令达到干净。详见 `CONTEXT.md` Git History Preservation 与 `docs/agents/skill-design.md` Rule 4。
-
-### 出口条件
-
-- 所有 seams 的红-绿循环完成
-- Typecheck 通过
-
-### 边界
-
-- 每个 cycle 后运行 typecheck
-- 全部 todo 为 done 才进入阶段④
-- 测试质量规则（公共接口验证、独立断言、mock 边界、重构归属 review）见 tdd 技能，不在本阶段重写
-
-
----
-
-## 阶段 ④：完整测试套件
-
-### 入口条件
-
-- 所有 issue 已完成其实现、targeted tests、typecheck、一次 code-review、commit 和收尾；多 issue 从 orchestration A4 进入，单 spec 在唯一 issue 收尾后进入
-- 阶段④不是 issue 闭环步骤，不得在任一 issue 完成时提前执行
-### 操作
-1. 按阶段①建立的验证矩阵，运行仓库规范的唯一全量测试命令；正常路径只执行一次
-2. 若失败，先运行失败测试或最小相关子集定位原因；修复对应 issue 后才重跑全量命令
-3. 记录最终全量结果，不同时运行等价命令（例如 `npm test` 与其展开命令），除非本次改动了 package script 本身
-4. 检查所有测试是否通过
-### 出口条件
-- 全量测试通过
-### 边界
-- 多 issue 仅由 A4 在所有 issue 完成后执行；单 spec 在唯一 issue 收尾后执行
-- 全量测试失败时回到失败 issue 的修复路径；修复后只做必要的定向诊断和全量重跑
-
----
-
-## 阶段 ⑤：Code Review
-
-### 入口条件
-
-- 阶段③ targeted tests 和 typecheck 通过；阶段④全量测试尚未执行也不构成此阶段入口条件
-### 操作
-1. 每个 issue 恰好调用一次 [code-review 技能](.agents/skills/code-review/SKILL.md)，按**双轴**审查当前 issue 的改动：
-   - **Standards 轴**：改动是否符合仓库文档化的编码标准（含 smell baseline 判断）
-   - **Spec 轴**：改动是否忠实实现来源 spec/issue（逐条对照验收要求）
-   - 两轴独立报告、**互不掩盖**；该 issue 不再次调用 code-review
-2. 审查发现的问题按 [回退路由](#回退路由) 处理，并只重跑受影响的 targeted checks；修复不触发第二次 review
-3. 记录该 issue 的一次 review 结果，通过后进入 commit 和收尾
-
-### 出口条件
-
-- Code review 通过
-
-### 边界
-
-- 重构在此阶段进行，而非 TDD 循环阶段
-- review 通过后才进入 commit
-- 审查结果只在对话输出，不生成书面审查报告（不落盘 `review-*.md` 类文件）
-
-## 阶段 ⑥：Commit
-
-### 入口条件
-
-- Code review 通过
-
-### 操作
-
-1. 在一次最终门禁中调用 [commit-check 技能](.agents/skills/commit-check/SKILL.md)：完成三项检查——文档一致性、目录卫生、commit message；目录卫生包含敏感扫描，spec 要求时再执行 package dry-run 等必要检查
-2. **历史校验**：commit 前执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`，若为 false 说明历史被改写，立即经 `git reflog` 恢复 `BASE_HEAD` 后的提交，校验通过才继续
-3. 三项门禁、历史校验和必要检查全部通过才 commit；门禁证据保持为最终基线，未改文件不在 commit 后重复扫描或打包
-4. 将工作提交到当前分支，附清晰的 commit message（单 issue 单提交，如 `feat(<feature>): <issue title> (#NN)`）；多 issue 时每 issue 独立提交后才取下一 issue
-
-### 出口条件
-
-- Commit 完成
-
-### 边界
-
-- Commit message 格式与内容由 commit-check ③ 把关（描述变更内容而非过程）
-- 每 issue 独立提交，主代理串行时一 issue 一 commit 后再进入下一 issue 的 ①
-
-## 阶段 ⑦：收尾（文档对齐 + issue 状态 + 实施总结）
-
-### 入口条件
-
-- Commit 完成（阶段⑥出口）
-
-### 操作
-
-1. **复核文档对齐**：以阶段⑥ commit-check 已记录的 README/docs/config/package 对齐证据为准；本阶段只复核并记录“无需更新”或已更新文件，不重复读取、编辑或追加 commit。若证据缺失或不一致，标记阶段⑥门禁失败并停止收尾，不将 issue 标为 resolved。
-2. 若本次实现有关联 issue/ticket（`.scratch/<feature-slug>/issues/`）：先审查该 issue——从 issue 提取验收标准（无显式验收标准节时以其正文行为要求为准），逐条转写为 checkbox 清单并逐条验证：通过标 `- [x]`，未通过保留 `- [ ]` 并注明缺口（证据：文件:行号 / 测试名）。全部打勾后才允许下一步：
-3. 将 `Status:` 行改为 `resolved`（无该行则追加），不改动 spec 与既有 Comments
-4. 在 issue 文件底部追加实施总结（`## 实施总结` 标题）：
-
+   ```text
+   必须实现：当前 issue 要求的行为
+   明确不做：后续 tickets 和 Out of Scope
+   允许触及：预计受影响的模块、组件、接口
    ```
-   ## 实施总结
-   - 提交：`<commit hash>` — `<commit message>`
-   - 实现的 seams：<清单>
-   - 验收标准：逐条 `- [x]`（未全绿列出缺口）
-   - 测试结果：<全绿 / 数量>
-   - typecheck：通过
-   - 文档对齐：<更新了哪些文件 / 无需更新>
-   - 遗留 / 后续建议：<如有>
-   ```
-5. **强制更新 `progress.md`**：在 `.scratch/<feature>/progress.md` 更新该 `NN` 行的 `Status`/`Commit`/`Review`/`Tests`（派生视图，真相源仍为 `issues/*.md`）
-6. 无关联 issue（直接实现用户给的 spec）→ 跳过状态更新，将总结作为会话最终输出
-7. **保持目录卫生**：仅清理本次实现产生的临时产物——`[DEBUG-...]` 标记的调试代码/日志、一次性脚本、临时文件与备份文件；用 `git status` 确认工作区只含预期改动，无残留未跟踪文件后才结束。Git 历史保护与禁令见本文件阶段③ [Git 安全前置](#git-安全前置历史保护)与 `docs/agents/skill-design.md` Rule 4，仅删本次临时产物，禁止为达干净而执行 git 层破坏性命令。
+
+4. 实现或 Review 中发现的新问题必须归类为：
+   - 当前 Behavior 必须修复；
+   - 当前 issue 需要新增 Behavior；
+   - 后续 ticket；
+   - 与当前 feature 无关。
+
+   只有前两类进入当前实现；第 2 类必须补回 Contract 和验证矩阵，第 3、4 类保留记录，不无记录地扩大范围。
+5. 完成一次 **Preflight** 并记录真实结果：
+   - 当前 `HEAD`、工作区状态和 `BASE_HEAD=$(git rev-parse HEAD)`；
+   - 可用的 test、typecheck、build 命令；
+   - 可用的 subagent model；
+   - 可用的 browser 或 Playwright 路径；
+   - commit-check 所需脚本是否存在；
+   - ticket 要求的真实运行验证方式。
+6. 建立一次验证矩阵，列出 targeted tests、typecheck、全量测试、必要 build、smoke/package/security check 和真实运行验证，并记录各项的触发条件，后续只复用这份矩阵。
+7. 识别公共测试边界和 Behaviors。一个 Seam 是一个公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 Seam 可以包含多个 Behaviors。每个 Behavior 明确输入、可观察输出、对应 Acceptance Criterion 和验证层级。
+8. spec 已确认且未变化的 Seam 直接复用；只有出现需求歧义、验收缺口、范围变化、破坏性操作或互斥方案时才请求用户确认。
 
 ### 出口条件
 
-- 文档与实现对齐（无相关文档或已更新）
-- issue 状态已更新（或确认无 issue）
-- 实施总结已落盘 / 输出
-- 工作区干净（临时产物已清理，`git status` 无残留未跟踪文件）
-
-### 边界
-
-- 只追加不改写：不修改 spec.md 与既有 Comments 内容
-- 文档对齐仅限与本次实现直接相关的描述，不顺手重构无关文档
-- 总结写事实（提交 / 测试 / 遗留），不写过程叙述
+- 能用自己的话复述需求和每条 Acceptance Criterion；
+- Scope Ledger 已记录，且明确什么不做；
+- 无未澄清歧义；
+- 验证矩阵已建立；
+- 工具、命令和真实运行路径已确认可用，或已记录为 `blocked/unavailable` 及替代路径；
+- `BASE_HEAD` 已记录。
 
 ---
 
-## Todo 规定
+## 阶段 ② Red-Green：行为级 TDD
 
-本节复用 `tdd`/`implement` 的 Todo 规定，`tdd-implement` 仅做多 issue 串行（主代理按依赖顺序）与单 issue 闭环，不再重写层次细节。
+### 入口条件
 
-### 拆分层级（大小任务层次）
+- Contract 出口条件全部满足。
 
-1. **大任务**：Goal/Ticket——整个实现单元，对应一次完整的 tdd-implement 流程
-2. **中任务**：Seam（阶段②生成）——一个红-绿循环单元，每 seam 一个 Todo
-3. **小任务**：Todo——seam 内可独立验证、可勾选的执行单元（T1/T2/T3…）
-4. **执行步**：Subtodo——Todo 内的串行步骤（红 → 绿 → typecheck），回合内逐步勾选推进
+### 操作
 
-> 多 issue（串行）新增一层见 [SKILL.md](../SKILL.md#多-issue-编排按依赖串行主代理直接执行) 与 [orchestration.md](orchestration.md)：**编排层** Feature——`.scratch/<feature>/` 下全部 issues，按 `Blocked by` 分层；主代理按层串行、层内亦串行，每 issue 完整 ①→⑦ 并单独提交。
+1. 在本阶段入口加载 [tdd 技能](.agents/skills/tdd/SKILL.md) 的相关规则一次；每个 Behavior 只按需读取对应的 `tdd/tests.md` 和 `tdd/mocking.md` reference，不重复阅读全文。
+2. 按 Behavior 建立 Todo，而不是按 Seam 建立 Todo。推荐层级：
+   - 大任务：整个 issue；
+   - 中任务：Seam；
+   - Todo：一个 Behavior cycle；
+   - Subtodo：`B1-R` 红 → `B1-G` 绿 → `B1-T` typecheck。
+3. 每个 Behavior 连续执行：
 
-### Todo 清单格式
+   ```text
+   写一个失败测试
+   → 从公共接口确认目标 Behavior 失败
+   → 最小实现
+   → formatter
+   → typecheck
+   → 最小相关测试
+   → 标记该 Behavior completed
+   ```
 
-阶段② seams 生成且确认门槛满足后立即生成 todo 清单，每个 seam 一个 todo：
+4. 只有通过公共接口观察到“目标行为尚未实现”的断言失败才是有效 Red。语法错误、缺失 helper/fixture、测试环境启动失败、工具参数错误、timeout 或命令中断都记录为失败类别或 `UNKNOWN`，不能当作有效 Red。
+5. 根据语言做即时验证：Go 修改后立即 `gofmt` 和最小 package test；TS/TSX 修改后立即 parser/typecheck 和最小 component test。批量编辑拆成小批，每批恢复绿色后再继续。
+6. 每个 Behavior 完成后更新实际 Todo 状态，再进入下一个 Behavior；全部 Behaviors completed 后才离开本阶段。
 
-- 编号：`T1`、`T2`、`T3`…
-- 描述：seam 名称 + 输入 + 预期输出
-- 状态：`pending` / `in-progress` / `done` / `blocked`
-- 完成标准（DoD）：该 seam 测试全绿 + typecheck 通过 + 既有测试不受影响
-- 执行步（Subtodo）：`T1-R` 红（写失败测试）→ `T1-G` 绿（最小实现）→ `T1-T` typecheck
+### 回合连续性与 Chunking
 
-编排模式下 Todo 清单为**分层清单**：`L1: [01, 02] → L2: [03, 04] → L3: [05]`，每层按依赖串行（不再并行）；每 issue 的 DoD 为 `Status: resolved` + 独立 commit + 实施总结已落盘。
+- 每个 Behavior 的 Red → Green → formatter → typecheck → 最小相关测试在一个回合内串行完成；确认全绿后立即进入下一个 Behavior。
+- 一个 Seam 全绿只是内部进度，不是阶段出口；阶段出口是所有 Behaviors 红-绿完成且 typecheck 通过。预告下一步后立即执行，直到阶段出口、合规交互点或外部阻塞。
+- 进度输出并入工具调用序列，输出后继续执行；不要把“准备下一步”当作回合终点。
+- 单次 `write` 超过约 150 行时先写骨架再分批补全；批量 `replace` 超过 5 处时拆批，每批后立即验证。
+- `done`、`completed` 等状态只按当前实际推进更新，已完成项永不回退。
 
-### Todo 状态机
+### 出口条件
 
-```
-pending → in-progress → done
-                ↘ blocked（外部阻塞）→（授权/替代路径）→ in-progress
+- 所有 Behaviors 都有有效 Red；
+- 所有 Behaviors 的最小实现已 Green；
+- formatter、typecheck 和最小相关测试通过；
+- Todo 清单反映真实状态，全部 Behavior Todo 为 `completed`；
+- `BASE_HEAD` 祖先校验通过。
+
+---
+
+## 阶段 ③ Verify：最终验证与审查
+
+### 入口条件
+
+- Red-Green 出口条件满足，当前 diff 稳定。
+
+### 固定顺序
+
+```text
+当前 issue 影响范围测试
+→ 必要 build
+→ 必要真实运行验证
+→ 一次 Standards + Spec Review
+→ 修复 blocking finding 后的定向复核
 ```
 
-- Subtodo 不单独设 `blocked`——阻塞状态归父 Todo，Subtodo 跟随父状态
-- 编排模式下 issue 粒度状态机：`pending → in-progress(主代理执行中) → done(Status: resolved)`；`blocked` 表示 `Blocked by` 依赖未满足，待前层全 `resolved` 后自动解阻。
+### 测试与真实运行验证
 
-### 粒度与回合归属
+- 多 issue 模式只运行当前 issue 影响范围内的完整测试；不在每个 issue 重复运行全仓测试。全部 issues 完成后由 orchestration A4 运行一次全仓测试。
+- 单 issue 或单 spec 模式运行仓库完整测试。按照 Contract 的验证矩阵执行，不同时运行等价命令。
+- ticket 要求真实运行时，优先使用专用 browser 工具，其次使用项目已有 Playwright；HTTP/CLI 只能补充 API 验证，不能替代 WebUI 验证。
+- 真实进程验证使用隔离配置和临时端口，保存 PID，记录实际请求结果或页面可见结果，结束时清理进程和临时目录。
 
-- 一个 todo = 一个 seam 的红-绿 cycle + typecheck，不可再拆
-- 一个 todo 必须在一个回合内完成（红→绿→typecheck→全绿）
-- Subtodo 是 todo 内的执行步：每完成一步立即进入下一步（`T1-R` → `T1-G` → `T1-T`），禁止停在步间预告
-- 每完成一个 todo 立即更新其状态，再进入下一个
-- todo 状态只按实际推进更新（pending → in-progress → done），不基于旧快照重写整个清单；已完成项（done）永不回退
-- 全部 todo 为 done 才进入阶段④
-- 编排模式下：前层全部 issue `done` 才进入下一层；全部层 `done` 后执行全量收敛（A4）。
+### Review
 
-### 阻塞处理
+1. 每个 issue 恰好执行一次正式双轴 review：
+   - **Standards**：是否符合仓库规则和代码质量要求；
+   - **Spec**：是否逐条满足当前 issue 的 Acceptance Criteria。
+2. 两个轴独立输出、互不掩盖；每个轴明确限制输出，例如 `≤ 400 words / ≤ 40 行`。
+3. findings 分类为：当前 issue blocking、后续 ticket、advisory、out of scope。只处理当前 issue blocking finding；其余记录而不扩大范围。
+4. 修复 blocking finding 后只运行受影响测试、typecheck 和 finding 的 delta recheck，不重新启动完整双轴 review。审查结果只在对话输出，不生成 `review-*.md` 等书面报告文件。
 
-- 外部阻塞（权限拒绝、缺失授权、依赖不可用）→ 标记 `blocked`，记录所需授权或替代路径
-- 不静默停止；恢复后回到 `in-progress` 继续
-- 编排模式下：`Blocked by` 依赖阻塞由主代理按层自动管理——前层未全 `resolved` 时后层 `blocked`，前层提交后自动解阻；不需人工确认依赖满足。
+### 出口条件
+
+- 最终 diff 对应的相关测试通过；
+- 必要 typecheck/build 通过；
+- ticket 要求的真实运行验证已完成并记录实际结果；
+- 一次 Standards + Spec Review 已完成；
+- 无 blocking finding；
+- 受影响范围的最后一次证据对应当前 diff。
+
+---
+
+## 阶段 ④ Deliver：提交与 Tracker 收尾
+
+### 入口条件
+
+- Verify 出口条件满足。
+
+### Commit 前门禁
+
+按以下顺序完成并记录事实：
+
+1. 最终逐条检查 Acceptance Criteria；
+2. 检查 README/docs/config/package 与实现一致；
+3. 复核 Scope Ledger，确认没有未记录的范围扩张；
+4. 确认证据对应最后一次代码或测试修改；
+5. 检查临时文件、构建产物和未跟踪文件；
+6. 对 staged diff 执行敏感信息检查；
+7. 执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`；
+8. 检查 commit message；
+9. 确认暂存区只包含当前 issue；
+10. 执行 `git diff --cached`，再创建当前 issue 的独立 commit。
+
+调用 [commit-check](.agents/skills/commit-check/SKILL.md) 完成文档一致性、目录卫生和 commit message 三项门禁。若预设安全扫描脚本不存在，记录统一 fallback 及实际检查方式。
+
+### Tracker 收尾
+
+Commit 成功后：
+
+- 逐条勾选 Acceptance Criteria；
+- 将 issue 状态改为 `resolved`；
+- 追加实施总结；
+- 更新 `.scratch/<feature>/progress.md` 的 `Status`、`Commit`、`Review`、`Tests`；
+- 记录 commit hash、message、最终测试命令/数量/结果和真实运行结果；
+- 清理本次产生的临时进程、目录和一次性文件；
+- 确认下一 issue 的 blockers 已解除。
+
+阶段 ④ 开始后不新增产品 Behavior。若实现、测试或文档不完整，回到对应阶段；不要在 Tracker 收尾后继续修改源码，也不要通过额外 docs-only commit 掩盖遗漏。只有四个阶段全部通过，才可把 issue 标记为 `resolved`。
+
+### 出口条件
+
+- commit 已创建且为当前 issue 的独立提交；
+- Acceptance Criteria 全部通过；
+- issue 状态为 `resolved`（无关联 issue 的直接 spec 则在会话中输出总结）；
+- 实施总结和 `progress.md` 已同步；
+- 工作区符合预期，无本次临时产物或残留未跟踪文件；
+- 文档与实现一致，Git 历史保护校验通过。
+
+---
+
+## 跨阶段运行纪律
+
+### Tool Failure Budget
+
+```text
+首次失败
+→ 判断失败类别
+→ 最多一次有依据的 fallback
+→ 仍失败则记录 blocked/unavailable 并停止该路径
+```
+
+相同命令或工具参数不原样连续重试；timeout 或中断后缩小到 package、文件或具体 test；model、browser 或 tool 不可用时最多一次 fallback。用户要求停止或 handoff 时立即停止。
+
+### 验证证据失效
+
+任何产品代码或测试文件再次变化，旧的测试、typecheck、build 和 review 证据立即失效；必须重新验证受影响范围。只能使用最后一次修改之后的结果证明当前 diff 已完成。
+
+### Git History Preservation
+
+进入 Contract 时记录 `BASE_HEAD=$(git rev-parse HEAD)`；每个阶段出口和 commit 前都执行：
+
+```bash
+git merge-base --is-ancestor $BASE_HEAD HEAD
+```
+
+失败时先经 `git reflog` 找回被改写的历史，再继续。为达到工作区干净只删除本次产生的 `[DEBUG-...]`、一次性脚本和临时文件；未经用户确认不使用 `git reset --hard`、`git checkout .`、`git clean -fd`、`git stash push --include-untracked`、`git push --force`、`git rebase -i` 或任何让 `HEAD` 后退的命令。需要 stash 时使用 `--keep-index`，pop 后重新校验。
+
+---
+
+## 状态统一
+
+```text
+Todo:     pending | in_progress | completed | blocked
+Issue:    ready-for-agent | in_progress | resolved | blocked
+Progress: pending | in_progress | done | blocked
+```
+
+状态转换：Contract 完成后 Issue/Progress 为 `in_progress`；Red-Green 完成后 Behaviors 为 `completed`，Issue 仍为 `in_progress`；Verify 完成后 Issue 仍为 `in_progress`；Deliver 完成后 Issue 为 `resolved`、Progress 为 `done`。外部阻塞记录为 `blocked`，恢复后回到 `in_progress`。
 
 ---
 
 ## 回退路由
 
 | 当前阶段 | 回退条件 | 回退目标 |
-|----------|----------|----------|
-| ③ TDD 开发 | typecheck 失败 | → ③ 修复类型错误 |
-| ④ 完整测试套件 | 测试失败 | → ③ 修复失败测试 |
-| ⑤ Code Review | 实现错误 | → ③ 修复实现 |
-| ⑤ Code Review | seams 遗漏 | → ② 补充 seams |
-| ⑤ Code Review | 需求偏差 | → ① 澄清需求 |
+|---|---|---|
+| ① Contract | 需求歧义、验收缺口、范围变化 | → ① 补充契约和验证矩阵 |
+| ② Red-Green | 有效 Red、实现、formatter、typecheck 或相关测试失败 | → ② 修复当前 Behavior |
+| ③ Verify | 测试、build、真实运行或 review finding 失败 | → ② 修复 Behavior；需求偏差 → ① |
+| ④ Deliver | docs、commit-check、staged diff 或 Tracker 信息不完整 | → ①/③ 修复对应证据；仍在 Deliver 前完成 |
 
-编排模式回退见 [orchestration.md](orchestration.md)：单 issue 内回退按上表在当 issue 内闭环；层收敛/全量失败定位到失败 issue 所在层重做该 issue 的失败 seam。
+多 issue 的层收敛、全量失败、依赖冲突和跨 issue 修改冲突按 [orchestration.md](orchestration.md) A5 回退，不跨 issue 无记录改动。

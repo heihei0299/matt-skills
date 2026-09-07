@@ -6,43 +6,41 @@ disable-model-invocation: true
 
 # TDD Implement
 
-`seam` + `red-green` 为领衔词的完整实现编排：每个 seam 一个红-绿循环，直到 commit。TDD 语义（红-绿循环、seam 定义、好测试标准）以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源——测试标准见 [tdd/tests.md](.agents/skills/tdd/tests.md)，Mock 边界见 [tdd/mocking.md](.agents/skills/tdd/mocking.md)；本技能只编排阶段与运行时规则。
+`seam` + `red-green` 是本技能的领衔词。它把一个 spec 或 task issue 编排成四个交付阶段；TDD 的红-绿语义、测试质量和 mock 边界以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，本技能只定义交付编排。
 
-本技能是**长程任务**（Long-Horizon Skill）：多阶段串行执行，自带**回合连续性**（Turn Continuity）与**任务分解**（Chunking）规则。术语定义见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
+本技能是 **Long-Horizon Skill**：阶段按顺序连续执行，并自带 **Turn Continuity** 与 **Chunking**。术语见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
 
-## 分支
+## 入口与分支
 
-- **入口**：单 `spec` 文件（`.scratch/<feature>/spec.md` 或等价）/ `Type: task` 的 `issue`（`wayfinder`/`to-tickets` 产出）均视同单 `task`，走下节 Steps ①→⑦；`Type: research/prototype/grilling` 分流至对应技能。
-- **多 issue 编排**：`.scratch/<feature>/issues/` 下多 `task` 时走编排模式——见上节与 [orchestration.md](references/orchestration.md)。
-## 多 issue 编排（按依赖串行，主代理直接执行）
+- **单 issue**：单个 `.scratch/<feature>/spec.md`、等价 spec 或 `Type: task` issue，按下方四个 Steps 完成一个交付闭环。
+- **多 issue**：`.scratch/<feature>/issues/` 下存在多个 `Type: task` 文件时，先读取 [orchestration.md](references/orchestration.md)，按 `Blocked by` 构建 DAG、Kahn 分层，再由主代理按层串行完成各 issue。
+- `Type: research`、`prototype`、`grilling` 分流到对应技能，不进入本技能。
 
-触发见 [orchestration.md](references/orchestration.md)；`.scratch/<feature>/issues/` 下多文件时触发，主过程 A0 依赖图 → A1 Kahn 分层 L1入度0→L2→Ln → A2 主代理串行调度（按层串行、层内亦串行，主代理直接执行完整 ①→⑦，禁止子代理派发；每 issue 单独 `commit`，绿后即 `code-review` + `commit-check` 双门禁） → A3 层收敛 → A4 全量收敛。`Blocked by` 仍为排序输入，三入口（单 `spec` / `Type: task` issue / `wayfinder task`）同构。强制维护 `.scratch/<feature>/progress.md`（`DAG` + `Layers` + `Progress` 表，派生视图，真相源为 `spec` + `issues/*.md`）。
-## Steps
+多 issue 的 A0-A5 是编排控制活动，不是额外的产品交付阶段：依赖图、分层、串行调度、层收敛、全量收敛和回退/冲突处理的详规只在 [orchestration.md](references/orchestration.md) 中维护。
 
-按序执行，每步达到完成条件才进入下一步；进入任一步前先读取其在 [stages.md](references/stages.md) 的定义。
+## 四阶段 Steps
 
-| Step | 做什么 | 完成条件（可验证） | 详规 |
-|------|--------|-------------------|------|
-| ① 理解需求 | 读取入口并建立验证矩阵 | 需求无待决歧义，验证命令已确定 | [stages.md#阶段-①](references/stages.md#阶段-①理解需求) |
-| ② 确认 Seams | 从明确 spec/ticket 生成 seams 与 Todo；详规列出的确认门槛例外（含破坏性操作） | seams/Todo 已生成且无待决歧义 | [stages.md#阶段-②](references/stages.md#阶段-②确认-seams测试接缝) |
-| ③ TDD 开发循环 | 逐 seam 红-绿循环（红→绿→typecheck）串行推进 | 所有 seams 红-绿完成 + typecheck 通过 | [stages.md#阶段-③](references/stages.md#阶段-③tdd-开发循环) |
-| ④ 最终全量测试 | 所有 issue 完成后按验证矩阵只运行一次全量命令；多 issue 由 A4 执行，单 spec 在 issue 收尾后执行 | 全量测试通过 | [stages.md#阶段-④](references/stages.md#阶段-④完整测试套件) |
-| ⑤ Code Review | 每个 issue 恰好执行一次 Standards + Spec 双轴 review；findings 只做 targeted 修复，不再次 review | 每个 issue 的一次 review 已完成 | [stages.md#阶段-⑤](references/stages.md#阶段-⑤code-review) |
-| ⑥ Commit | 运行一次最终 commit-check 门禁并提交 | commit 完成且历史校验通过 | [stages.md#阶段-⑥](references/stages.md#阶段-⑥commit) |
-| ⑦ 收尾 | 复核门禁证据，处理 issue 总结与目录卫生 | 总结完成、工作区干净 | [stages.md#阶段-⑦](references/stages.md#阶段-⑦收尾文档对齐--issue-状态--实施总结) |
-主代理串行时每个 `task` 先走 `①→②→③→⑤→⑥→⑦` 并单独 commit；所有 issue 完成后再执行阶段④全量收敛（单 spec 只有一个 issue，也在其收尾后执行一次）。
+按序执行；每步达到可验证出口条件后立即进入下一步。每步开始前读取 [stages.md](references/stages.md) 中对应定义。
 
-### 阶段间流转
+| Step | 做什么 | 出口条件 |
+|---|---|---|
+| ① **Contract** | 读取入口，提取 Acceptance Criteria，建立 Scope Ledger、Preflight、验证矩阵和 Behavior/Seam 边界 | 需求无待决歧义，验证命令已确定；知道做什么、从哪里验证、什么不做 |
+| ② **Red-Green** | 以 Behavior 为粒度执行有效 Red → 最小 Green → formatter/typecheck → 最小相关测试 | 所有 Behaviors 均有有效 Red、实现全绿，formatter/typecheck 和最小相关测试通过 |
+| ③ **Verify** | 运行当前 issue 影响范围测试、必要 build、要求的真实运行验证；执行一次 Standards + Spec Review | 最终 diff 的相关证据通过，真实运行验证完成（如要求），无 blocking finding |
+| ④ **Deliver** | 对齐 docs/README，运行 commit-check，检查 staged diff 和 Git 历史，创建独立 commit，更新 issue/progress.md | commit 已创建，Acceptance Criteria 全部通过，Tracker 与工作区反映真实完成状态 |
 
-- 正常流转：出口条件满足即进入下一阶段，不在阶段间停顿。
-- 回退路由：见 [stages.md#回退路由](references/stages.md#回退路由)；编排模式回退见 [orchestration.md](references/orchestration.md)。
-- 回合连续性与任务分解：见 [stages.md ③-3e/3f](references/stages.md#阶段-③tdd-开发循环)（红→绿→typecheck→下一 seam 一个回合内串行完成，直至阶段出口；预告下一步后立即执行；write>150 行/replace>5 处拆小步）。
+## 运行时纪律
+
+- 四个阶段都从入口连续执行到自身出口：预告下一步后立即执行；进度输出并入工具调用序列，输出后继续执行。只有合规交互点、明确的外部阻塞或阶段出口条件结束当前回合。
+- 一个 seam 是公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 seam 可以包含多个 Behaviors。Seam/Behavior 的细节和 Todo 粒度见 [stages.md](references/stages.md)。
+- 当前 issue 的范围、Acceptance Criteria、Out of Scope、测试/typecheck/build/真实运行证据和最终 commit 必须可追溯。Seam 或专项测试绿色不代表 issue 完成；四阶段出口全部满足后才可标记 `resolved`。
+- 多 issue 模式中，每个 issue 只提交一个独立 commit；issue 影响范围测试在 Step ③ 执行，全仓测试由 orchestration 的 A4 在全部 issue 完成后执行一次。
 
 ## 引用
 
 - TDD 核心规则：[tdd 技能](.agents/skills/tdd/SKILL.md)
 - 测试标准：[tdd/tests.md](.agents/skills/tdd/tests.md)
 - Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
+- 四阶段详规：[stages.md](references/stages.md)
+- 多 issue 编排：[orchestration.md](references/orchestration.md)
 - Commit 门禁：[commit-check](.agents/skills/commit-check/SKILL.md)
-- 单线详规：[stages.md](references/stages.md)
-- 多 issue 编排详规：[orchestration.md](references/orchestration.md)（A0-A1 排序 + 主代理串行，不含子代理）
