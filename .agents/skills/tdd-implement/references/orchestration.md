@@ -45,8 +45,8 @@ Ln = 最后一层
 ```
 for each 层 Li in L1..Ln:
   for each issue in Li（按编号顺序）:
-    主代理直接执行该 issue 的完整 ①→⑦：
-      ①理解需求 → ②确认 seams → ③红-绿循环（每 cycle 后 typecheck）→ ④相关测试 → ⑤code-review（双轴，逐 issue）→ ⑥commit-check + 单独 commit → ⑦收尾（Status: resolved + ## 实施总结 + map.md 指针如为 wayfinder 产物 + 目录卫生）
+    主代理直接执行该 issue 的 issue 闭环：
+      ①理解需求 → ②生成 seams/Todo → ③红-绿循环（每 cycle 后 typecheck）→ ⑤一次 code-review → ⑥commit-check + 单独 commit → ⑦收尾（Status: resolved + ## 实施总结 + map.md 指针如为 wayfinder 产物 + 目录卫生）；④全量测试不在 issue 闭环内执行
     产回执卡片（改动文件/测试结果/commit hash）并回写该 issue 文件后**强制更新 `progress.md` 该行**（`Status`/`Commit`/`Review`/`Tests`）后再取下一 issue
   层收敛：该层全部 issue `Status: resolved` 且 `progress.md` 同步为 `done`、各自独立 commit 已落盘、相关测试通过、`git status` 卫生、历史校验通过，才进下一层
 全部层串行完成后进入 A4
@@ -69,7 +69,7 @@ for each 层 Li in L1..Ln:
 ### A4. 全量收敛
 
 全部层串行完成且各自层收敛通过后，执行：
-1. **全量测试套件**：跑仓库完整测试套件（仅此一次全量）
+1. **全量测试套件**：这是多 issue 流程中唯一的全量回归点；全部层、全部 issue 串行完成后仅执行一次（失败修复后才允许必要重跑）
 2. **历史校验**：`git merge-base --is-ancestor $BASE_HEAD HEAD`，失败即 `reflog` 恢复后重跑
 3. **目录卫生**：`git status` 无 `[DEBUG-...]` 残留、无未跟踪临时文件
 4. **汇总总结**：在会话输出汇总各 issue 的回执卡片关键信息（提交 hash / seams / 验收 checkbox / 测试结果 / 文档对齐）；不另写汇总文件

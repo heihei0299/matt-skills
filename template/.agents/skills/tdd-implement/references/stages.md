@@ -138,21 +138,18 @@
 
 ### 入口条件
 
-- 阶段 ③ 完成，typecheck 通过
-
+- 所有 issue 已完成其实现、targeted tests、typecheck、一次 code-review、commit 和收尾；多 issue 从 orchestration A4 进入，单 spec 在唯一 issue 收尾后进入
+- 阶段④不是 issue 闭环步骤，不得在任一 issue 完成时提前执行
 ### 操作
-
-1. 按阶段①建立的验证矩阵，运行仓库规范的唯一全量测试命令（单 issue 在此执行；多 issue 由 A4 统一执行）
-2. 若失败，先运行失败测试或最小相关子集定位原因；修复后再运行同一全量命令
-3. 记录通过证据供阶段⑤/⑥复用，不重复执行等价命令（例如 `npm test` 与其展开命令），除非本次改动了 package script 本身
+1. 按阶段①建立的验证矩阵，运行仓库规范的唯一全量测试命令；正常路径只执行一次
+2. 若失败，先运行失败测试或最小相关子集定位原因；修复对应 issue 后才重跑全量命令
+3. 记录最终全量结果，不同时运行等价命令（例如 `npm test` 与其展开命令），除非本次改动了 package script 本身
 4. 检查所有测试是否通过
-
 ### 出口条件
-
-- 全部测试通过
-
+- 全量测试通过
 ### 边界
-- 全量测试失败时回到阶段③；修复后只重跑失败子集用于诊断，再重跑验证矩阵中的唯一全量命令——进入 review 前必须全绿
+- 多 issue 仅由 A4 在所有 issue 完成后执行；单 spec 在唯一 issue 收尾后执行
+- 全量测试失败时回到失败 issue 的修复路径；修复后只做必要的定向诊断和全量重跑
 
 ---
 
@@ -160,17 +157,14 @@
 
 ### 入口条件
 
-- 完整测试套件通过
-
+- 阶段③ targeted tests 和 typecheck 通过；阶段④全量测试尚未执行也不构成此阶段入口条件
 ### 操作
-
-1. 首次调用 [code-review 技能](.agents/skills/code-review/SKILL.md) 按**双轴**审查当前 issue 的改动：
+1. 每个 issue 恰好调用一次 [code-review 技能](.agents/skills/code-review/SKILL.md)，按**双轴**审查当前 issue 的改动：
    - **Standards 轴**：改动是否符合仓库文档化的编码标准（含 smell baseline 判断）
    - **Spec 轴**：改动是否忠实实现来源 spec/issue（逐条对照验收要求）
-   - 两轴独立报告、**互不掩盖**——一轴通过另一轴失败时仍须修复
-2. 审查发现的问题按 [回退路由](#回退路由) 处理，并只重跑受影响的 targeted checks
-3. 修复后执行**增量复审**：只检查修复涉及的 symbols、验收项和测试；只有架构或范围发生变化时，才重新执行完整双轴审查
-4. **逐 issue 触发**：每 issue 绿后即审查，review 通过后进入 commit，不在阶段间重复启动同一审查
+   - 两轴独立报告、**互不掩盖**；该 issue 不再次调用 code-review
+2. 审查发现的问题按 [回退路由](#回退路由) 处理，并只重跑受影响的 targeted checks；修复不触发第二次 review
+3. 记录该 issue 的一次 review 结果，通过后进入 commit 和收尾
 
 ### 出口条件
 

@@ -25,12 +25,11 @@ description: "Multi-task orchestrator: use when the user provides a spec/ticket 
 | ① 理解需求 | 读取入口并建立验证矩阵 | 需求无待决歧义，验证命令已确定 | [stages.md#阶段-①](references/stages.md#阶段-①理解需求) |
 | ② 确认 Seams | 从明确 spec/ticket 生成 seams 与 Todo；详规列出的确认门槛例外（含破坏性操作） | seams/Todo 已生成且无待决歧义 | [stages.md#阶段-②](references/stages.md#阶段-②确认-seams测试接缝) |
 | ③ TDD 开发循环 | 逐 seam 红-绿循环（红→绿→typecheck）串行推进 | 所有 seams 红-绿完成 + typecheck 通过 | [stages.md#阶段-③](references/stages.md#阶段-③tdd-开发循环) |
-| ④ 完整测试套件 | 运行验证矩阵中的唯一全量命令 | 全量测试通过 | [stages.md#阶段-④](references/stages.md#阶段-④完整测试套件) |
-| ⑤ Code Review | 首次双轴 review；findings 后按详规增量复审 | review 通过 | [stages.md#阶段-⑤](references/stages.md#阶段-⑤code-review) |
+| ④ 最终全量测试 | 所有 issue 完成后按验证矩阵只运行一次全量命令；多 issue 由 A4 执行，单 spec 在 issue 收尾后执行 | 全量测试通过 | [stages.md#阶段-④](references/stages.md#阶段-④完整测试套件) |
+| ⑤ Code Review | 每个 issue 恰好执行一次 Standards + Spec 双轴 review；findings 只做 targeted 修复，不再次 review | 每个 issue 的一次 review 已完成 | [stages.md#阶段-⑤](references/stages.md#阶段-⑤code-review) |
 | ⑥ Commit | 运行一次最终 commit-check 门禁并提交 | commit 完成且历史校验通过 | [stages.md#阶段-⑥](references/stages.md#阶段-⑥commit) |
 | ⑦ 收尾 | 复核门禁证据，处理 issue 总结与目录卫生 | 总结完成、工作区干净 | [stages.md#阶段-⑦](references/stages.md#阶段-⑦收尾文档对齐--issue-状态--实施总结) |
-
-主代理串行时每 `task` 仍走上表 ①→⑦（每 issue 单独 `commit`，`code-review` + `commit-check` 双门禁逐 issue，全量由 A4 收敛）。
+主代理串行时每个 `task` 先走 `①→②→③→⑤→⑥→⑦` 并单独 commit；所有 issue 完成后再执行阶段④全量收敛（单 spec 只有一个 issue，也在其收尾后执行一次）。
 
 ### 阶段间流转
 
