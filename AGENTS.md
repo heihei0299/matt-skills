@@ -7,24 +7,13 @@
 
 
 
-## 行为路由（默认 23 自动发现，`--all` 展开至 32）
-
-命中即行动，回复中简短声明所用技能与原因。
-
-- 探索/定位/理解代码库 → 直接使用 `codegraph explore`（`codegrafh CLI`）；若无 `.codegraph/` 索引先 `codegraph init` 初始化，再 `explore`（Q1 硬判定，Q2 意图文+文件锚点，Q3 仅完整源码免读，Q4 跨仓才传 projectPath，Q5 研调链用 research 另行触发）
-- 后台调研 → research；原型验证 → prototype
-- 简单、低风险修改 → 直接执行：理解现状 → 最小修改 → 相关验证；有实际文件改动且验证通过时，按一个用户请求执行一次 `git commit`
-- 用户显式 `/implement` → implement（普通中等规模、已有 spec 且不要求 TDD）
-- 用户显式 `/tdd-implement` → tdd-implement（seam red-green）；用户明确要求 test-first/TDD 但未显式调用时，提示用户显式调用
-- 测试先行但不需要完整交付编排 → tdd；中大型且需要正式 spec 的工作 → to-spec
-- 设计打磨 → grilling；达成共识→spec → grill-to-spec（grilling→domain-modeling→to-spec）
-- 领域术语/ADR → domain-modeling；模块接口 → codebase-design；巨型规划 → wayfinder
-- 诊断 → diagnose-fix（编排 diagnosing-bugs + tdd，硬门槛）；审查 → code-review；合并冲突 → resolving-merge-conflicts
-- 分诊 → triage；架构扫描 → improve-codebase-architecture；综合 spec → to-spec；拆票 → to-tickets
-- 可选（需 `--all` 才发现）：grill-me / handoff / teach / to-questionnaire / wait-what / writing-for-agents / ci-guard / scaffold-functional-test / instance-test
-- 兜底 → ask-matt；模板维护 → README.md
-
-显式触发（须用户 `/` 发起；其中 teach/handoff/writing-for-agents 需 `--all`）：grill-to-spec、wayfinder、to-spec、to-tickets、triage、improve-codebase-architecture、teach、handoff、writing-for-agents、commit-check
+## 行为路由
+命中即行动，回复中简短声明所用 skill 或工具。
+- 理解/定位 → `codegraph explore`
+- 调研/原型 → `research` / `prototype`
+- 修改/实现 → 简单低风险直接执行：理解现状 → 最小修改 → 相关验证；有实际改动且验证通过时按一个用户请求执行一次 `git commit`；测试先行、TDD 或集成测试 → `tdd`；bug、失败、异常或性能问题 → `diagnose-fix`；其它中大型修改 → 先澄清范围、验收和验证方式，再按项目流程执行
+- 审查/设计 → `code-review` / `grilling` / `domain-modeling`
+- 无法归类 → 直接澄清
 
 ## 分文件
 

@@ -6,30 +6,45 @@ import { fileURLToPath } from 'node:url';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(dir, file), 'utf8');
+const routeSection = (content) => content.slice(content.indexOf('## 行为路由'), content.indexOf('## 分文件'));
 
 const agents = read('AGENTS.md');
 const templateAgents = read('template/AGENTS.md');
-const skill = read('.agents/skills/tdd-implement/SKILL.md');
-const templateSkill = read('template/.agents/skills/tdd-implement/SKILL.md');
+
 
 test('simple low-risk changes use the direct route and commit per request', () => {
   for (const content of [agents, templateAgents]) {
-    assert.match(content, /简单、低风险修改 → 直接执行/);
-    assert.match(content, /理解现状 → 最小修改 → 相关验证/);
-    assert.match(content, /按一个用户请求执行一次 `git commit`/);
-    assert.doesNotMatch(content, /提交前 → commit-check/);
+    const route = routeSection(content);
+    assert.match(route, /简单低风险直接执行/);
+    assert.match(route, /理解现状 → 最小修改 → 相关验证/);
+    assert.match(route, /按一个用户请求执行一次 `git commit`/);
   }
 });
 
-test('tdd-implement is reachable only through explicit user invocation', () => {
+test('behavior routing keeps only the five automatic intent branches', () => {
   for (const content of [agents, templateAgents]) {
-    assert.match(content, /用户显式 `\/tdd-implement` → tdd-implement/);
-    assert.match(content, /明确要求 test-first\/TDD 但未显式调用时，提示用户显式调用/);
-  }
+    const route = routeSection(content);
+    assert.match(route, /## 行为路由/);
+    assert.match(route, /理解\/定位 → `codegraph explore`/);
+    assert.match(route, /调研\/原型 → `research` \/ `prototype`/);
+    assert.match(route, /修改\/实现 → .*`tdd`.*`diagnose-fix`/);
+    assert.match(route, /审查\/设计 → `code-review` \/ `grilling` \/ `domain-modeling`/);
+    assert.match(route, /无法归类 → 直接澄清/);
 
-  for (const content of [skill, templateSkill]) {
-    assert.match(content, /^disable-model-invocation:\s*true$/m);
-    assert.match(content, /完成已确认的 spec\/ticket 的 test-first\/TDD 交付闭环/);
-    assert.doesNotMatch(content, /^description:\s*"Use when/m);
+    for (const manualSkill of [
+      'implement',
+      'tdd-implement',
+      'commit-check',
+      'to-spec',
+      'to-tickets',
+      'triage',
+      'teach',
+      'handoff',
+      'wayfinder',
+      'grill-to-spec',
+    ]) {
+      assert.doesNotMatch(route, new RegExp(manualSkill));
+    }
+    assert.doesNotMatch(route, /显式触发|可选（需 `--all`）/);
   }
 });
