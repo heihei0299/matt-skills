@@ -14,6 +14,9 @@ async function copyDirRecursive(src, dest) {
 }
 async function tryCopy(src, dest) { try { await cp(src, dest); } catch {} }
 async function tryCopyDir(src, dest) { try { await copyDirRecursive(src, dest); } catch {} }
+function stripTemplateOnlySections(content) {
+  return content.replace(/^## 优先级\n\n[^\n]*\n\n/, '');
+}
 async function main() {
   await rm(path.join(ROOT, 'template'), { recursive: true, force: true });
   await mkdir(path.join(ROOT, 'template'), { recursive: true });
@@ -41,7 +44,8 @@ async function main() {
   }
   await tryCopy(path.join(ROOT, '.pi/prompts/issue-audit.md'), path.join(ROOT, 'template/.pi/prompts/issue-audit.md'));
   await tryCopyDir(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
-  await cp(path.join(ROOT, 'AGENTS.md'), path.join(ROOT, 'template/AGENTS.md'));
+  const agents = await readFile(path.join(ROOT, 'AGENTS.md'), 'utf8');
+  await writeFile(path.join(ROOT, 'template/AGENTS.md'), stripTemplateOnlySections(agents));
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.opencode/docs/agents'));
