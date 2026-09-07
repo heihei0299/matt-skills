@@ -9,13 +9,11 @@ import { MAP_SKILL, MAP_DOCS, MAP_AGENTS, normalize } from './mirror-utils.js';
 // repos. The workspace mirrors into template/ with a path mapping (skills
 // singular source, discipline docs and glossary land under .opencode/.pi,
 // AGENTS.md at the top level), so the mirror checks normalize the template
-// copies back to workspace paths before comparing, except intentional template-only sections.
-// Edit the workspace, then re-sync.
+// copies back to workspace paths before comparing. Edit the workspace, then re-sync.
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (p) => path.join(dir, p);
 
-const stripTemplateOnlySections = (content) => content.replace(/^## 优先级\n\n[^\n]*\n\n/, '');
 const DOC_AGENTS = ['domain.md', 'issue-tracker.md', 'runtime-discipline.md', 'skill-design.md', 'triage-labels.md'];
 
 // Config-repo positioning: template/ ships ALL skills via .agents/skills (single source)
@@ -118,21 +116,13 @@ test('template/.pi/prompts carries the pi issue-audit command in sync', () => {
   assert.match(ocCommand, /^agent: /m, 'opencode source keeps its subagent delegation');
 });
 
-test('template/AGENTS.md mirrors the root AGENTS.md except template-only sections', () => {
-  const templateAgents = readFileSync(root('template/AGENTS.md'), 'utf8');
-  const rootAgents = readFileSync(root('AGENTS.md'), 'utf8');
+test('template/AGENTS.md mirrors the root AGENTS.md (path-mapped)', () => {
   assert.equal(
-    normalize(templateAgents, MAP_AGENTS),
-    stripTemplateOnlySections(rootAgents),
+    normalize(readFileSync(root('template/AGENTS.md'), 'utf8'), MAP_AGENTS),
+    readFileSync(root('AGENTS.md'), 'utf8'),
   );
-  assert.doesNotMatch(templateAgents, /^## 优先级/m);
 });
 
-test('template builder strips root-only priority section', () => {
-  const builder = readFileSync(root('scripts/build-template.js'), 'utf8');
-  assert.match(builder, /function stripTemplateOnlySections/);
-  assert.match(builder, /template\/AGENTS\.md.*stripTemplateOnlySections/s);
-});
 
 test('template/.opencode/CONTEXT.md mirrors the root CONTEXT.md', () => {
   assert.equal(
