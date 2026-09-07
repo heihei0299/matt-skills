@@ -213,9 +213,10 @@ test('SKILL.md orchestration: trigger and single-issue fallback', () => {
   assert.match(orchestration, /单 issue \/ 单 spec 不走本文件/);
 });
 
-test('orchestration: main-agent serial contract (full ①→⑦ each issue)', () => {
-  assert.match(orchestration, /主代理直接执行该 issue 的完整 ①→⑦/);
-  assert.match(orchestration, /①→⑦/);
+test('orchestration: main-agent serial contract (issue closure without full regression)', () => {
+  assert.match(orchestration, /主代理直接执行该 issue 的 issue 闭环/);
+  assert.match(orchestration, /⑤一次 code-review/);
+  assert.match(orchestration, /④全量测试不在 issue 闭环内执行/);
   assert.match(orchestration, /独立 commit/);
   assert.match(orchestration, /禁止子代理派发/);
 });
@@ -263,9 +264,10 @@ test('orchestration A1 uses Kahn layered topological sort', () => {
   assert.match(orchestration, /L2/);
 });
 
-test('orchestration A2 main-agent is a full single-issue tdd-implement unit', () => {
-  assert.match(orchestration, /主代理直接执行该 issue 的完整 ①→⑦/);
-  assert.match(orchestration, /①→⑦/);
+test('orchestration A2 skips full regression and reviews each issue once', () => {
+  assert.match(orchestration, /主代理直接执行该 issue 的 issue 闭环/);
+  assert.match(orchestration, /⑤一次 code-review/);
+  assert.match(orchestration, /④全量测试不在 issue 闭环内执行/);
   assert.match(orchestration, /NN-<slug>/);
   assert.match(orchestration, /spec\.md/);
 });
@@ -462,14 +464,14 @@ test('stage ③ loads TDD references selectively instead of rereading every sect
 test('stage ④ defines one canonical verification matrix', () => {
   assert.match(stages, /验证矩阵/);
   assert.match(stages, /唯一.*测试命令|规范的.*测试命令/);
-  assert.match(stages, /不重复.*等价|等价.*不重复/);
-  assert.match(stages, /证据.*复用|通过证据.*后续/);
+  assert.match(stages, /不同时运行等价命令/);
+  assert.match(stages, /正常路径只执行一次/);
 });
 
-test('stage ⑤ uses incremental review after targeted fixes', () => {
-  assert.match(stages, /首次.*双轴/);
-  assert.match(stages, /增量复审/);
-  assert.match(stages, /架构.*范围.*变化.*完整.*双轴/);
+test('stage ⑤ performs exactly one code-review per issue', () => {
+  assert.match(stages, /每个 issue 恰好调用一次/);
+  assert.match(stages, /修复不触发第二次 review/);
+  assert.doesNotMatch(stages, /增量复审/);
 });
 
 test('stage ⑦ reports documentation alignment instead of opening a second commit cycle', () => {
