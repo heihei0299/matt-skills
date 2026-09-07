@@ -60,7 +60,9 @@ test('stage ⑦ closes the loop: issue status + implementation summary', () => {
 test('stage ⑦ carries the doc-alignment step', () => {
   assert.match(stages, /文档对齐/);
   assert.match(stages, /README/);
-  assert.match(stages, /单独 commit/);
+  assert.match(stages, /阶段⑥.*commit-check|commit-check.*文档/);
+  assert.match(stages, /只复核|仅复核/);
+  assert.doesNotMatch(stages, /不一致则更新文档，并单独 commit/);
   assert.match(stages, /不顺手重构无关文档/);
   // SKILL is Steps-only: it points to stages instead of duplicating the detail
   assert.match(skill, /⑦ 收尾/);
@@ -88,7 +90,7 @@ test('SKILL.md reference section keeps the tests.md and mocking.md links', () =>
 test('stage ③ defers TDD semantics to the tdd skill (single source of truth)', () => {
   assert.match(stages, /以 \[tdd 技能\]\(\.agents\/skills\/tdd\/SKILL\.md\) 为唯一事实源/);
   assert.match(stages, /不再在此重写/);
-  assert.match(stages, /循环前与循环中都查阅/);
+  assert.match(stages, /阶段③入口.*加载.*一次|加载.*一次/);
   assert.match(stages, /tdd\/tests\.md/);
   assert.match(stages, /tdd\/mocking\.md/);
 });
@@ -186,7 +188,7 @@ test('stage ⑤ reviews along two axes (Standards + Spec), independent reports',
 
 test('stage ⑥ embeds the commit-check gate before commit', () => {
   assert.match(stages, /commit-check/);
-  assert.match(stages, /四项/);
+  assert.match(stages, /三项/);
   assert.match(stages, /全部通过才 commit/);
   assert.match(skill, /commit-check/);
 });
@@ -434,4 +436,44 @@ test('stages.md no longer duplicates orchestration appendix (single source of tr
   assert.doesNotMatch(stages, /A0.*依赖图构建/);
   // stages points to orchestration for multi-issue
   assert.match(stages, /orchestration\.md/);
+});
+
+test('stage ① uses progressive disclosure and an exploration read cache', () => {
+  assert.match(stages, /CONTEXT\.md.*按需|按需.*CONTEXT\.md/);
+  assert.match(stages, /ADR.*相关/);
+  assert.match(stages, /完整源码时视为已读/);
+  assert.match(stages, /不再次 `read` 同一文件/);
+  assert.match(stages, /验证矩阵已建立/);
+});
+
+test('stage ② does not block on a complete spec', () => {
+  assert.match(stages, /验收标准.*明确.*直接.*Todo|明确验收标准.*直接/);
+  assert.match(stages, /不等待确认|不等待用户确认/);
+  assert.match(stages, /歧义|验收缺口/);
+  assert.match(skill, /破坏性操作/);
+});
+
+test('stage ③ loads TDD references selectively instead of rereading every section', () => {
+  assert.match(stages, /阶段③入口.*一次|加载一次/);
+  assert.match(stages, /当前 seam.*相关 reference|按当前 seam.*reference/);
+  assert.doesNotMatch(stages, /Every section applies on every cycle/);
+});
+
+test('stage ④ defines one canonical verification matrix', () => {
+  assert.match(stages, /验证矩阵/);
+  assert.match(stages, /唯一.*测试命令|规范的.*测试命令/);
+  assert.match(stages, /不重复.*等价|等价.*不重复/);
+  assert.match(stages, /证据.*复用|通过证据.*后续/);
+});
+
+test('stage ⑤ uses incremental review after targeted fixes', () => {
+  assert.match(stages, /首次.*双轴/);
+  assert.match(stages, /增量复审/);
+  assert.match(stages, /架构.*范围.*变化.*完整.*双轴/);
+});
+
+test('stage ⑦ reports documentation alignment instead of opening a second commit cycle', () => {
+  assert.match(stages, /阶段⑥.*文档.*对齐|阶段⑥.*README/);
+  assert.match(stages, /只复核|仅复核/);
+  assert.doesNotMatch(stages, /不一致则更新文档，并单独 commit/);
 });

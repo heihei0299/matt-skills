@@ -22,13 +22,13 @@ description: "Multi-task orchestrator: use when the user provides a spec/ticket 
 
 | Step | 做什么 | 完成条件（可验证） | 详规 |
 |------|--------|-------------------|------|
-| ① 理解需求 | 读取 spec/ticket + `CONTEXT.md`/`docs/adr/`，澄清歧义 | 能复述需求且无未澄清歧义 | [stages.md#阶段-①](references/stages.md#阶段-①理解需求) |
-| ② 确认 Seams | 列出待测公共接口 seams（名称+输入+预期输出），向用户确认并生成 Todo | 用户明确同意 seams 清单；Todo 已生成 | [stages.md#阶段-②](references/stages.md#阶段-②确认-seams测试接缝) |
-| ③ TDD 开发循环 | 逐 seam 红-绿循环（红→绿→typecheck）串行推进至全绿 | 所有 seams 红-绿完成 + typecheck 通过 | [stages.md#阶段-③](references/stages.md#阶段-③tdd-开发循环) |
-| ④ 完整测试套件 | 跑全量测试 | 全部测试通过（失败回 ③） | [stages.md#阶段-④](references/stages.md#阶段-④完整测试套件) |
-| ⑤ Code Review | 按 [code-review](.agents/skills/code-review/SKILL.md) 双轴审查（Standards + Spec） | 双轴均通过 | [stages.md#阶段-⑤](references/stages.md#阶段-⑤code-review) |
-| ⑥ Commit | 跑 [commit-check](.agents/skills/commit-check/SKILL.md) 门禁四项后提交 | commit 完成且历史校验通过 | [stages.md#阶段-⑥](references/stages.md#阶段-⑥commit) |
-| ⑦ 收尾 | 文档对齐 → issue 状态与实施总结 → 目录卫生 | 文档已对齐、issue 已 `resolved`+总结落盘、工作区干净 | [stages.md#阶段-⑦](references/stages.md#阶段-⑦收尾文档对齐--issue-状态--实施总结) |
+| ① 理解需求 | 读取入口并建立验证矩阵 | 需求无待决歧义，验证命令已确定 | [stages.md#阶段-①](references/stages.md#阶段-①理解需求) |
+| ② 确认 Seams | 从明确 spec/ticket 生成 seams 与 Todo；详规列出的确认门槛例外（含破坏性操作） | seams/Todo 已生成且无待决歧义 | [stages.md#阶段-②](references/stages.md#阶段-②确认-seams测试接缝) |
+| ③ TDD 开发循环 | 逐 seam 红-绿循环（红→绿→typecheck）串行推进 | 所有 seams 红-绿完成 + typecheck 通过 | [stages.md#阶段-③](references/stages.md#阶段-③tdd-开发循环) |
+| ④ 完整测试套件 | 运行验证矩阵中的唯一全量命令 | 全量测试通过 | [stages.md#阶段-④](references/stages.md#阶段-④完整测试套件) |
+| ⑤ Code Review | 首次双轴 review；findings 后按详规增量复审 | review 通过 | [stages.md#阶段-⑤](references/stages.md#阶段-⑤code-review) |
+| ⑥ Commit | 运行一次最终 commit-check 门禁并提交 | commit 完成且历史校验通过 | [stages.md#阶段-⑥](references/stages.md#阶段-⑥commit) |
+| ⑦ 收尾 | 复核门禁证据，处理 issue 总结与目录卫生 | 总结完成、工作区干净 | [stages.md#阶段-⑦](references/stages.md#阶段-⑦收尾文档对齐--issue-状态--实施总结) |
 
 主代理串行时每 `task` 仍走上表 ①→⑦（每 issue 单独 `commit`，`code-review` + `commit-check` 双门禁逐 issue，全量由 A4 收敛）。
 
