@@ -92,6 +92,25 @@ git clone --depth 1 https://github.com/mattpocock/skills.git /tmp/mattpocock-ski
 
 pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边界」已按此表述）。
 
+## Codex CLI 支持
+
+本仓库将 Codex CLI 作为一等本地 harness 支持。Codex 与 pi、opencode、Claude 共用项目级 `.agents/skills/`，项目级 `AGENTS.md` 继续作为通用行为路由和约束入口。
+
+- **项目级技能**：`.agents/skills/`（唯一共享源）
+- **全局技能**：`~/.codex/skills/`
+- **不创建**：项目级 `.codex/skills/` 副本；Codex 技能不单独分叉
+- **安装映射**：`--tools codex` 使用 `.agents/skills/`，`--global --tools codex` 使用 `~/.codex/skills/`
+
+使用真实 Codex CLI 验证支持：
+
+```sh
+npm run codex:smoke                         # 默认 SKIP，不需要 Codex 凭证
+CODEX_E2E=1 npm run codex:smoke             # 显式运行真实 smoke test
+```
+
+真实 smoke test 使用临时 fixture、ephemeral 会话、read-only sandbox 和 JSONL 输出，验证 `AGENTS.md` 与最小 `codex-probe` skill 的 sentinel。结果分为 `PASS`、`SKIP`、`FAIL_ENV` 和 `FAIL_CONTRACT`；环境问题与契约失败分别返回非零退出码。运行结果会记录 `codex --version`，但不绑定最低 CLI 版本。
+
+本期不包含 Codex Cloud、Codex-specific commands、plugins 或 MCP 配置。
 ## harness 目录结构
 
 两个 harness 的技能加载目录结构如下（本项目只分发项目级目录，全局目录由用户自备）：
@@ -174,7 +193,7 @@ npm publish
 ```
 
 - `prepublishOnly` 自动跑全量测试（`node --test test/*.test.js`）
-- 发布内容 = `bin/` + `template/` + `.agents/skills/` + `README.md`，由 `package.json` 的 `files` 白名单控制，`npm pack` 可预览
+- 发布内容 = `bin/` + `template/` + `.agents/skills/` + `scripts/` + `config/` + `README.md`，由 `package.json` 的 `files` 白名单控制，`npm pack` 可预览
 - `template/` 与 `.agents/skills/` 是包内容：改动后需重新发版才对目标仓库生效
 
 ## 开发

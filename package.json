@@ -11,6 +11,7 @@
     "template/",
     ".agents/skills/",
     "scripts/sync-upstream.js",
+    "scripts/codex-smoke.js",
     "config/proprietary.json",
     "config/engineering.json",
     "README.md"
@@ -18,6 +19,7 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "prepublishOnly": "node --test test/*.test.js",
+    "codex:smoke": "node scripts/codex-smoke.js",
     "build:template": "node scripts/build-template.js"
   },
   "dependencies": {
