@@ -33,9 +33,9 @@ npx @heihei0299/matt-skills init              # 默认编程相关 26（engineer
 npx @heihei0299/matt-skills init --all       # 安装全量 33（含 productivity）
 ```
 
-`init` 做一件事：复制 `template/` 快照（`AGENTS.md`、`.agents/skills/`、`.opencode/`、`.pi/`）到当前目录；模板全量 33，默认仅安装默认范围 26（engineering 18 + 独有所需 4 + 核心独有 4，见 config/engineering.json 与 config/required.json），`--all` 展开全量，无需二次拉取上游。
+`init` 默认只在目标没有 `AGENTS.md` 时初始化；已有项目默认跳过以保护定制，显式 `init --all` 会刷新模板并安装/覆盖全量 33 个 skill。模板全量 33，默认仅安装默认范围 26（engineering 18 + 独有所需 4 + 核心独有 4，见 config/engineering.json 与 config/required.json），无需二次拉取上游。
 
-选项：`--dest <path>` 指定目标目录（默认当前目录）；`--all` 包含非编程技能（productivity，默认编程 26：engineering 18 + 独有所需 4 + 核心独有 4）（默认跳过已存在）。
+选项：`--dest <path>` 指定目标目录（默认当前目录）；`--all` 包含非编程技能（productivity，默认编程 26：engineering 18 + 独有所需 4 + 核心独有 4）；已有目标使用 `init --all` 刷新，普通 `init` 跳过。
 **增量同步（已有项目）**：已有项目更新到最新模板与技能：
 
 ```sh

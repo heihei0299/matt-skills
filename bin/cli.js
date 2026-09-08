@@ -66,6 +66,7 @@ Init options:
   --dest <path>   Target directory (default: current directory)
   --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + required 4 + default proprietary 4 → 26)
   --help, -h      Show this help
+提示：已有 AGENTS.md 时普通 init 跳过；显式 init --all 刷新模板并覆盖全量 skills。
 
 提示：matt-skills --help 查看全量
 `;
@@ -283,7 +284,7 @@ async function initCommand({ dest, all }) {
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
   const onlyProgramming = !all;
-  if (await pathExists(marker)) {
+  if (await pathExists(marker) && !all) {
     process.stdout.write('模板已存在（AGENTS.md），跳过\n');
   } else {
     await cp(TEMPLATE_DIR, target, { recursive: true, force: true });

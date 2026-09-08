@@ -191,6 +191,29 @@ test('`init --all` copies all 33 skills into .agents/skills/', () => {
   }
 });
 
+test('`init --all` refreshes an existing target', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
+  try {
+    const first = runCli(['init', '--all', '--dest', dest]);
+    assert.equal(first.status, 0, first.stderr);
+    fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'STALE AGENTS');
+    fs.writeFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'STALE SKILL');
+    const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
+    assert.equal(status, 0, stderr);
+    assert.match(stdout, /模板：已复制/);
+    assert.equal(
+      fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'),
+      fs.readFileSync(path.join(REPO_ROOT, 'template', 'AGENTS.md'), 'utf8'),
+    );
+    assert.equal(
+      fs.readFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'utf8'),
+      fs.readFileSync(path.join(REPO_ROOT, 'template', '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'utf8'),
+    );
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
 test('`init` on an already-initialized project skips without overwriting', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
