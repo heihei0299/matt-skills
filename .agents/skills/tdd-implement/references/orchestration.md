@@ -20,8 +20,8 @@
 1. 扫描 `.scratch/<feature>/issues/` 下全部 `NN-<slug>.md`，逐文件解析 `Blocked by`：
    - `Blocked by: None`、`Blocked by: （无）` 或无此行：无依赖；
    - `Blocked by: 01, 02` 或 `Blocked by: 01（…）`：依赖对应编号 issue；
-   - 无法解析：按无依赖处理，并在编排总结中记录告警。
-2. 以 issue 编号为节点、`Blocked by` 为有向边构建 DAG；检测到环时列出环上节点并停止调度。
+   - `Blocked by` 行存在但无法解析：**fail closed**。将该 issue 标记为 `blocked`，记录原始字段和值，不把它加入可调度 DAG，也不得按“无依赖”继续。只有字段修正或用户明确确认依赖后才能继续编排。
+2. 以 issue 编号为节点、`Blocked by` 为有向边构建 DAG；检测到环时列出环上节点并停止调度。依赖引用了不存在的 issue 时同样 fail closed：对应 issue 保持 `blocked`，报告缺失节点，不静默忽略该依赖。
 3. 读取共享 `spec.md`（若存在）、`CONTEXT.md` 和与本次改动有关的 ADR。
 4. 完成编排级 Preflight：记录当前 `HEAD`、工作区状态、`BASE_HEAD=$(git rev-parse HEAD)`、测试/typecheck/build 命令、真实运行路径和敏感信息扫描脚本可用性。后续只使用已经确认的命令和路径。
 5. 强制初始化 `.scratch/<feature>/progress.md`：
@@ -38,10 +38,11 @@
 
 ### A0 出口
 
+- 所有 `Blocked by` 字段均可解析且依赖节点存在；否则相关 issue 保持 `blocked`，A1 不开始；
 - DAG 已构建且无环；
 - 编排 Preflight 和 `BASE_HEAD` 已记录；
 - `progress.md` 已存在并可回写；
-- 依赖解析告警已记录。
+- 依赖解析或缺失节点问题已明确报告，而不是降级成无依赖。
 
 ## A1：Kahn 拓扑分层
 
@@ -59,7 +60,8 @@ Ln = 最后一层
 ### A1 出口
 
 - Kahn 分层结果已展示并确认；
-- 每个 issue 都属于一个层；
+- 每个可调度 issue 都属于一个层；
+- 不存在因无法解析依赖而被误放入 L1 的 issue；
 - 同文件预期冲突已记录，必要时已通过依赖顺序隔离。
 
 ## A2：分层串行调度
@@ -147,6 +149,7 @@ A5 负责所有编排级失败，不把失败静默吞掉，也不把不相关�
 
 | 失败类别 | 处理 |
 |---|---|
+| `Blocked by` 存在但无法解析，或依赖节点不存在 | fail closed：该 issue 保持 `blocked`，保留原始依赖值并停止其调度；字段修正或用户明确确认依赖后才重新构建 DAG |
 | Contract 歧义、验收缺口、范围变化 | 回到该 issue 的 Contract，补 Scope Ledger、Behavior 和验证矩阵 |
 | Red-Green 的有效 Red、实现、typecheck 或 targeted test 失败 | 回到该 issue 的 Red-Green，修复当前 Behavior 并重新验证 |
 | Verify 的测试、build、真实运行或 review blocking finding 失败 | 回到受影响 issue 的对应阶段；修复后只做受影响检查和 delta review |

@@ -35,7 +35,7 @@ test('scaffold-functional-test keeps a four-step generation flow', () => {
 
 test('scaffold-functional-test validates generated structure instead of running by default', () => {
   assert.match(skill, /references\/schema\.md/);
-  assert.match(skill, /文件存在、schema 字段、实例溯源、spec hash/);
+  assert.match(skill, /文件存在、schema 字段、实例类型、实例溯源、spec hash/);
   assert.match(skill, /SHA-256/);
   assert.match(skill, /generatedAt/);
   assert.match(skill, /manual/);
@@ -44,13 +44,29 @@ test('scaffold-functional-test validates generated structure instead of running 
   assert.doesNotMatch(skill, /默认.*PASS m\/n/);
 });
 
-test('schema centralizes required fields, provenance, fingerprint, and protection', () => {
-  for (const field of ['prompt', 'command', 'expected files/content', 'expected stdout phrases', 'expected exit code', 'source']) {
-    assert.match(schema, new RegExp(field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+test('schema uses common provenance plus type-specific contracts', () => {
+  for (const field of ['prompt', 'type', 'source']) {
+    assert.match(schema, new RegExp(field));
   }
+  for (const type of ['cli', 'http', 'browser', 'file']) {
+    assert.match(schema, new RegExp(`type: ${type}`));
+  }
+  assert.match(schema, /expected exit code/);
+  assert.match(schema, /expected status/);
+  assert.match(schema, /entrypoint/);
+  assert.match(schema, /assertions/);
+  assert.match(schema, /expected files\/content/);
+  assert.match(schema, /不强行统一成 CLI/);
   assert.match(schema, /SHA-256/);
   assert.match(schema, /ISO 8601/);
   assert.match(schema, /<!-- manual -->/);
+});
+
+test('skill captures evidence according to instance type', () => {
+  assert.match(skill, /`cli`、`http`、`browser` 或 `file`/);
+  assert.match(skill, /HTTP 的 status\/body\/headers/);
+  assert.match(skill, /browser 的页面\/DOM\/network\/console/);
+  assert.match(skill, /不把所有行为强制降格成 CLI 测试/);
 });
 
 test('template-sync keeps the generated scaffold mirror and excludes demo instance skill', () => {
