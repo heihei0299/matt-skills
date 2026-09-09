@@ -12,6 +12,7 @@ const yamlPath = root('.agents/skills/scaffold-functional-test/agents/openai.yam
 const templateSkillPath = root('template/.agents/skills/scaffold-functional-test/SKILL.md');
 const templateSchemaPath = root('template/.agents/skills/scaffold-functional-test/references/schema.md');
 const templateSyncPath = root('test/template-sync.test.js');
+const proprietaryConfig = JSON.parse(readFileSync(root('config/proprietary.json'), 'utf8'));
 const skill = readFileSync(skillPath, 'utf8');
 const schema = readFileSync(schemaPath, 'utf8');
 
@@ -71,7 +72,8 @@ test('skill captures evidence according to instance type', () => {
 
 test('template-sync keeps the generated scaffold mirror and excludes demo instance skill', () => {
   const syncContent = readFileSync(templateSyncPath, 'utf8');
-  assert.match(syncContent, /scaffold-functional-test/);
+  assert.ok(proprietaryConfig.distributable.includes('scaffold-functional-test'));
+  assert.match(syncContent, /DISTRIBUTABLE_PROPRIETARY_SKILLS/);
   assert.doesNotMatch(syncContent, /'instance-test'/);
 });
 

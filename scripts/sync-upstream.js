@@ -205,7 +205,8 @@ export async function applySync({ upstreamUrl, tmpDir, ref, dryRun = false, forc
   const actions = [];
 
   if (dryRun) {
-    return { ...cmp, actions, dryRun: true };
+    await rm(dest, { recursive: true, force: true });
+    return { ...cmp, dest: null, actions, dryRun: true };
   }
 
   // 处理重命名
