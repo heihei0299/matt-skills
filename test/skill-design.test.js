@@ -64,10 +64,11 @@ test('runtime-discipline.md carries the runtime discipline (rules 2 & 3)', () =>
   assert.match(runtime, /docs\/agents\/skill-design\.md/);
 });
 
-test('AGENTS.md is the router: points at the discipline files, carries no rule detail', () => {
-  assert.match(agents, /docs\/agents\/issue-tracker\.md/);
-  assert.match(agents, /CONTEXT\.md/);
-  // thresholds live in the split file, not the main config
+test('AGENTS.md is the router: points at the runtime discipline entry points', () => {
+  assert.match(agents, /## 路由/);
+  assert.match(agents, /## CodeGraph/);
+  assert.match(agents, /codegraph explore/);
+  // quantitative thresholds belong in the discipline files, not the main config
   assert.doesNotMatch(agents, /150 行/);
 });
 

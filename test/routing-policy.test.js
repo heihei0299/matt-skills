@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(dir, file), 'utf8');
-const routeSection = (content) => content.slice(content.indexOf('## 行为路由'), content.indexOf('## 分文件'));
+const routeSection = (content) => content;
 
 const agents = read('AGENTS.md');
 const templateAgents = read('template/AGENTS.md');
@@ -15,21 +15,26 @@ const templateAgents = read('template/AGENTS.md');
 test('simple low-risk changes use the direct route and commit per request', () => {
   for (const content of [agents, templateAgents]) {
     const route = routeSection(content);
-    assert.match(route, /简单低风险直接执行/);
-    assert.match(route, /理解现状 → 最小修改 → 相关验证/);
-    assert.match(route, /按一个用户请求执行一次 `git commit`/);
+    assert.match(route, /简单修改 → 直接实现/);
+    assert.match(route, /定位 → 实现 → 验证 → 修正/);
+    assert.match(route, /每个用户请求最多一次 commit/);
   }
 });
 
-test('behavior routing keeps only the five automatic intent branches', () => {
+test('behavior routing lists the current intent branches', () => {
   for (const content of [agents, templateAgents]) {
     const route = routeSection(content);
-    assert.match(route, /## 行为路由/);
-    assert.match(route, /理解\/定位 → `codegraph explore`/);
-    assert.match(route, /调研\/原型 → `research` \/ `prototype`/);
-    assert.match(route, /修改\/实现 → .*`tdd-implement`.*`tdd`.*`diagnose-fix`/);
-    assert.match(route, /审查\/设计 → `code-review` \/ `grilling` \/ `domain-modeling`/);
-    assert.match(route, /无法归类 → 直接澄清/);
+    assert.match(route, /## 路由/);
+    assert.match(route, /理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
+    assert.match(route, /外部调研 \/ 方案比较 → `research`/);
+    assert.match(route, /原型 \/ PoC → `prototype`/);
+    assert.match(route, /简单修改 → 直接实现/);
+    assert.match(route, /TDD \/ 集成测试 → `tdd`/);
+    assert.match(route, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
+    assert.match(route, /代码审查 → `code-review`/);
+    assert.match(route, /设计质询 → `grilling`/);
+    assert.match(route, /领域建模 → `domain-modeling`/);
+    assert.match(route, /无法归类 → `ask-matt`/);
 
     for (const manualSkill of [
       'commit-check',

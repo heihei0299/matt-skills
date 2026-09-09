@@ -165,7 +165,7 @@ test('Codex static contract includes skill metadata and template instructions', 
   assert.match(metadata, /interface:/);
   assert.match(metadata, /display_name:/);
   assert.match(metadata, /short_description:/);
-  assert.match(templateAgents, /行为路由|AGENTS\.md/);
+  assert.match(templateAgents, /## 路由|行为路由|AGENTS\.md/);
 });
 
 test('smoke classifies malformed JSONL as FAIL_ENV', () => {
