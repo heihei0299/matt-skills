@@ -137,7 +137,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通�
 当前 issue 影响范围测试
 → 必要 build
 → 必要真实运行验证
-→ 一次 Standards + Spec Review
+→ 一个正式 Review round：并行启动两个独立 reviewer（Standards-only + Spec-only）
 → 修复 blocking finding 后的定向复核
 ```
 
@@ -150,19 +150,21 @@ Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通�
 
 ### Review
 
-1. 每个 issue 恰好执行一次正式双轴 review：
-   - **Standards**：是否符合仓库规则和代码质量要求；
-   - **Spec**：是否逐条满足当前 issue 的 Acceptance Criteria。
-2. 两个轴独立输出、互不掩盖；每个轴明确限制输出，例如 `≤ 400 words / ≤ 40 行`。
-3. findings 分类为：当前 issue blocking、后续 ticket、advisory、out of scope。只处理当前 issue blocking finding；其余记录而不扩大范围。
-4. 修复 blocking finding 后只运行受影响测试、typecheck 和 finding 的 delta recheck，不重新启动完整双轴 review。审查结果只在对话输出，不生成 `review-*.md` 等书面报告文件。
+1. 每个 issue 恰好执行一次正式双轴 review round：该 round 必须并行启动两个独立 reviewer invocation/process：
+   - **Standards-only reviewer**：只判断是否符合仓库规则和代码质量要求；
+   - **Spec-only reviewer**：只判断是否逐条满足当前 issue 的 Acceptance Criteria。
+   同一个 reviewer invocation 不能同时承担两个轴；“一个 reviewer 输出两个章节”不算独立双轴 review。
+2. 两个 reviewer 都必须返回结果后，才能记录 `review_axes: standards=completed; spec=completed` 并推进 review state；任一 reviewer/tool/model 不可用时记录 `blocked/unavailable`，保持 issue 未解决，不用人工 diff 检查替代正式轴结果。
+3. 两个轴独立输出、互不掩盖；每个轴明确限制输出，例如 `≤ 400 words / ≤ 40 行`。
+4. findings 分类为：当前 issue blocking、后续 ticket、advisory、out of scope。只处理当前 issue blocking finding；其余记录而不扩大范围。
+5. 修复 blocking finding 后只运行受影响测试、typecheck 和 finding 的 delta recheck，不重新启动完整双轴 review。审查结果只在对话输出，不生成 `review-*.md` 等书面报告文件。
 
 ### 出口条件
 
 - 最终 diff 对应的相关测试通过；
 - 必要 typecheck/build 通过；
 - ticket 要求的真实运行验证已完成并记录实际结果；
-- 一次 Standards + Spec Review 已完成；
+- 一个正式 Review round 已完成；Standards-only 与 Spec-only 两个独立结果均已记录；
 - 无 blocking finding；
 - 受影响范围的最后一次证据对应当前 diff。
 

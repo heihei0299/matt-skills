@@ -80,7 +80,7 @@ for each layer Li in L1..Ln:
 全部层完成后进入 A4
 ```
 
-每个 issue 的 Verify 只运行当前 issue 影响范围内的完整测试；全仓测试不在每个 issue 中重复执行。每个 issue 只做一次正式 Standards + Spec Review；修复 blocking finding 后执行定向复核，不重新启动完整 review。
+每个 issue 的 Verify 只运行当前 issue 影响范围内的完整测试；全仓测试不在每个 issue 中重复执行。每个 issue 只做一次正式 Review round；该 round 并行启动两个独立 reviewer：Standards-only 与 Spec-only。两份结果齐全前不得收敛 review；修复 blocking finding 后执行定向复核，不重新启动完整双轴 review。
 
 主代理在层内和层间连续调度：一个 issue 的 Deliver 出口满足后，立即取下一个 issue，直到全部层完成或发生明确外部阻塞。进度输出并入执行序列，不在正常切换点等待用户“继续”。
 
@@ -102,7 +102,7 @@ Status: resolved
 Commit: <hash> — <message>
 Behaviors: <completed list>
 Acceptance Criteria: <checkbox result>
-Review: Standards + Spec, no blocking finding
+Review: Standards-only reviewer + Spec-only reviewer, both completed, no blocking finding
 Tests: <targeted command and actual result>
 Runtime: <actual request/page-visible result or not required>
 Docs: <updated files or no update required>

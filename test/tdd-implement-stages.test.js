@@ -135,7 +135,7 @@ test('Red-Green carries continuity and chunking rules', () => {
 });
 
 test('Verify follows test, build, runtime, and one review in order', () => {
-  const ordered = /当前 issue 影响范围测试[\s\S]*必要 build[\s\S]*必要真实运行验证[\s\S]*一次 Standards \+ Spec Review/;
+  const ordered = /当前 issue 影响范围测试[\s\S]*必要 build[\s\S]*必要真实运行验证[\s\S]*两个独立 reviewer/;
   assert.match(stages, ordered);
   assert.match(stages, /多 issue 模式只运行当前 issue 影响范围内的完整测试/);
   assert.match(stages, /单 issue 或单 spec 模式运行仓库完整测试/);
@@ -152,10 +152,21 @@ test('Verify records real process evidence and cleans it up', () => {
   assert.match(stages, /清理进程和临时目录/);
 });
 
-test('Verify limits review to one independent two-axis review', () => {
-  assert.match(stages, /每个 issue 恰好执行一次正式双轴 review/);
-  assert.match(stages, /Standards/);
-  assert.match(stages, /Spec/);
+test('Verify requires two independent reviewer subagents, one axis per subagent', () => {
+  assert.match(stages, /两个独立.*reviewer/);
+  assert.match(stages, /Standards-only/);
+  assert.match(stages, /Spec-only/);
+  assert.match(stages, /并行/);
+  assert.match(stages, /同一.*reviewer.*不能.*两个轴/);
+  assert.match(stages, /两个 reviewer 都必须返回结果/);
+  assert.match(stages, /review_axes/);
+  assert.match(stages, /blocked\/unavailable/);
+});
+
+test('Verify limits review to one round with two independent axis-specific reviewers', () => {
+  assert.match(stages, /每个 issue 恰好执行一次正式双轴 review round/);
+  assert.match(stages, /Standards-only reviewer/);
+  assert.match(stages, /Spec-only reviewer/);
   assert.match(stages, /互不掩盖/);
   assert.match(stages, /≤ 400 words \/ ≤ 40 行/);
   assert.match(stages, /当前 issue blocking/);
@@ -265,7 +276,9 @@ test('orchestration A2 runs the four stages serially per issue', () => {
   assert.match(orchestration, /④ Deliver/);
   assert.match(orchestration, /独立 commit/);
   assert.match(orchestration, /全仓测试不在每个 issue 中重复执行/);
-  assert.match(orchestration, /一次正式 Standards \+ Spec Review/);
+  assert.match(orchestration, /一次正式 Review round/);
+  assert.match(orchestration, /两个独立 reviewer/);
+  assert.match(orchestration, /Standards-only 与 Spec-only/);
   assert.match(orchestration, /回执卡片/);
   assert.match(orchestration, /Status\/Commit\/Review\/Tests/);
 });
