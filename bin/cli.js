@@ -70,9 +70,9 @@ Usage:
 
 Init options:
   --dest <path>   Target directory (default: current directory)
-  --all           Include non-programming skills (productivity) and optional proprietary; default only core programming (engineering 18 + required 4 + default proprietary 4 → 26)
+  --all           Include all distributable skills; default only default programming skills
   --help, -h      Show this help
-提示：已有 AGENTS.md 时普通 init 跳过；显式 init --all 刷新模板并覆盖全量 skills。
+提示：已有 AGENTS.md 时普通 init 跳过；显式 init --all 刷新模板并覆盖全量可分发 skills。
 
 提示：matt-skills --help 查看全量
 `;
@@ -88,7 +88,7 @@ Sync options:
   --dest <path>   Target directory (default: current directory)
   --help, -h      Show this help
 
-说明：默认不带 --all 仅增量同步默认技能（26）且 AGENTS.md 有定制则跳过；--all 时对同名技能 upsert 并强制更新 AGENTS.md。
+说明：默认不带 --all 仅增量同步默认 programming skill 且 AGENTS.md 有定制则跳过；--all 时同步全部可分发 skill 并强制更新 AGENTS.md。
 
 提示：matt-skills --help 查看全量
 `;
@@ -99,7 +99,7 @@ Usage:
   matt-skills list [--all] [--json]
 
 List options:
-  --all           List all skills (default only core programming 26)
+  --all           List all distributable skills (default only default programming skills)
   --json          Output as JSON
   --help, -h      Show this help
 
@@ -112,7 +112,7 @@ Usage:
   matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
 
 Check options:
-  --all           Include non-programming and optional proprietary; default only core programming (26: engineering 18 + required 4 + default proprietary 4)
+  --all           Include the full upstream comparison scope; default only default programming scope
   --json          Output as JSON
   --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
   --ref <ref>     Upstream ref (default: HEAD)
@@ -128,7 +128,7 @@ Usage:
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection — 共享技能统一指向 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义
-  --all           Install all skills (default only core programming 26); skips skill selection
+  --all           Install all distributable skills (default only default programming); skips skill selection
   --force         Overwrite existing skills
   --global        Install to the user's global skill directories
   --project       Install to project skill directories (default)
@@ -335,7 +335,7 @@ async function initCommand({ dest, all }) {
   let installed = 0;
   try {
     const entries = await readdir(skillsDir, { withFileTypes: true });
-    installed = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== '.git' && e.name !== 'skill-creator').length;
+    installed = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== '.git' && e.name !== 'skill-creator' && !isRepoLocalSkill(e.name)).length;
   } catch {}
   const allSkillsFull = await listSkills({ onlyProgramming: false });
   const engineeringForStats = await loadEngineeringSkills();
@@ -346,12 +346,12 @@ async function initCommand({ dest, all }) {
   const displayTotal = onlyProgramming ? programmingCount : allSkillsFull.length;
   const displayUpstream = onlyProgramming ? upstreamProg : upstreamFull;
   if (path.resolve(skillsDir) === path.resolve(SKILLS_DIR)) {
-    process.stdout.write(`技能：已装 ${installed}、跳过 0（全量 ${allSkillsFull.length}，含上游 ${upstreamFull}；编程 ${programmingCount}，含上游 ${upstreamProg}）\n`);
+    process.stdout.write(`技能：已装 ${installed}、跳过 0（可分发 ${allSkillsFull.length}，含上游 ${upstreamFull}；默认编程 ${programmingCount}，含上游 ${upstreamProg}）\n`);
   } else {
     if (onlyProgramming) {
-      process.stdout.write(`技能：已装 ${installed}（编程 ${displayTotal}，含上游 ${displayUpstream}；全量 ${allSkillsFull.length}，含上游 ${upstreamFull}）\n`);
+      process.stdout.write(`技能：已装 ${installed}（默认编程 ${displayTotal}，含上游 ${displayUpstream}；可分发 ${allSkillsFull.length}，含上游 ${upstreamFull}）\n`);
     } else {
-      process.stdout.write(`技能：已装 ${installed}（全量 ${displayTotal}，含上游 ${displayUpstream}）\n`);
+      process.stdout.write(`技能：已装 ${installed}（可分发 ${displayTotal}，含上游 ${displayUpstream}）\n`);
     }
   }
   process.stdout.write(`目标路径：${target}\n`);
@@ -364,7 +364,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
     if (json) {
       process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
     } else {
-      const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量）';
+      const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量上游）';
       const lines = [];
       lines.push(`上游 HEAD: ${cmp.head}`);
       lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream} ${modeHint}`);
@@ -467,7 +467,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
   }
-  // 技能同步：--all 仅更新同名技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围 26，--all 时按全量同名集合处理，不删多余
+  // 技能同步：--all 仅更新同名可分发技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围为默认 programming，不删多余
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const allNames = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== 'skill-creator' && e.name !== '.git').map((e) => e.name);
   let allSkills = allNames.sort();
@@ -545,7 +545,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   if (preservedRepoLocal.length) {
     process.stdout.write(`迁移提示：${preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
   }
-  const modeLabel = onlyProgramming ? '编程' : '全量';
+  const modeLabel = onlyProgramming ? '默认编程' : '全部可分发';
   process.stdout.write(`技能：新增 ${installed}、更新 ${updated}（${modeLabel} ${allSkills.length}）\n`);
   process.stdout.write(`目标路径：${target}\n`);
 }
@@ -645,7 +645,7 @@ async function checkCommand(args) {
   } else {
     const lines = [];
     lines.push(`上游 HEAD: ${cmp.head}`);
-    const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量）';
+    const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量上游）';
     lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream} ${modeHint}`);
     lines.push('');
     const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
