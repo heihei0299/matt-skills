@@ -112,7 +112,7 @@ Usage:
   matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
 
 Check options:
-  --all           Include the full upstream comparison scope; default only default programming scope
+  --all           Include the full upstream comparison scope; default engineering + required upstream skills (proprietary excluded)
   --json          Output as JSON
   --upstream <url> Upstream repo URL (default: https://github.com/mattpocock/skills.git)
   --ref <ref>     Upstream ref (default: HEAD)

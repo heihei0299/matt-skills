@@ -1,7 +1,26 @@
-# This repo is a config repo for mattpocock/skills, not a full skill template
+# Config repository with an explicit distributable boundary
 
-Previously the repo positioned itself as a template repository that distributed a full set of engineering skills (24 skills mirrored into `template/`). We discovered that 22 of those 24 skills already exist upstream in mattpocock/skills (`skills/engineering` and `skills/productivity`), making local copies a duplicate-maintenance burden: upstream fixes never reached our copies, and our template diverged silently.
+## Status
 
-We decided the repo is a config repo for the upstream: `template/` ships only the project-level config (AGENTS.md behavior routing, `.opencode/docs/agents/` discipline files, `.opencode/CONTEXT.md` glossary) plus the three proprietary skills that do not exist upstream (tdd-implement, grill-to-spec and the issue-audit subagent skill). Target repos initialize by copying `template/` and then fetching the 22 upstream skills manually per the README; the workspace `.agents/skills/` keeps all 24 skill copies (22 upstream + 2 proprietary) and `.opencode/agents/` holds the issue-audit subagent source for this repo's own sessions.
+Accepted. This decision supersedes the earlier template-positioning description in this ADR and defines the current repository model.
 
-Trade-offs: losing offline skill copies and adding a manual fetch step to initialization (documented as a copy-paste block); gaining a single source of truth for skill bodies upstream and focused ownership of only what this repo actually adds. Guarded by `test/template-sync.test.js` (proprietary skills mirror + upstream skills must not be copied in) and CONTEXT.md glossary terms (Upstream Repository, Proprietary Skill).
+## Decision
+
+This repository is the configuration and distribution repository for `mattpocock/skills`.
+
+The workspace is the complete maintenance source: it contains the upstream skill copies plus all proprietary skills maintained by this repository. The proprietary set is explicitly divided into:
+
+- 5 distributable skills: `tdd-implement`, `diagnose-fix`, `grill-to-spec`, `scaffold-functional-test`, and `show-me`;
+- 2 repo-local skills: `ci-guard` and `commit-check`.
+
+The Template Snapshot is a distribution projection of the workspace. It contains project configuration, all distributable shared skills, distributable commands and prompts, and no repo-local skill or command. A Target Repository initializes by copying this snapshot and does not need a separate manual upstream fetch.
+
+`list`, `install`, `init`, and `sync` operate on the distributable projection for user-facing paths. Repo-local skills remain available in the workspace for maintaining matt-skills itself. Existing repo-local copies in a Target Repository are preserved and may receive a migration notice; this boundary does not authorize destructive cleanup.
+
+## Trade-offs
+
+The workspace and Template Snapshot no longer have identical skill listings. This is intentional: the workspace remains complete for maintenance, while the template is safe to distribute. The explicit classification adds a small configuration and testing surface, but prevents repo-specific skills and commands from leaking into user projects.
+
+## Verification
+
+The classification invariant tests, CLI distribution-boundary fixtures, template mirror tests, and documentation contract tests guard this decision. The template generator is the single projection path and must keep distributable and repo-local contents separate.

@@ -13,7 +13,7 @@ mattpocock/skills — the source of the 26 skill bodies (skills/engineering + sk
 _Avoid_: source repo, skill origin
 
 **Proprietary Skill** (独有技能):
-A skill that does not exist upstream and lives only in this repo (currently ci-guard, tdd-implement, grill-to-spec, diagnose-fix, commit-check, scaffold-functional-test and show-me). Before adding a new skill, check the Upstream Repository first; only skills absent there qualify as proprietary. Proprietary skills are classified as distributable or repo-local; repo-local skills serve matt-skills maintenance and are never distributed. The issue-audit subagent is NOT a skill: it ships as a subagent + command under `.opencode/` and is distributed through the Template Snapshot without a skill directory.
+A skill that does not exist upstream and lives only in this repo (currently ci-guard, tdd-implement, grill-to-spec, diagnose-fix, commit-check, scaffold-functional-test and show-me). Before adding a new skill, check the Upstream Repository first; only skills absent there qualify as proprietary. The 7 proprietary skills are classified as 5 distributable (`tdd-implement`, `diagnose-fix`, `grill-to-spec`, `scaffold-functional-test`, `show-me`) and 2 repo-local (`ci-guard`, `commit-check`). The default programming set includes 4 proprietary skills: `tdd-implement`, `diagnose-fix`, `grill-to-spec` and `show-me`; `scaffold-functional-test` is distributable but optional. Repo-local skills serve matt-skills maintenance and are never distributed. The issue-audit subagent is NOT a skill: it ships as a subagent + command under `.opencode/` and is distributed through the Template Snapshot without a skill directory.
 _Avoid_: private skill, local skill
 
 **Workspace** (工作区):
