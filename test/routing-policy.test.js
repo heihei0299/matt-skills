@@ -41,7 +41,7 @@ test('behavior routing keeps only the five automatic intent branches', () => {
       'wayfinder',
       'grill-to-spec',
     ]) {
-      assert.doesNotMatch(route, new RegExp(`\\`${manualSkill}\\``));
+      assert.doesNotMatch(route, new RegExp('`' + manualSkill + '`'));
     }
     assert.doesNotMatch(route, /`implement`/);
     assert.doesNotMatch(route, /显式触发|可选（需 `--all`）/);
