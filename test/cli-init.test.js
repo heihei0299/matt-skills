@@ -9,13 +9,11 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-// Independent literal: the 33 skills shipped in this repo.
+// Independent literal: the distributable skills shipped to user projects.
 const SKILL_NAMES = [
   'ask-matt',
-  'ci-guard',
   'codebase-design',
   'code-review',
-  'commit-check',
   'diagnose-fix',
   'diagnosing-bugs',
   'domain-modeling',
@@ -46,13 +44,10 @@ const SKILL_NAMES = [
   'writing-for-agents',
 ];
 
-const PROPRIETARY = ['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test', 'show-me'];
-
 const PROGRAMMING_SKILL_NAMES = [
   'ask-matt',
   'code-review',
   'codebase-design',
-  'commit-check',
   'diagnose-fix',
   'diagnosing-bugs',
   'domain-modeling',
@@ -77,12 +72,11 @@ const PROGRAMMING_SKILL_NAMES = [
   'wizard',
 ];
 
-// Template files that must land in the target project root (single-source) — 默认范围（engineering + 独有所需），grilling 为独有所需默认安装
+// Template files that must land in the target project root (single-source) — default programming scope.
 const TEMPLATE_FILES_PROGRAMMING = [
   'AGENTS.md',
   '.agents/skills/tdd-implement/SKILL.md',
   '.agents/skills/diagnose-fix/SKILL.md',
-  '.agents/skills/commit-check/scripts/scan-sensitive.sh',
   '.agents/skills/tdd/SKILL.md',
   '.agents/skills/grilling/SKILL.md',
   '.opencode/CONTEXT.md',
@@ -96,7 +90,6 @@ const TEMPLATE_FILES = [
   'AGENTS.md',
   '.agents/skills/tdd-implement/SKILL.md',
   '.agents/skills/diagnose-fix/SKILL.md',
-  '.agents/skills/commit-check/scripts/scan-sensitive.sh',
   '.agents/skills/grilling/SKILL.md',
   '.opencode/CONTEXT.md',
   '.opencode/commands/issue-audit.md',
@@ -121,7 +114,7 @@ function listDir(dir) {
     .sort();
 }
 
-test('`init` copies the programming template (default 26) into the target', () => {
+test('`init` copies the default programming template into the target', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
@@ -139,7 +132,7 @@ test('`init` copies the programming template (default 26) into the target', () =
   }
 });
 
-test('`init --all` copies all 33 skills', () => {
+test('`init --all` copies all distributable skills', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
@@ -152,21 +145,21 @@ test('`init --all` copies all 33 skills', () => {
   }
 });
 
-test('`init` copies default skills (26) into .agents/skills/ by default', () => {
+test('`init` copies default programming skills into .agents/skills/ by default', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     const installed = listDir(path.join(dest, '.agents', 'skills'));
     assert.deepEqual(installed, [...PROGRAMMING_SKILL_NAMES].sort());
-    for (const name of ['tdd-implement', 'diagnose-fix', 'commit-check']) {
+    for (const name of ['tdd-implement', 'diagnose-fix']) {
       assert.ok(
         fs.existsSync(path.join(dest, '.agents', 'skills', name, 'SKILL.md')),
         `${name} should land in .agents/skills/ (single source)`,
       );
     }
-    // 可选独有默认不装
-    assert.ok(fs.existsSync(path.join(dest, '.agents', 'skills', 'grill-to-spec', 'SKILL.md')), 'grill-to-spec should NOT be installed by default');
+    // default proprietary is part of the default programming set
+    assert.ok(fs.existsSync(path.join(dest, '.agents', 'skills', 'grill-to-spec', 'SKILL.md')), 'grill-to-spec should be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md')), 'ci-guard should NOT be installed by default');
     for (const harness of ['.pi/skills', '.opencode/skills']) {
       const entries = fs.readdirSync(path.join(dest, harness));
@@ -179,7 +172,7 @@ test('`init` copies default skills (26) into .agents/skills/ by default', () => 
   }
 });
 
-test('`init --all` copies all 33 skills into .agents/skills/', () => {
+test('`init --all` copies all distributable skills into .agents/skills/', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
@@ -197,6 +190,7 @@ test('`init --all` refreshes an existing target', () => {
     const first = runCli(['init', '--all', '--dest', dest]);
     assert.equal(first.status, 0, first.stderr);
     fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'STALE AGENTS');
+    fs.mkdirSync(path.join(dest, '.agents', 'skills', 'ci-guard'), { recursive: true });
     fs.writeFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'STALE SKILL');
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
     assert.equal(status, 0, stderr);
@@ -207,7 +201,7 @@ test('`init --all` refreshes an existing target', () => {
     );
     assert.equal(
       fs.readFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'utf8'),
-      fs.readFileSync(path.join(REPO_ROOT, 'template', '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'utf8'),
+      'STALE SKILL',
     );
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });

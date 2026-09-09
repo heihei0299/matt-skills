@@ -81,6 +81,48 @@ test('install --all --dest copies only distributable skills', () => {
   }
 });
 
+test('init default and --all distribute only the appropriate skill sets', () => {
+  const defaultDest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-default-'));
+  const allDest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-all-'));
+  try {
+    const defaultResult = runCli(['init', '--dest', defaultDest]);
+    assert.equal(defaultResult.status, 0, defaultResult.stderr);
+    assert.deepEqual(listDirectories(path.join(defaultDest, '.agents/skills')), defaultNames);
+
+    const allResult = runCli(['init', '--all', '--dest', allDest]);
+    assert.equal(allResult.status, 0, allResult.stderr);
+    assert.deepEqual(listDirectories(path.join(allDest, '.agents/skills')), distributableNames);
+    assert.equal(fs.existsSync(path.join(allDest, '.agents/skills/ci-guard')), false);
+    assert.equal(fs.existsSync(path.join(allDest, '.agents/skills/commit-check')), false);
+  } finally {
+    fs.rmSync(defaultDest, { recursive: true, force: true });
+    fs.rmSync(allDest, { recursive: true, force: true });
+  }
+});
+
+test('init --all preserves existing repo-local skill sentinels', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-preserve-'));
+  try {
+    fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL AGENTS');
+    for (const name of ['ci-guard', 'commit-check']) {
+      const dir = path.join(dest, '.agents/skills', name);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'SKILL.md'), `USER CUSTOM ${name}`);
+    }
+
+    const result = runCli(['init', '--all', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    for (const name of ['ci-guard', 'commit-check']) {
+      assert.equal(
+        fs.readFileSync(path.join(dest, '.agents/skills', name, 'SKILL.md'), 'utf8'),
+        `USER CUSTOM ${name}`,
+      );
+    }
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
 test('install --all never distributes repo-local skills to project or global targets', async (t) => {
   const projectTools = ['codex', 'pi', 'opencode', 'claude'];
   for (const tool of projectTools) {

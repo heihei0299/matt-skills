@@ -188,6 +188,13 @@ async function pathExists(p) {
     return false;
   }
 }
+
+function shouldCopyTemplatePath(src) {
+  const relative = path.relative(TEMPLATE_DIR, src);
+  const parts = relative.split(path.sep);
+  return !(parts[0] === '.agents' && parts[1] === 'skills' && isRepoLocalSkill(parts[2]));
+}
+
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
 
 // 统一源：共享技能全部在 .agents/skills，harness 的 .pi/skills/.opencode/skills 仅用于项目自定义
@@ -299,7 +306,11 @@ async function initCommand({ dest, all }) {
   if (await pathExists(marker) && !all) {
     process.stdout.write('模板已存在（AGENTS.md），跳过\n');
   } else {
-    await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+    await cp(TEMPLATE_DIR, target, {
+      recursive: true,
+      force: true,
+      filter: shouldCopyTemplatePath,
+    });
     process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     // 默认范围（engineering + 独有所需 + 默认独有），--all 才保留其余 productivity
     if (onlyProgramming && path.resolve(target) !== path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), '..'))) {
