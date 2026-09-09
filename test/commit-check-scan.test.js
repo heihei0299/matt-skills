@@ -12,12 +12,18 @@ const scan = path.join(repo, '.agents/skills/commit-check/scripts/scan-sensitive
 function makeRepo() {
   const cwd = mkdtempSync(path.join(os.tmpdir(), 'matt-skills-commit-check-'));
   execFileSync('git', ['init', '-q'], { cwd });
+  execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd });
+  execFileSync('git', ['config', 'user.name', 'Test User'], { cwd });
   return cwd;
 }
 
 function stage(cwd, file, content) {
   writeFileSync(path.join(cwd, file), content);
   execFileSync('git', ['add', file], { cwd });
+}
+
+function commit(cwd, message = 'baseline') {
+  execFileSync('git', ['commit', '-qm', message], { cwd });
 }
 
 function runScan(cwd, ...args) {
@@ -37,20 +43,22 @@ test('scan passes a safe staged diff', () => {
     stage(cwd, 'README.md', 'safe documentation\n');
     const result = runScan(cwd, '--staged-only');
     assert.equal(result.status, 0, output(result));
-    assert.match(output(result), /No structured secrets in staged diff/);
+    assert.match(output(result), /No structured secrets in added staged content/);
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
 });
 
-test('scan blocks a structured secret in staged diff', () => {
+test('scan blocks a structured secret without echoing the secret value', () => {
   const cwd = makeRepo();
   try {
     const field = ['api', 'key'].join('_');
-    stage(cwd, 'config.txt', `${field}=${'s'.repeat(16)}\n`);
+    const secret = 's'.repeat(16);
+    stage(cwd, 'config.txt', `${field}=${secret}\n`);
     const result = runScan(cwd);
     assert.equal(result.status, 1, output(result));
-    assert.match(output(result), /Structured secrets found in STAGED diff/);
+    assert.match(output(result), /Possible structured secret found in ADDED staged content/);
+    assert.doesNotMatch(output(result), new RegExp(secret));
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
@@ -62,7 +70,7 @@ test('scan warns but does not block a bare keyword', () => {
     stage(cwd, 'docs.txt', 'This document explains the token concept.\n');
     const result = runScan(cwd);
     assert.equal(result.status, 0, output(result));
-    assert.match(output(result), /Keyword matches in STAGED diff/);
+    assert.match(output(result), /Sensitive keyword found in ADDED staged content/);
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
@@ -76,7 +84,24 @@ test('scan ignores unstaged secrets by default', () => {
     writeFileSync(path.join(cwd, file), `unsafe ${['token', 'value'].join('_')}=${'u'.repeat(16)}\n`);
     const result = runScan(cwd);
     assert.equal(result.status, 0, output(result));
-    assert.doesNotMatch(output(result), /UNSTAGED/);
+    assert.doesNotMatch(output(result), /Possible structured secret/);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('scan allows a commit that removes an existing secret', () => {
+  const cwd = makeRepo();
+  try {
+    const secret = 'r'.repeat(16);
+    stage(cwd, 'config.txt', `api_key=${secret}\n`);
+    commit(cwd, 'add leaked fixture');
+    stage(cwd, 'config.txt', 'removed=true\n');
+
+    const result = runScan(cwd);
+    assert.equal(result.status, 0, output(result));
+    assert.doesNotMatch(output(result), new RegExp(secret));
+    assert.doesNotMatch(output(result), /Possible structured secret/);
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }

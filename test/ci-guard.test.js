@@ -11,6 +11,14 @@ const skill = read('.agents/skills/ci-guard/SKILL.md');
 const templateSkill = read('template/.agents/skills/ci-guard/SKILL.md');
 const workflow = read('.github/workflows/ci.yml');
 
+test('ci-guard is explicit-only and repository-scoped', () => {
+  assert.match(skill, /disable-model-invocation:\s*true/);
+  assert.match(skill, /matt-skills 仓库专用/);
+  assert.match(skill, /@heihei0299\/matt-skills/);
+  assert.match(skill, /repo mismatch/);
+  assert.match(skill, /不得把本仓库的 workflow、tag 或 npm 发布假设套到其它项目/);
+});
+
 test('ci-guard is scenario-based and reads the actual workflow as source of truth', () => {
   assert.match(skill, /场景选择/);
   assert.match(skill, /发布路径/);

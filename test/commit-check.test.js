@@ -48,10 +48,10 @@ test('core gates preserve staging and commit boundaries', () => {
 test('sensitive scan keeps structured failures and keyword warnings', () => {
   assert.match(skill, /结构化 secret assignment 和 private key block.*fail/s);
   assert.match(skill, /普通 .*关键词.*warning/s);
-  assert.match(scan, /git diff --cached -U0/);
+  assert.match(scan, /git diff --cached --unified=0 --no-color/);
   assert.match(scan, /--staged-only/);
-  assert.match(scan, /Structured secrets found in STAGED diff/);
-  assert.match(scan, /Keyword matches in STAGED diff/);
+  assert.match(scan, /Possible structured secret found in ADDED staged content/);
+  assert.match(scan, /Sensitive keyword found in ADDED staged content/);
   assert.doesNotMatch(scan, /git diff -U0/);
 });
 

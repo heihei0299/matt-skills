@@ -16,7 +16,15 @@ test('grill-to-spec is a thin upstream orchestrator', () => {
   assert.match(skill, /只做两个上游 skill 的编排/);
   assert.match(skill, /不写代码、不修改源码或测试/);
   assert.match(skill, /只确认本次 seam|seam 提案/);
-  assert.ok(skill.split(/\r?\n/).length < 60, 'orchestrator should stay concise');
+  assert.ok(skill.split(/\r?\n/).length < 65, 'orchestrator should stay concise');
+});
+
+test('grill-to-spec carries its own turn continuity rule', () => {
+  assert.match(skill, /回合连续性/);
+  assert.match(skill, /Long-Horizon Skill/);
+  assert.match(skill, /阶段 ① 达到出口后立即进入阶段 ②/);
+  assert.match(skill, /进度汇报.*不是回合终点/);
+  assert.match(skill, /不要求用户额外回复“继续”/);
 });
 
 test('grill-to-spec keeps only its durable confirmation gates', () => {
@@ -30,11 +38,16 @@ test('grill-to-spec keeps only its durable confirmation gates', () => {
   assert.doesNotMatch(skill, /\| Glossary \|.*\| ADR \|.*\| Spec \|/s);
 });
 
-test('format details stay disclosed in the dedicated reference', () => {
+test('rules contain only local deltas and delegate spec schema upstream', () => {
   assert.match(skill, /references\/rules\.md/);
-  assert.match(rules, /Glossary/);
-  assert.match(rules, /ADR/);
-  assert.match(rules, /Spec/);
+  assert.match(rules, /Glossary 增量规则/);
+  assert.match(rules, /ADR 增量规则/);
+  assert.match(rules, /Spec 增量规则/);
+  assert.match(rules, /to-spec.*唯一事实源/s);
+  assert.match(rules, /不维护第二份模板/);
+  assert.doesNotMatch(rules, /完整七节模板/);
+  assert.doesNotMatch(rules, /Problem Statement/);
+  assert.doesNotMatch(rules, /As an <actor>/);
 });
 
 test('grill-to-spec template mirror stays path-mapped and exact', () => {
