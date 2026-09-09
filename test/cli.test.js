@@ -9,13 +9,11 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-// Independent literal: the 33 skills shipped in this repo.
+// Independent literal: the distributable skills shipped to user projects.
 const SKILL_NAMES = [
   'ask-matt',
-  'ci-guard',
   'codebase-design',
   'code-review',
-  'commit-check',
   'diagnose-fix',
   'diagnosing-bugs',
   'domain-modeling',
@@ -46,12 +44,11 @@ const SKILL_NAMES = [
   'writing-for-agents',
 ];
 
-// 默认子集：engineering (18) + 独有所需 3 + 核心独有 5 → 26，默认 list/install 仅此
+// 默认 programming subset: engineering + required + default proprietary.
 const PROGRAMMING_SKILL_NAMES = [
   'ask-matt',
   'code-review',
   'codebase-design',
-  'commit-check',
   'diagnose-fix',
   'diagnosing-bugs',
   'domain-modeling',
@@ -96,20 +93,20 @@ function runCli(args, cwd = REPO_ROOT, opts = {}) {
   });
 }
 
-test('`list` exits 0 and prints 26 default skills by default', () => {
+test('`list` exits 0 and prints default programming skills by default', () => {
   const { status, stdout, stderr } = runCli(['list']);
   assert.equal(status, 0, stderr);
   const lines = stdout.trim().split('\n').filter(Boolean);
-  assert.equal(lines.length, 26);
+  assert.equal(lines.length, PROGRAMMING_SKILL_NAMES.length);
   const names = lines.map((line) => line.split(' — ')[0]);
   assert.deepEqual([...names].sort(), [...PROGRAMMING_SKILL_NAMES].sort());
 });
 
-test('`list --all` prints all 33 skills', () => {
+test('`list --all` prints all distributable skills', () => {
   const { status, stdout, stderr } = runCli(['list', '--all']);
   assert.equal(status, 0, stderr);
   const lines = stdout.trim().split('\n').filter(Boolean);
-  assert.equal(lines.length, 33);
+  assert.equal(lines.length, SKILL_NAMES.length);
   const names = lines.map((line) => line.split(' — ')[0]);
   assert.deepEqual([...names].sort(), [...SKILL_NAMES].sort());
 });
@@ -122,11 +119,11 @@ test('`list` prints each skill description from its frontmatter', () => {
   }
 });
 
-test('`list --json` emits a JSON array with 26 default skills by default', () => {
+test('`list --json` emits the default programming skills by default', () => {
   const { status, stdout, stderr } = runCli(['list', '--json']);
   assert.equal(status, 0, stderr);
   const skills = JSON.parse(stdout);
-  assert.equal(skills.length, 26);
+  assert.equal(skills.length, PROGRAMMING_SKILL_NAMES.length);
   assert.deepEqual(
     skills.map((s) => s.name).sort(),
     [...PROGRAMMING_SKILL_NAMES].sort(),
@@ -137,11 +134,11 @@ test('`list --json` emits a JSON array with 26 default skills by default', () =>
   );
 });
 
-test('`list --all --json` emits all 33 skills', () => {
+test('`list --all --json` emits all distributable skills', () => {
   const { status, stdout, stderr } = runCli(['list', '--all', '--json']);
   assert.equal(status, 0, stderr);
   const skills = JSON.parse(stdout);
-  assert.equal(skills.length, 33);
+  assert.equal(skills.length, SKILL_NAMES.length);
   assert.deepEqual(
     skills.map((s) => s.name).sort(),
     [...SKILL_NAMES].sort(),
@@ -153,7 +150,7 @@ test('`list` works from any working directory (temp dir)', () => {
   try {
     const { status, stdout, stderr } = runCli(['list'], tmp);
     assert.equal(status, 0, stderr);
-    assert.equal(stdout.trim().split('\n').filter(Boolean).length, 26);
+    assert.equal(stdout.trim().split('\n').filter(Boolean).length, PROGRAMMING_SKILL_NAMES.length);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -185,7 +182,7 @@ test('`install --all --dest` copies every skill (incl. attached files) and print
     assert.deepEqual(installed, [...SKILL_NAMES].sort());
     assert.ok(fs.existsSync(path.join(dest, 'triage', 'AGENT-BRIEF.md')), 'triage/AGENT-BRIEF.md missing');
     assert.ok(fs.existsSync(path.join(dest, 'tdd', 'tests.md')), 'tdd/tests.md missing');
-    assert.match(stdout, /已装 33、跳过 0/);
+    assert.match(stdout, new RegExp(`已装 ${SKILL_NAMES.length}、跳过 0`));
     assert.match(stdout, new RegExp(`目标路径：${dest.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -200,7 +197,7 @@ test('`install --all` rerun without --force skips existing skills and does not o
     fs.writeFileSync(path.join(dest, 'tdd', 'tests.md'), 'LOCAL EDIT');
     const { status, stdout, stderr } = runCli(['install', '--all', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /已装 0、跳过 33/);
+    assert.match(stdout, new RegExp(`已装 0、跳过 ${SKILL_NAMES.length}`));
     assert.equal(fs.readFileSync(path.join(dest, 'tdd', 'tests.md'), 'utf8'), 'LOCAL EDIT');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -219,7 +216,7 @@ test('`install --tools codex --all` lands in `.agents/skills/` under the working
       .map((e) => e.name)
       .sort();
     assert.deepEqual(installed, [...SKILL_NAMES].sort());
-    assert.match(stdout, /已装 33、跳过 0/);
+    assert.match(stdout, new RegExp(`已装 ${SKILL_NAMES.length}、跳过 0`));
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }
@@ -233,7 +230,7 @@ test('`install --force` overwrites existing skills', () => {
     fs.writeFileSync(path.join(dest, 'tdd', 'tests.md'), 'LOCAL EDIT');
     const { status, stdout, stderr } = runCli(['install', '--all', '--force', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /已装 33、跳过 0/);
+    assert.match(stdout, new RegExp(`已装 ${SKILL_NAMES.length}、跳过 0`));
     const source = fs.readFileSync(path.join(REPO_ROOT, '.agents', 'skills', 'tdd', 'tests.md'), 'utf8');
     assert.equal(
       fs.readFileSync(path.join(dest, 'tdd', 'tests.md'), 'utf8'),
@@ -332,7 +329,7 @@ test('`install --tools claude,codex --all` dedups to single .agents/skills (sing
       .sort();
     assert.deepEqual(installed, [...SKILL_NAMES].sort(), '.agents/skills');
     assert.ok(!fs.existsSync(path.join(cwd, '.claude/skills')), '.claude/skills should not be created (unified source)');
-    assert.match(stdout, /已装 33/);
+    assert.match(stdout, new RegExp(`已装 ${SKILL_NAMES.length}`));
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }

@@ -8,6 +8,8 @@ import {
   PROPRIETARY_SKILLS,
   isDefaultProgrammingSkill,
   isDistributableProprietarySkill,
+  isDistributableSkill,
+  isRepoLocalSkill,
 } from './skill-boundaries.js';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
@@ -164,6 +166,7 @@ async function listSkills({ onlyProgramming = false } = {}) {
     if (!entry.isDirectory()) continue;
     if (entry.name.endsWith('.bak')) continue;
     if (entry.name === 'skill-creator') continue;
+    if (isRepoLocalSkill(entry.name)) continue;
     if (onlyProgramming && !isProgrammingSkill(entry.name, engineering, required)) continue;
     let content;
     try {
@@ -264,6 +267,12 @@ async function installCommand({ dest, all, force, tools, global }) {
   if (selected.length === 0) {
     process.stdout.write('未选择任何技能，未安装任何技能\n');
     return;
+  }
+  const knownDistributable = new Set(skills.map((skill) => skill.name));
+  for (const name of selected) {
+    if (!isDistributableSkill(name, knownDistributable)) {
+      throw new Error(`${name} is repository-local or unavailable and cannot be distributed`);
+    }
   }
   for (const { tool, dir } of targets) {
     let installed = 0;
