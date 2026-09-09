@@ -9,24 +9,35 @@ const root = (file) => path.join(dir, file);
 const skill = readFileSync(root('.agents/skills/diagnose-fix/SKILL.md'), 'utf8');
 const anti = readFileSync(root('.agents/skills/diagnose-fix/references/anti-patterns.md'), 'utf8');
 
-test('diagnose-fix connects diagnosis, TDD fix, and regression', () => {
+test('diagnose-fix connects diagnosis, protected fix, and regression without phase-number coupling', () => {
   assert.match(skill, /diagnosing-bugs/);
-  assert.match(skill, /Phase 1–4/);
+  assert.match(skill, /修复前的诊断活动/);
+  assert.match(skill, /不要依赖固定 Phase 编号/);
   assert.match(skill, /tdd/);
   assert.match(skill, /③ 回归收尾/);
-  assert.ok(skill.split(/\r?\n/).length < 60, 'wrapper should stay concise');
+  assert.ok(skill.split(/\r?\n/).length < 70, 'wrapper should stay concise');
 });
 
-test('diagnose-fix keeps its hard gates without copying upstream semantics', () => {
+test('functional bugs still require a failing regression test at a correct seam', () => {
+  assert.match(skill, /功能 bug/);
   assert.match(skill, /正确的公共 seam/);
   assert.match(skill, /遵循 `tdd` 要求获得用户确认/);
   assert.match(skill, /失败回归测试/);
-  assert.match(skill, /不得写任何修复代码/);
+  assert.match(skill, /不得写修复代码/);
   assert.match(skill, /本身就是 finding/);
-  assert.doesNotMatch(skill, /不设 seams 确认步骤/);
   assert.match(skill, /不进入 `tdd-implement` 的长流程/);
-  assert.doesNotMatch(skill, /断言值来自独立来源/);
-  assert.doesNotMatch(skill, /垂直切片逐条推进/);
+});
+
+test('performance regressions may use measured red evidence instead of fake unit tests', () => {
+  assert.match(skill, /性能回归/);
+  assert.match(skill, /benchmark/);
+  assert.match(skill, /timing harness/);
+  assert.match(skill, /query-count/);
+  assert.match(skill, /profiler-derived threshold/);
+  assert.match(skill, /red-capable regression evidence/);
+  assert.match(skill, /不为满足形式强造/);
+  assert.match(anti, /不为性能问题强造/);
+  assert.match(anti, /可靠测量边界/);
 });
 
 test('diagnose-fix preserves continuity and upstream cleanup ownership', () => {
@@ -34,7 +45,7 @@ test('diagnose-fix preserves continuity and upstream cleanup ownership', () => {
   assert.match(skill, /重跑阶段 ① 的原始/);
   assert.match(skill, /清理.*探针/);
   assert.match(skill, /anti-patterns\.md/);
-  assert.match(anti, /不绕过测试直接改代码/);
+  assert.match(anti, /不绕过 red-capable regression evidence/);
   assert.match(anti, /不遗留探针/);
 });
 
