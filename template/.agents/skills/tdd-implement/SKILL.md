@@ -20,19 +20,19 @@ disable-model-invocation: true
 
 ## 四阶段 Steps
 
-按序执行；每步达到可验证出口条件后立即进入下一步。每步开始前读取 [stages.md](references/stages.md) 中对应定义。
+按序执行；每步达到可验证出口条件后立即进入下一步。每步只读取自己的轻量 reference，避免在每个阶段重复注入完整 `stages.md`。
 
-| Step | 做什么 | 出口条件 |
-|---|---|---|
-| ① **Contract** | 读取入口，提取 Acceptance Criteria，建立 Scope Ledger、Preflight、验证矩阵和 Behavior/Seam 边界 | 需求无待决歧义，验证命令已确定；知道做什么、从哪里验证、什么不做 |
-| ② **Red-Green** | 以 Behavior 为粒度执行有效 Red → 最小 Green → formatter/typecheck → 最小相关测试 | 所有 Behaviors 均有有效 Red、实现全绿，formatter/typecheck 和最小相关测试通过 |
-| ③ **Verify** | 运行当前 issue 影响范围测试、必要 build、要求的真实运行验证；执行一次 Standards + Spec Review | 最终 diff 的相关证据通过，真实运行验证完成（如要求），无 blocking finding |
-| ④ **Deliver** | 对齐 docs/README，执行敏感信息扫描，检查 staged diff、commit message 和必要的 Git history，创建独立 commit，更新 issue/progress.md | commit 已创建，Acceptance Criteria 全部通过，Tracker 与工作区反映真实完成状态 |
+| Step | Reference | 做什么 | 出口条件 |
+|---|---|---|---|
+| ① **Contract** | [contract.md](references/contract.md) | 读取入口，提取 Acceptance Criteria，建立 Scope Ledger、Preflight、验证矩阵和 Behavior/Seam 边界 | 需求无待决歧义，验证命令已确定；知道做什么、从哪里验证、什么不做 |
+| ② **Red-Green** | [red-green.md](references/red-green.md) | 以 Behavior 为粒度执行有效 Red → 最小 Green → formatter/typecheck → 最小相关测试 | 所有 Behaviors 均有有效 Red、实现全绿，formatter/typecheck 和最小相关测试通过 |
+| ③ **Verify** | [verify.md](references/verify.md) | 运行当前 issue 影响范围测试、必要 build、要求的真实运行验证；执行一次 Standards + Spec Review | 最终 diff 的相关证据通过，真实运行验证完成（如要求），无 blocking finding |
+| ④ **Deliver** | [deliver.md](references/deliver.md) | 对齐 docs/README，执行敏感信息扫描，检查 staged diff、commit message 和必要的 Git history，创建独立 commit，更新 issue/progress.md | commit 已创建，Acceptance Criteria 全部通过，Tracker 与工作区反映真实完成状态 |
 
 ## 运行时纪律
 
 - 四个阶段都从入口连续执行到自身出口：预告下一步后立即执行；进度输出并入工具调用序列，输出后继续执行。只有合规交互点、明确的外部阻塞或阶段出口条件结束当前回合。
-- 一个 seam 是公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 seam 可以包含多个 Behaviors。Seam/Behavior 的细节和 Todo 粒度见 [stages.md](references/stages.md)。
+- 一个 seam 是公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 seam 可以包含多个 Behaviors。Seam/Behavior 的细节和 Todo 粒度只在进入 Step ② 时读取 [red-green.md](references/red-green.md)。
 - 当前 issue 的范围、Acceptance Criteria、Out of Scope、测试/typecheck/build/真实运行证据和最终 commit 必须可追溯。Seam 或专项测试绿色不代表 issue 完成；四阶段出口全部满足后才可标记 `resolved`。
 - 多 issue 模式中，每个 issue 只提交一个独立 commit；issue 影响范围测试在 Step ③ 执行，全仓测试由 orchestration 的 A4 在全部 issue 完成后执行一次。
 
@@ -41,5 +41,9 @@ disable-model-invocation: true
 - TDD 核心规则：[tdd 技能](.agents/skills/tdd/SKILL.md)
 - 测试标准：[tdd/tests.md](.agents/skills/tdd/tests.md)
 - Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
-- 四阶段详规：[stages.md](references/stages.md)
+- Contract：[contract.md](references/contract.md)
+- Red-Green：[red-green.md](references/red-green.md)
+- Verify：[verify.md](references/verify.md)
+- Deliver：[deliver.md](references/deliver.md)
+- 完整兼容规范：[stages.md](references/stages.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)
