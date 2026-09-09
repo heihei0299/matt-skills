@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,7 +8,6 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(dir, file), 'utf8');
 
 const skill = read('.agents/skills/ci-guard/SKILL.md');
-const templateSkill = read('template/.agents/skills/ci-guard/SKILL.md');
 const workflow = read('.github/workflows/ci.yml');
 
 test('ci-guard is explicit-only and repository-scoped', () => {
@@ -53,6 +52,7 @@ test('workflow checks do not invent unavailable inputs or tools', () => {
   assert.match(skill, /不得伪报通过/);
 });
 
-test('ci-guard template mirror stays exact', () => {
-  assert.equal(templateSkill, skill);
+test('ci-guard remains workspace-only', () => {
+  assert.equal(existsSync(path.join(dir, 'template/.agents/skills/ci-guard')), false);
+  assert.equal(existsSync(path.join(dir, '.agents/skills/ci-guard/SKILL.md')), true);
 });

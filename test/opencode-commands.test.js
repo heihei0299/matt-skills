@@ -25,6 +25,7 @@ const EXPLICIT_SKILLS = [
   'writing-for-agents',
   'commit-check',
 ];
+const DISTRIBUTABLE_EXPLICIT_SKILLS = EXPLICIT_SKILLS.filter((skill) => skill !== 'commit-check');
 
 function readDirRecursive(dirPath) {
   const out = [];
@@ -39,9 +40,10 @@ function readDirRecursive(dirPath) {
 test('every explicitly-invoked skill has an opencode command (workspace + template)', () => {
   for (const skill of EXPLICIT_SKILLS) {
     const wsFile = root(path.join('.opencode/commands', `${skill}.md`));
-    const tmplFile = root(path.join('template/.opencode/commands', `${skill}.md`));
     assert.ok(statSync(wsFile).isFile(), `missing opencode command for ${skill}`);
     const ws = readFileSync(wsFile, 'utf8');
+    if (skill === 'commit-check') continue;
+    const tmplFile = root(path.join('template/.opencode/commands', `${skill}.md`));
     const tmpl = readFileSync(tmplFile, 'utf8');
     assert.equal(tmpl, ws, `template command for ${skill} out of sync`);
     // command shape: description frontmatter + body naming the skill + $ARGUMENTS passthrough
@@ -52,7 +54,7 @@ test('every explicitly-invoked skill has an opencode command (workspace + templa
 });
 
 test('template commands dir carries exactly the explicit-skill commands + issue-audit', () => {
-  const expected = [...EXPLICIT_SKILLS, 'issue-audit'].map((n) => `${n}.md`).sort();
+  const expected = [...DISTRIBUTABLE_EXPLICIT_SKILLS, 'issue-audit'].map((n) => `${n}.md`).sort();
   const tmpl = readdirSync(root('template/.opencode/commands')).sort();
   assert.deepEqual(tmpl, expected);
 });

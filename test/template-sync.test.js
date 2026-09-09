@@ -4,6 +4,11 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MAP_SKILL, MAP_DOCS, MAP_AGENTS, normalize } from './mirror-utils.js';
+import {
+  PROPRIETARY_SKILLS,
+  DISTRIBUTABLE_PROPRIETARY_SKILLS,
+  REPO_LOCAL_SKILLS,
+} from '../bin/skill-boundaries.js';
 
 // Guard the template snapshot: template/ is what init copies into target
 // repos. The workspace mirrors into template/ with a path mapping (skills
@@ -16,11 +21,11 @@ const root = (p) => path.join(dir, p);
 
 const DOC_AGENTS = ['domain.md', 'issue-tracker.md', 'runtime-discipline.md', 'skill-design.md', 'triage-labels.md'];
 
-// Config-repo positioning: template/ ships ALL skills via .agents/skills (single source)
-// Upstream + proprietary together (32). Harness skill dirs .pi/skills / .opencode/skills
-// are empty placeholders for project-local custom skills.
-const ALL_SKILLS = readdirSync(root('.agents/skills')).filter(n => !n.endsWith('.bak') && n !== 'skill-creator' && n !== '.git').sort();
-const PROPRIETARY_SKILLS = ['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test'];
+// Template ships the distributable skill set; repo-local skills stay in the workspace only.
+const WORKSPACE_SKILLS = readdirSync(root('.agents/skills'))
+  .filter(n => !n.endsWith('.bak') && n !== 'skill-creator' && n !== '.git')
+  .sort();
+const DISTRIBUTABLE_SKILLS = WORKSPACE_SKILLS.filter((name) => !REPO_LOCAL_SKILLS.has(name));
 
 function readDirRecursive(dirPath) {
   const out = [];
@@ -32,41 +37,41 @@ function readDirRecursive(dirPath) {
   return out.sort();
 }
 
-test('template/.agents/skills mirrors .agents/skills fully (single source)', () => {
-  const wsSkills = readdirSync(root('.agents/skills')).filter(n => !n.endsWith('.bak') && n !== 'skill-creator').sort();
+test('template/.agents/skills mirrors distributable .agents/skills (single source)', () => {
   const tmplSkills = readdirSync(root('template/.agents/skills')).sort();
-  assert.deepEqual(tmplSkills, wsSkills.filter(n => n !== '.git').sort(), 'template/.agents/skills listing out of sync');
-  for (const skill of wsSkills) {
-    if (skill === '.git' || skill.endsWith('.bak') || skill === 'skill-creator') continue;
+  assert.deepEqual(tmplSkills, DISTRIBUTABLE_SKILLS, 'template/.agents/skills listing out of sync');
+  for (const skill of DISTRIBUTABLE_SKILLS) {
     const wsFiles = readDirRecursive(root(path.join('.agents/skills', skill)));
     const tmplFiles = readDirRecursive(root(path.join('template/.agents/skills', skill)));
     assert.deepEqual(
-        tmplFiles.map((f) => path.relative(root(path.join('template/.agents/skills', skill)), f)),
-        wsFiles.map((f) => path.relative(root(path.join('.agents/skills', skill)), f)),
-        `template/.agents/skills/${skill} file listing out of sync`,
+      tmplFiles.map((f) => path.relative(root(path.join('template/.agents/skills', skill)), f)),
+      wsFiles.map((f) => path.relative(root(path.join('.agents/skills', skill)), f)),
+      `template/.agents/skills/${skill} file listing out of sync`,
+    );
+    for (const f of wsFiles) {
+      const rel = path.relative(root(path.join('.agents/skills', skill)), f);
+      assert.equal(
+        normalize(readFileSync(root(path.join('template/.agents/skills', skill, rel)), 'utf8'), MAP_SKILL),
+        readFileSync(f, 'utf8'),
+        `template/.agents/skills/${skill}/${rel} out of sync`,
       );
-      for (const f of wsFiles) {
-        const rel = path.relative(root(path.join('.agents/skills', skill)), f);
-        assert.equal(
-          normalize(readFileSync(root(path.join('template/.agents/skills', skill, rel)), 'utf8'), MAP_SKILL),
-          readFileSync(f, 'utf8'),
-          `template/.agents/skills/${skill}/${rel} out of sync`,
-        );
-      }
+    }
   }
 });
 
-test('template/.agents/skills carries both upstream and proprietary (full 32)', () => {
+test('template/.agents/skills carries distributable proprietary and excludes repo-local', () => {
   const tmplSkills = readdirSync(root('template/.agents/skills')).sort();
-  const wsSkills = readdirSync(root('.agents/skills')).filter(n => !n.endsWith('.bak') && n !== 'skill-creator' && n !== '.git').sort();
-  assert.deepEqual(tmplSkills, wsSkills, 'template/.agents/skills should contain all workspace skills');
-  for (const p of PROPRIETARY_SKILLS) {
-    assert.ok(tmplSkills.includes(p), `proprietary ${p} missing in template/.agents/skills`);
+  assert.deepEqual(tmplSkills, DISTRIBUTABLE_SKILLS, 'template/.agents/skills should contain only distributable skills');
+  for (const name of DISTRIBUTABLE_PROPRIETARY_SKILLS) {
+    assert.ok(tmplSkills.includes(name), `distributable proprietary ${name} missing in template/.agents/skills`);
   }
-  const upstream = wsSkills.filter(n => !PROPRIETARY_SKILLS.includes(n));
+  for (const name of REPO_LOCAL_SKILLS) {
+    assert.equal(tmplSkills.includes(name), false, `repo-local ${name} must not be in template/.agents/skills`);
+  }
+  const upstream = WORKSPACE_SKILLS.filter((name) => !PROPRIETARY_SKILLS.has(name));
   assert.ok(upstream.length >= 20, 'expected many upstream skills in template');
-  for (const u of upstream.slice(0,3)) {
-    assert.ok(tmplSkills.includes(u), `upstream ${u} missing in template/.agents/skills`);
+  for (const name of upstream.slice(0, 3)) {
+    assert.ok(tmplSkills.includes(name), `upstream ${name} missing in template/.agents/skills`);
   }
 });
 
@@ -90,8 +95,10 @@ test('template/.opencode/agents carries issue-audit in sync', () => {
   );
 });
 
-test('template/.opencode/commands mirrors all commands in sync', () => {
-  const wsCommands = readdirSync(root('.opencode/commands')).sort();
+test('template/.opencode/commands mirrors distributable commands in sync', () => {
+  const wsCommands = readdirSync(root('.opencode/commands'))
+    .filter((name) => name !== 'commit-check.md')
+    .sort();
   const tmplCommands = readdirSync(root('template/.opencode/commands')).sort();
   assert.deepEqual(tmplCommands, wsCommands, 'command file listing out of sync');
   for (const f of wsCommands) {

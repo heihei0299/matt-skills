@@ -189,7 +189,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通�
 9. 确认暂存区只包含当前 issue；
 10. 执行 `git diff --cached`，再创建当前 issue 的独立 commit。
 
-执行敏感信息扫描脚本（`bash .agents/skills/commit-check/scripts/scan-sensitive.sh --staged-only`），检查 staged diff、commit message 和 Git history preservation，全部通过后创建当前 issue 的独立 commit。
+执行敏感信息扫描脚本（`bash .agents/skills/tdd-implement/scripts/scan-sensitive.sh --staged-only`），检查 staged diff、commit message 和 Git history preservation，全部通过后创建当前 issue 的独立 commit。
 
 ### Tracker 收尾
 

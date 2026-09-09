@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deterministic staged-diff secret scan for commit-check.
+# Deterministic staged-diff secret scan for the tdd-implement deliver gate.
 # Only ADDED lines are inspected: removing a leaked secret must never be blocked.
 # Match contents are never echoed, so detected credentials do not leak into agent/log output.
 # FAIL: structured assignments and private-key blocks.

@@ -1,20 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MAP_SKILL, normalize } from './mirror-utils.js';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (file) => path.join(dir, file);
 const read = (file) => readFileSync(root(file), 'utf8');
 
 const skill = read('.agents/skills/commit-check/SKILL.md');
-const templateSkill = read('template/.agents/skills/commit-check/SKILL.md');
 const scan = read('.agents/skills/commit-check/scripts/scan-sensitive.sh');
 
 test('commit-check is an explicit staged commit gate', () => {
-  for (const content of [skill, templateSkill]) {
+  for (const content of [skill]) {
     assert.match(content, /name: commit-check/);
     assert.match(content, /^disable-model-invocation:\s*true$/m);
     assert.match(content, /staged commit gate/);
@@ -98,13 +96,8 @@ test('commit-check stays independent from implementation and review execution', 
   assert.doesNotMatch(skill, /code-review/);
 });
 
-test('template mirrors the compact commit-check skill', () => {
-  assert.equal(
-    normalize(read('template/.agents/skills/commit-check/SKILL.md'), MAP_SKILL),
-    skill,
-  );
-  assert.equal(
-    read('template/.agents/skills/commit-check/scripts/scan-sensitive.sh'),
-    scan,
-  );
+test('commit-check remains workspace-only', () => {
+  assert.equal(existsSync(root('template/.agents/skills/commit-check')), false);
+  assert.equal(existsSync(root('template/.opencode/commands/commit-check.md')), false);
+  assert.equal(existsSync(root('.agents/skills/commit-check/SKILL.md')), true);
 });
