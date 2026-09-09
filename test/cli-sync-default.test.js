@@ -17,7 +17,7 @@ function runCli(args, cwd = REPO_ROOT) {
 }
 
 function readProprietary() {
-  return JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/proprietary.json'), 'utf8'));
+  return JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/proprietary.json'), 'utf8')).all;
 }
 
 function upstreamSkillNames() {

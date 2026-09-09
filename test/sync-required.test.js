@@ -21,7 +21,7 @@ function readJson(rel) {
 }
 
 function localUpstreamNames() {
-  const prop = new Set(readJson('config/proprietary.json'));
+  const prop = new Set(readJson('config/proprietary.json').all);
   return fs
     .readdirSync(path.join(REPO_ROOT, '.agents/skills'), { withFileTypes: true })
     .filter((e) => e.isDirectory() && !e.name.endsWith('.bak'))

@@ -4,11 +4,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prompts from 'prompts';
+import {
+  PROPRIETARY_SKILLS,
+  isDefaultProgrammingSkill,
+  isDistributableProprietarySkill,
+} from './skill-boundaries.js';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
-const PROPRIETARY_SKILLS = new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test', 'show-me']);
-const PROPRIETARY_DEFAULT = new Set(['tdd-implement', 'diagnose-fix', 'commit-check', 'grill-to-spec', 'show-me']); // 默认仅装核心 4 + show-me，--all 才装全部 7
 const ENGINEERING_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'engineering.json');
 const REQUIRED_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'required.json');
 let ENGINEERING_SKILLS = null;
@@ -34,10 +37,10 @@ async function loadRequiredSkills() {
   return REQUIRED_SKILLS;
 }
 function isProgrammingSkill(name, engineering, required) {
-  return PROPRIETARY_DEFAULT.has(name) || engineering.has(name) || (required && required.has(name));
+  return isDefaultProgrammingSkill(name, engineering, required);
 }
 function isProgrammingAll(name, engineering) {
-  return PROPRIETARY_SKILLS.has(name) || engineering.has(name);
+  return isDistributableProprietarySkill(name) || engineering.has(name);
 }
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);

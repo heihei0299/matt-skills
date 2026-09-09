@@ -5,10 +5,10 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { PROPRIETARY_SKILLS } from '../bin/skill-boundaries.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_SKILLS_DIR = path.join(ROOT, '.agents', 'skills');
-const PROPRIETARY_PATH = path.join(ROOT, 'config', 'proprietary.json');
 const ENGINEERING_PATH = path.join(ROOT, 'config', 'engineering.json');
 const REQUIRED_PATH = path.join(ROOT, 'config', 'required.json');
 const UPSTREAM_URL = 'https://github.com/mattpocock/skills.git';
@@ -19,12 +19,7 @@ const RENAMES = {
 };
 
 async function loadProprietary() {
-  try {
-    const raw = await readFile(PROPRIETARY_PATH, 'utf8');
-    return new Set(JSON.parse(raw));
-  } catch {
-    return new Set(['ci-guard', 'tdd-implement', 'grill-to-spec', 'diagnose-fix', 'commit-check', 'scaffold-functional-test', 'show-me']);
-  }
+  return new Set(PROPRIETARY_SKILLS);
 }
 
 async function loadEngineering() {

@@ -1,9 +1,28 @@
-[
-  "ci-guard",
-  "tdd-implement",
-  "grill-to-spec",
-  "diagnose-fix",
-  "commit-check",
-  "scaffold-functional-test",
-  "show-me"
-]
+{
+  "all": [
+    "ci-guard",
+    "tdd-implement",
+    "grill-to-spec",
+    "diagnose-fix",
+    "commit-check",
+    "scaffold-functional-test",
+    "show-me"
+  ],
+  "distributable": [
+    "tdd-implement",
+    "diagnose-fix",
+    "grill-to-spec",
+    "scaffold-functional-test",
+    "show-me"
+  ],
+  "repoLocal": [
+    "ci-guard",
+    "commit-check"
+  ],
+  "default": [
+    "tdd-implement",
+    "diagnose-fix",
+    "grill-to-spec",
+    "show-me"
+  ]
+}
