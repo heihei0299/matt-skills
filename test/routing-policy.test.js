@@ -27,13 +27,11 @@ test('behavior routing keeps only the five automatic intent branches', () => {
     assert.match(route, /## 行为路由/);
     assert.match(route, /理解\/定位 → `codegraph explore`/);
     assert.match(route, /调研\/原型 → `research` \/ `prototype`/);
-    assert.match(route, /修改\/实现 → .*`tdd`.*`diagnose-fix`/);
+    assert.match(route, /修改\/实现 → .*`tdd-implement`.*`tdd`.*`diagnose-fix`/);
     assert.match(route, /审查\/设计 → `code-review` \/ `grilling` \/ `domain-modeling`/);
     assert.match(route, /无法归类 → 直接澄清/);
 
     for (const manualSkill of [
-      'implement',
-      'tdd-implement',
       'commit-check',
       'to-spec',
       'to-tickets',
@@ -43,8 +41,9 @@ test('behavior routing keeps only the five automatic intent branches', () => {
       'wayfinder',
       'grill-to-spec',
     ]) {
-      assert.doesNotMatch(route, new RegExp(manualSkill));
+      assert.doesNotMatch(route, new RegExp(`\\`${manualSkill}\\``));
     }
+    assert.doesNotMatch(route, /`implement`/);
     assert.doesNotMatch(route, /显式触发|可选（需 `--all`）/);
   }
 });

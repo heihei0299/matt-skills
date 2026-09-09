@@ -1,11 +1,14 @@
 ---
 name: ci-guard
-description: "保护本仓库 GitHub Actions CI/release pipeline：按发布、workflow 维护或发布后故障场景执行必要门禁。Use when CI is flaky/failing, when setting up or editing .github/workflows/ci.yml, or before tagging a release to npm."
+description: "matt-skills 仓库专用 GitHub Actions / npm release gate。仅在用户显式调用并且当前仓库身份确认是 @heihei0299/matt-skills 时执行。"
+disable-model-invocation: true
 ---
 
 # CI Guard
 
-本 skill 只编排当前仓库的 CI 与 npm 发布门禁。先读取 `.github/workflows/ci.yml`，以实际 workflow 的 job、input、condition 和权限为事实源；不要假设不存在的 job、input 或自动回滚行为。产品代码 bug 的诊断和修复交给 `diagnose-fix`，不在此重复通用诊断。
+这是 **matt-skills 仓库专用** skill，不是通用 CI skill。用户显式调用后，第一步先读取当前 `package.json`；只有 `name` 精确等于 `@heihei0299/matt-skills` 时才继续。身份不匹配立即停止并报告 `repo mismatch`，不得把本仓库的 workflow、tag 或 npm 发布假设套到其它项目。
+
+身份确认后，读取 `.github/workflows/ci.yml`，以实际 workflow 的 job、input、condition 和权限为事实源；不要假设不存在的 job、input 或自动回滚行为。产品代码 bug 的诊断和修复交给 `diagnose-fix`，不在此重复通用诊断。
 
 ## 场景选择
 
@@ -44,6 +47,7 @@ description: "保护本仓库 GitHub Actions CI/release pipeline：按发布、w
 
 ## 不做什么
 
+- 不在非 `@heihei0299/matt-skills` 仓库执行；
 - 不把每次发布都扩展为完整 CI 工具链演练；
 - 不引用不存在的 `build` job、`dry_run` input 或 `rollback_version` input；
 - 不把历史事故描述当成当前仓库事实；
