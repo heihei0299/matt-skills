@@ -10,6 +10,7 @@ import {
   isDistributableProprietarySkill,
   isDistributableSkill,
   isRepoLocalSkill,
+  REPO_LOCAL_SKILLS,
 } from './skill-boundaries.js';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
@@ -391,7 +392,11 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   // 模板同步：默认模式下过滤 skills，仅同步默认子集
   async function copyTemplateFiltered() {
     if (!onlyProgramming) {
-      await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+      await cp(TEMPLATE_DIR, target, {
+        recursive: true,
+        force: true,
+        filter: shouldCopyTemplatePath,
+      });
       return;
     }
     // 默认范围：分别复制非 skills 部分，skills 由后续 allSkills 循环处理
@@ -414,7 +419,11 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   if (!(await pathExists(marker))) {
     process.stdout.write('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
     if (onlyProgramming) await copyTemplateFiltered();
-    else await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+    else await cp(TEMPLATE_DIR, target, {
+      recursive: true,
+      force: true,
+      filter: shouldCopyTemplatePath,
+    });
     process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
   } else {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
@@ -439,14 +448,22 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
           }
         } catch {}
       } else {
-        await cp(path.join(TEMPLATE_DIR, '.agents'), path.join(target, '.agents'), { recursive: true, force: true });
+        await cp(path.join(TEMPLATE_DIR, '.agents'), path.join(target, '.agents'), {
+          recursive: true,
+          force: true,
+          filter: shouldCopyTemplatePath,
+        });
         await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
         await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
       }
       process.stdout.write('模板：已同步（AGENTS.md 跳过，已含定制）\n');
     } else {
       if (onlyProgramming) await copyTemplateFiltered();
-      else await cp(TEMPLATE_DIR, target, { recursive: true, force: true });
+      else await cp(TEMPLATE_DIR, target, {
+        recursive: true,
+        force: true,
+        filter: shouldCopyTemplatePath,
+      });
       process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
     }
   }
@@ -454,6 +471,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
   const allNames = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== 'skill-creator' && e.name !== '.git').map((e) => e.name);
   let allSkills = allNames.sort();
+  allSkills = allSkills.filter((name) => !isRepoLocalSkill(name));
   if (onlyProgramming) {
     const engineering = await loadEngineeringSkills();
     const required = await loadRequiredSkills();
@@ -461,6 +479,23 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   }
   const skillsDir = path.join(target, '.agents', 'skills');
   await mkdir(skillsDir, { recursive: true });
+  const preservedRepoLocal = [];
+  const preserveLocations = [
+    {
+      dir: skillsDir,
+      label: '.agents/skills',
+      isWorkspaceSource: path.resolve(skillsDir) === path.resolve(SKILLS_DIR),
+    },
+    { dir: path.join(target, '.pi', 'skills'), label: '.pi/skills', isWorkspaceSource: false },
+    { dir: path.join(target, '.opencode', 'skills'), label: '.opencode/skills', isWorkspaceSource: false },
+  ];
+  for (const name of REPO_LOCAL_SKILLS) {
+    for (const location of preserveLocations) {
+      if (!location.isWorkspaceSource && await pathExists(path.join(location.dir, name))) {
+        preservedRepoLocal.push(`${location.label}/${name}`);
+      }
+    }
+  }
   let installed = 0;
   let updated = 0;
   for (const name of allSkills) {
@@ -491,7 +526,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       if (!e.isDirectory()) continue;
       if (e.name === '.git' || e.name.endsWith('.bak')) continue;
       if (e.name === '.gitkeep' || e.name === 'README.md') continue;
-      if (allSkills.includes(e.name) || PROPRIETARY_SKILLS.has(e.name)) {
+      if (allSkills.includes(e.name)) {
         await rm(path.join(dir, e.name), { recursive: true, force: true });
       }
     }
@@ -507,6 +542,9 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       }
     }
   } catch {}
+  if (preservedRepoLocal.length) {
+    process.stdout.write(`迁移提示：${preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
+  }
   const modeLabel = onlyProgramming ? '编程' : '全量';
   process.stdout.write(`技能：新增 ${installed}、更新 ${updated}（${modeLabel} ${allSkills.length}）\n`);
   process.stdout.write(`目标路径：${target}\n`);

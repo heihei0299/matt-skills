@@ -156,3 +156,55 @@ test('install --all never distributes repo-local skills to project or global tar
     });
   }
 });
+
+test('sync default and --all do not add repo-local skills', () => {
+  for (const args of [['sync'], ['sync', '--all']]) {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-boundary-'));
+    try {
+      const result = runCli([...args, '--dest', dest]);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(fs.existsSync(path.join(dest, '.agents/skills/ci-guard')), false);
+      assert.equal(fs.existsSync(path.join(dest, '.agents/skills/commit-check')), false);
+    } finally {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
+  }
+});
+
+test('sync preserves repo-local sentinels and only cleans shared harness mirrors', () => {
+  for (const args of [['sync'], ['sync', '--all']]) {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-preserve-'));
+    try {
+      fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL AGENTS');
+      for (const [harness, name] of [
+        ['.agents/skills', 'commit-check'],
+        ['.pi/skills', 'commit-check'],
+        ['.opencode/skills', 'ci-guard'],
+      ]) {
+        const dir = path.join(dest, harness, name);
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'SKILL.md'), `USER CUSTOM ${name}`);
+      }
+      const sharedMirror = path.join(dest, '.pi/skills/tdd');
+      fs.mkdirSync(sharedMirror, { recursive: true });
+      fs.writeFileSync(path.join(sharedMirror, 'SKILL.md'), 'LEGACY SHARED MIRROR');
+
+      const result = runCli([...args, '--dest', dest]);
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /不再分发|已保留/);
+      assert.equal(fs.existsSync(sharedMirror), false);
+      for (const [harness, name] of [
+        ['.agents/skills', 'commit-check'],
+        ['.pi/skills', 'commit-check'],
+        ['.opencode/skills', 'ci-guard'],
+      ]) {
+        assert.equal(
+          fs.readFileSync(path.join(dest, harness, name, 'SKILL.md'), 'utf8'),
+          `USER CUSTOM ${name}`,
+        );
+      }
+    } finally {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
+  }
+});
