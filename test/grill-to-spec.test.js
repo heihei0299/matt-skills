@@ -44,7 +44,7 @@ test('rules contain only local deltas and delegate spec schema upstream', () => 
   assert.match(rules, /ADR 增量规则/);
   assert.match(rules, /Spec 增量规则/);
   assert.match(rules, /to-spec.*唯一事实源/s);
-  assert.match(rules, /不另造第二套 spec schema/);
+  assert.match(rules, /不维护第二份模板/);
   assert.doesNotMatch(rules, /完整七节模板/);
   assert.doesNotMatch(rules, /Problem Statement/);
   assert.doesNotMatch(rules, /As an <actor>/);
