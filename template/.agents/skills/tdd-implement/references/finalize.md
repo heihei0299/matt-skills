@@ -1,6 +1,6 @@
-# Deliver
+# Finalize（非阶段）
 
-仅在 `tdd-implement` Step ④ 读取。阶段开始后不新增产品 Behavior；发现实现/测试/文档遗漏时回到对应阶段。
+仅在 `tdd-implement` Step ③ Verify 通过后读取。Finalize 不计入交付阶段；开始后不新增产品 Behavior，发现实现/测试/文档遗漏时回到对应阶段。
 
 ## Commit 前门禁
 

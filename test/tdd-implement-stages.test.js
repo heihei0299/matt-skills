@@ -24,16 +24,16 @@ test('frontmatter triggers on spec/ticket test-first implementation', () => {
   assert.match(skill, /Contract/);
   assert.match(skill, /Red-Green/);
   assert.match(skill, /Verify/);
-  assert.match(skill, /Deliver/);
+  assert.match(skill, /Finalize/);
 });
 
-test('SKILL.md exposes exactly four delivery stages', () => {
-  assert.match(skill, /四阶段 Steps/);
+test('SKILL.md exposes exactly three delivery stages plus non-stage Finalize', () => {
+  assert.match(skill, /三阶段 Steps/);
   assert.match(skill, /① \*\*Contract\*\*/);
   assert.match(skill, /② \*\*Red-Green\*\*/);
   assert.match(skill, /③ \*\*Verify\*\*/);
-  assert.match(skill, /④ \*\*Deliver\*\*/);
-  assert.doesNotMatch(skill, /①→⑦|阶段⑤|阶段⑥|阶段⑦/);
+  assert.doesNotMatch(skill, /④ \*\*/);
+  assert.match(skill, /Finalize（非阶段）/);
 });
 
 test('each SKILL step has a checkable exit condition', () => {
@@ -43,12 +43,12 @@ test('each SKILL step has a checkable exit condition', () => {
   assert.match(skill, /commit 已创建.*Acceptance Criteria 全部通过/);
 });
 
-test('detailed references define the same four stages', () => {
+test('detailed references define the same three stages plus Finalize', () => {
   assert.match(stages, /## 阶段 ① Contract：明确交付契约/);
   assert.match(stages, /## 阶段 ② Red-Green：行为级 TDD/);
   assert.match(stages, /## 阶段 ③ Verify：最终验证与审查/);
-  assert.match(stages, /## 阶段 ④ Deliver：提交与 Tracker 收尾/);
-  assert.doesNotMatch(stages, /阶段 ⑤|阶段 ⑥|阶段 ⑦/);
+  assert.match(stages, /## Finalize：非阶段交付收尾/);
+  assert.doesNotMatch(stages, /阶段 ④/);
 });
 
 test('Contract extracts acceptance criteria and maintains a scope ledger', () => {
@@ -177,7 +177,7 @@ test('Verify limits review to one round with two independent axis-specific revie
   assert.match(stages, /不生成 `review-\*\.md`/);
 });
 
-test('Deliver contains docs, staged diff, history, and commit gates', () => {
+test('Finalize contains docs, staged diff, history, and commit gates', () => {
   assert.match(stages, /README\/docs\/config\/package 与实现一致/);
   assert.match(stages, /Scope Ledger/);
   assert.match(stages, /敏感信息检查/);
@@ -189,15 +189,15 @@ test('Deliver contains docs, staged diff, history, and commit gates', () => {
   assert.match(stages, /Git history preservation/);
 });
 
-test('Deliver closes the tracker only after the four stages', () => {
+test('Finalize closes the tracker only after the three stages', () => {
   assert.match(stages, /逐条勾选 Acceptance Criteria/);
   assert.match(stages, /将 issue 状态改为 `resolved`/);
   assert.match(stages, /追加实施总结/);
   assert.match(stages, /progress\.md/);
   assert.match(stages, /commit hash、message/);
   assert.match(stages, /真实运行结果/);
-  assert.match(stages, /阶段 ④ 开始后不新增产品 Behavior/);
-  assert.match(stages, /只有四个阶段全部通过/);
+  assert.match(stages, /Finalize 开始后不新增产品 Behavior/);
+  assert.match(stages, /只有三个阶段与 Finalize 全部通过/);
   assert.match(stages, /工作区符合预期/);
 });
 
@@ -229,10 +229,10 @@ test('state mapping distinguishes Todo, Issue, and Progress', () => {
   assert.match(stages, /Todo:\s+pending \| in_progress \| completed \| blocked/);
   assert.match(stages, /Issue:\s+ready-for-agent \| in_progress \| resolved \| blocked/);
   assert.match(stages, /Progress:\s+pending \| in_progress \| done \| blocked/);
-  assert.match(stages, /Deliver 完成后 Issue 为 `resolved`、Progress 为 `done`/);
+  assert.match(stages, /Finalize 完成后 Issue 为 `resolved`、Progress 为 `done`/);
 });
 
-test('SKILL points to the disclosed four-stage and orchestration references', () => {
+test('SKILL points to the disclosed three-stage and orchestration references', () => {
   assert.match(skill, /\[stages\.md\]\(references\/stages\.md\)/);
   assert.match(skill, /\[orchestration\.md\]\(references\/orchestration\.md\)/);
   assert.match(skill, /progress\.md/);
@@ -268,12 +268,12 @@ test('orchestration A1 uses Kahn layers and one confirmation checkpoint', () => 
   assert.match(orchestration, /得到确认后进入 A2/);
 });
 
-test('orchestration A2 runs the four stages serially per issue', () => {
-  assert.match(orchestration, /主代理执行四阶段/);
+test('orchestration A2 runs three stages then Finalize serially per issue', () => {
+  assert.match(orchestration, /主代理执行三个阶段/);
   assert.match(orchestration, /① Contract/);
   assert.match(orchestration, /② Red-Green/);
   assert.match(orchestration, /③ Verify/);
-  assert.match(orchestration, /④ Deliver/);
+  assert.match(orchestration, /Finalize（非阶段/);
   assert.match(orchestration, /独立 commit/);
   assert.match(orchestration, /全仓测试不在每个 issue 中重复执行/);
   assert.match(orchestration, /一次正式 Review round/);
@@ -298,7 +298,7 @@ test('orchestration A5 classifies rollback and conflicts', () => {
   assert.match(orchestration, /Contract 歧义/);
   assert.match(orchestration, /Red-Green 的有效 Red/);
   assert.match(orchestration, /Verify 的测试/);
-  assert.match(orchestration, /Deliver 的 docs/);
+  assert.match(orchestration, /Finalize 的 docs/);
   assert.match(orchestration, /全量测试失败/);
   assert.match(orchestration, /Blocked by/);
   assert.match(orchestration, /多 issue 预期修改同一文件/);
@@ -311,7 +311,7 @@ test('template mirrors the three tdd-implement files', () => {
   assert.equal(normalize(readFileSync(templateOrchestrationPath, 'utf8'), MAP_SKILL), orchestration);
 });
 
-test('tdd-implement owns deliver checks without commit-check skill coupling', () => {
+test('tdd-implement owns Finalize checks without commit-check skill coupling', () => {
   assert.doesNotMatch(skill, /commit-check/);
   assert.doesNotMatch(stages, /\[commit-check\]/);
   assert.doesNotMatch(orchestration, /commit-check/);

@@ -1,8 +1,8 @@
 # 多 issue 编排（按依赖分层串行）
 
-本文件仅在 `.scratch/<feature>/issues/` 下存在多个 `Type: task` issue 时生效。单 `spec` / 单 `task` 直接按 [stages.md](stages.md) 的四阶段闭环执行。A0-A5 是编排控制活动，不是额外的产品交付阶段。
+本文件仅在 `.scratch/<feature>/issues/` 下存在多个 `Type: task` issue 时生效。单 `spec` / 单 `task` 直接按 [stages.md](stages.md) 的三个交付阶段执行，并在 Verify 后 Finalize。A0-A5 是编排控制活动，不是额外的产品交付阶段。
 
-主代理按依赖分层、层内按编号串行执行；每个 issue 由同一个主代理完成 Contract → Red-Green → Verify → Deliver，并创建一个独立 commit。实现细节以 [stages.md](stages.md) 为准，TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为准。
+主代理按依赖分层、层内按编号串行执行；每个 issue 由同一个主代理完成 Contract → Red-Green → Verify，再执行非阶段 Finalize 并创建一个独立 commit。实现细节以 [stages.md](stages.md) 为准，TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为准。
 
 ## 目录
 
@@ -69,11 +69,11 @@ Ln = 最后一层
 ```text
 for each layer Li in L1..Ln:
   for each issue in Li（按编号顺序）:
-    主代理执行四阶段：
+    主代理执行三个阶段：
       ① Contract
       ② Red-Green
-      ③ Verify（当前 issue 影响范围）
-      ④ Deliver（独立 commit + Tracker 收尾）
+      ③ Verify（当前 issue 影响范围 + 当前 issue review）
+    执行 Finalize（非阶段：独立 commit + Tracker 收尾）
     产出回执卡片并回写 issue
     强制更新 progress.md 的 Status/Commit/Review/Tests
   通过 A3 层收敛后进入下一层
@@ -82,9 +82,9 @@ for each layer Li in L1..Ln:
 
 每个 issue 的 Verify 只运行当前 issue 影响范围内的完整测试；全仓测试不在每个 issue 中重复执行。每个 issue 只做一次正式 Review round；该 round 并行启动两个独立 reviewer：Standards-only 与 Spec-only。两份结果齐全前不得收敛 review；修复 blocking finding 后执行定向复核，不重新启动完整双轴 review。
 
-主代理在层内和层间连续调度：一个 issue 的 Deliver 出口满足后，立即取下一个 issue，直到全部层完成或发生明确外部阻塞。进度输出并入执行序列，不在正常切换点等待用户“继续”。
+主代理在层内和层间连续调度：一个 issue 的 Finalize 出口满足后，立即取下一个 issue，直到全部层完成或发生明确外部阻塞。进度输出并入执行序列，不在正常切换点等待用户“继续”。
 
-进入 A2 前记录的 `BASE_HEAD` 必须在每个 issue 的阶段出口和 commit 前校验：
+进入 A2 前记录的 `BASE_HEAD` 必须在每个 issue 的三个阶段出口和 Finalize commit 前校验：
 
 ```bash
 git merge-base --is-ancestor $BASE_HEAD HEAD
@@ -110,12 +110,14 @@ Docs: <updated files or no update required>
 
 ### A2 出口
 
-- 当前层每个 issue 均完成四阶段并有独立 commit；
+- 当前层每个 issue 均完成三个阶段与 Finalize 并有独立 commit；
 - issue、回执卡片和 `progress.md` 一致；
 - 相关测试通过，工作区卫生和历史校验通过；
 - 没有未记录的跨 issue 改动。
 
 ## A3：层收敛
+
+A3 只做编排收敛，不启动 Standards/Spec reviewer；正式 review 已在每个 issue 的 Verify 中完成。
 
 每层全部 issue 串行完成后检查以下项目，全部通过才进入下一层：
 
@@ -153,7 +155,7 @@ A5 负责所有编排级失败，不把失败静默吞掉，也不把不相关�
 | Contract 歧义、验收缺口、范围变化 | 回到该 issue 的 Contract，补 Scope Ledger、Behavior 和验证矩阵 |
 | Red-Green 的有效 Red、实现、typecheck 或 targeted test 失败 | 回到该 issue 的 Red-Green，修复当前 Behavior 并重新验证 |
 | Verify 的测试、build、真实运行或 review blocking finding 失败 | 回到受影响 issue 的对应阶段；修复后只做受影响检查和 delta review |
-| Deliver 的 docs、敏感扫描、commit 或 Tracker 失败 | 保持 issue 未 resolved，修复 Deliver 门禁后重新验证 |
+| Finalize 的 docs、敏感扫描、commit 或 Tracker 失败 | 保持 issue 未 resolved，修复 Finalize 门禁后重新验证 |
 | 全量测试失败 | 定位到引入失败的 issue，按上述路径修复；只在修复后重跑必要范围和全量测试 |
 | `Blocked by` 依赖未完成 | 后续 issue 保持 `blocked`，前置 issue resolved 后自动解阻 |
 | 多 issue 预期修改同一文件 | 记录冲突，按编号串行；无法安全归属时暂停并请求用户决定 |

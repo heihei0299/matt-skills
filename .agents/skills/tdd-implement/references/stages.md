@@ -1,13 +1,13 @@
-# 四阶段详细定义
+# 三阶段详细定义 + Finalize
 
-单 `spec` / 单 `task` 与多 `task` 共用下表四阶段。多 issue 的依赖图、Kahn 分层、层收敛、全量收敛和回退/冲突处理见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
+单 `spec` / 单 `task` 与多 `task` 共用下列三个交付阶段；Verify 通过后执行 Finalize 收尾，Finalize 不计入阶段。多 issue 的依赖图、Kahn 分层、层收敛、全量收敛和回退/冲突处理见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
 
 ## 目录
 
 - [① Contract：明确交付契约](#阶段-①-contract明确交付契约)
 - [② Red-Green：行为级 TDD](#阶段-②-red-green行为级-tdd)
 - [③ Verify：最终验证与审查](#阶段-③-verify最终验证与审查)
-- [④ Deliver：提交与 Tracker 收尾](#阶段-④-deliver提交与-tracker-收尾)
+- [Finalize：非阶段交付收尾](#finalize非阶段交付收尾)
 - [跨阶段运行纪律](#跨阶段运行纪律)
 - [状态统一](#状态统一)
 - [回退路由](#回退路由)
@@ -26,7 +26,7 @@
 7. 每个 issue 形成独立、可追溯的 commit；
 8. Tracker 状态与真实完成度一致。
 
-Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通过，issue 才能标记为 `resolved`。
+Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finalize 全部通过，issue 才能标记为 `resolved`。
 
 
 ## 阶段 ① Contract：明确交付契约
@@ -170,7 +170,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有四个阶段全部通�
 
 ---
 
-## 阶段 ④ Deliver：提交与 Tracker 收尾
+## Finalize：非阶段交付收尾
 
 ### 入口条件
 
@@ -205,7 +205,7 @@ Commit 成功后：
 - 清理本次产生的临时进程、目录和一次性文件；
 - 确认下一 issue 的 blockers 已解除。
 
-阶段 ④ 开始后不新增产品 Behavior。若实现、测试或文档不完整，回到对应阶段；不要在 Tracker 收尾后继续修改源码，也不要通过额外 docs-only commit 掩盖遗漏。只有四个阶段全部通过，才可把 issue 标记为 `resolved`。
+Finalize 开始后不新增产品 Behavior。若实现、测试或文档不完整，回到对应阶段；不要在 Tracker 收尾后继续修改源码，也不要通过额外 docs-only commit 掩盖遗漏。只有三个阶段与 Finalize 全部通过，才可把 issue 标记为 `resolved`。
 
 ### 出口条件
 
@@ -255,7 +255,7 @@ Issue:    ready-for-agent | in_progress | resolved | blocked
 Progress: pending | in_progress | done | blocked
 ```
 
-状态转换：Contract 完成后 Issue/Progress 为 `in_progress`；Red-Green 完成后 Behaviors 为 `completed`，Issue 仍为 `in_progress`；Verify 完成后 Issue 仍为 `in_progress`；Deliver 完成后 Issue 为 `resolved`、Progress 为 `done`。外部阻塞记录为 `blocked`，恢复后回到 `in_progress`。
+状态转换：Contract 完成后 Issue/Progress 为 `in_progress`；Red-Green 完成后 Behaviors 为 `completed`，Issue 仍为 `in_progress`；Verify 完成后 Issue 仍为 `in_progress`；Finalize 完成后 Issue 为 `resolved`、Progress 为 `done`。外部阻塞记录为 `blocked`，恢复后回到 `in_progress`。
 
 ---
 
@@ -266,6 +266,6 @@ Progress: pending | in_progress | done | blocked
 | ① Contract | 需求歧义、验收缺口、范围变化 | → ① 补充契约和验证矩阵 |
 | ② Red-Green | 有效 Red、实现、formatter、typecheck 或相关测试失败 | → ② 修复当前 Behavior |
 | ③ Verify | 测试、build、真实运行或 review finding 失败 | → ② 修复 Behavior；需求偏差 → ① |
-| ④ Deliver | docs、敏感扫描、staged diff、commit message 或 Tracker 信息不完整 | → ①/③ 修复对应证据；仍在 Deliver 前完成 |
+| Finalize | docs、敏感扫描、staged diff、commit message 或 Tracker 信息不完整 | → ①/③ 修复对应证据；仍在 Finalize 完成前解决 |
 
 多 issue 的层收敛、全量失败、依赖冲突和跨 issue 修改冲突按 [orchestration.md](orchestration.md) A5 回退，不跨 issue 无记录改动。
