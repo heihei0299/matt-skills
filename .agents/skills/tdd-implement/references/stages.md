@@ -21,7 +21,7 @@
 2. 产品实现之前存在有效 Red；
 3. 最终 diff 对应的相关测试和 typecheck 通过；
 4. ticket 要求真实运行时，真实运行验证已完成；
-5. Standards 与 Spec Review 无 blocking finding；
+5. 当前稳定 diff 已完成一次 `code-review` 且无 blocking finding；
 6. README/docs 与实现一致；
 7. 每个 issue 形成独立、可追溯的 commit；
 8. Tracker 状态与真实完成度一致。
@@ -58,7 +58,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finaliz
 5. 完成一次 **Preflight** 并记录真实结果：
    - 当前 `HEAD`、工作区状态和 `BASE_HEAD=$(git rev-parse HEAD)`；
    - 可用的 test、typecheck、build 命令；
-   - 可用的 subagent model；
+   - `code-review` 可用性；
    - 可用的 browser 或 Playwright 路径；
    - ticket 要求的真实运行验证方式。
 6. 建立一次验证矩阵，列出 targeted tests、typecheck、全量测试、必要 build、smoke/package check 和真实运行验证，并记录各项的触发条件，后续只复用这份矩阵。
@@ -136,7 +136,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finaliz
 当前 issue 影响范围测试
 → 必要 build
 → 必要真实运行验证
-→ 一个正式 Review round：并行启动两个独立 reviewer（Standards-only + Spec-only）
+→ 当前稳定 diff 调用一次 code-review
 → 修复 blocking finding 后的定向复核
 ```
 
@@ -149,21 +149,18 @@ Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finaliz
 
 ### Review
 
-1. 每个 issue 恰好执行一次正式双轴 review round：该 round 必须并行启动两个独立 reviewer invocation/process：
-   - **Standards-only reviewer**：只判断是否符合仓库规则和代码质量要求；
-   - **Spec-only reviewer**：只判断是否逐条满足当前 issue 的 Acceptance Criteria。
-   同一个 reviewer invocation 不能同时承担两个轴；“一个 reviewer 输出两个章节”不算独立双轴 review。
-2. 两个 reviewer 都必须返回结果后，才能记录 `review_axes: standards=completed; spec=completed` 并推进 review state；任一 reviewer/tool/model 不可用时记录 `blocked/unavailable`，保持 issue 未解决，不用人工 diff 检查替代正式轴结果。
-3. 两个轴独立输出、互不掩盖；每个轴明确限制输出，例如 `≤ 400 words / ≤ 40 行`。
-4. findings 分类为：当前 issue blocking、后续 ticket、advisory、out of scope。只处理当前 issue blocking finding；其余记录而不扩大范围。
-5. 修复 blocking finding 后只运行受影响测试、typecheck 和 finding 的 delta recheck，不重新启动完整双轴 review。审查结果只在对话输出，不生成 `review-*.md` 等书面报告文件。
+1. 当前 issue 的最终 diff 稳定后，调用一次 [code-review](.agents/skills/code-review/SKILL.md)。
+2. `tdd-implement` 只负责 **何时调用 review**；审查维度、reviewer 数量、提示词、上下文与输出格式全部以 `code-review` 为唯一事实源，不在这里复制或弱化。
+3. `code-review` 未完成或存在 blocking finding 时，issue 保持未完成。只修当前 issue blocking finding；其余 findings 按 `code-review` 的分类与输出处理，不无记录地扩大范围。
+4. 修复 blocking finding 后，只运行受影响测试/typecheck 与 finding delta recheck，不再次调用完整 `code-review`。若修复引入新的 Behavior、改变 Scope 或使原 Review 对象不再成立，则回到 Contract/Red-Green，重新形成稳定最终 diff 后再进入 Verify。
+5. Review 结果只在对话/运行记录中消费，不由 `tdd-implement` 额外生成自己的 review 报告格式。
 
 ### 出口条件
 
 - 最终 diff 对应的相关测试通过；
 - 必要 typecheck/build 通过；
 - ticket 要求的真实运行验证已完成并记录实际结果；
-- 一个正式 Review round 已完成；Standards-only 与 Spec-only 两个独立结果均已记录；
+- 当前稳定 diff 已完成一次 `code-review`；
 - 无 blocking finding；
 - 受影响范围的最后一次证据对应当前 diff。
 
@@ -220,7 +217,7 @@ Finalize 开始后不新增产品 Behavior。若实现、测试或文档不完�
 
 ### 验证证据失效
 
-任何产品代码或测试文件再次变化，旧的测试、typecheck、build 和 review 证据立即失效；必须重新验证受影响范围。只能使用最后一次修改之后的结果证明当前 diff 已完成。
+任何产品代码或测试文件再次变化，旧的测试、typecheck、build 等受影响证据立即失效，必须重新验证受影响范围。正式 `code-review` 调用本身不因 finding 修复而重复；post-review 修复必须完成受影响验证和 finding delta recheck。若修改引入新的 Behavior、改变 Scope 或使原 Review 对象不再成立，则回到 Contract/Red-Green，重新形成稳定最终 diff 后再进入 Verify。
 
 ### Git History Preservation
 

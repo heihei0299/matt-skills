@@ -26,7 +26,7 @@ disable-model-invocation: true
 |---|---|---|---|
 | ① **Contract** | [contract.md](references/contract.md) | 读取入口，提取 Acceptance Criteria，建立 Scope Ledger、Preflight、验证矩阵和 Behavior/Seam 边界 | 需求无待决歧义，验证命令已确定；知道做什么、从哪里验证、什么不做 |
 | ② **Red-Green** | [red-green.md](references/red-green.md) | 以 Behavior 为粒度执行有效 Red → 最小 Green → formatter/typecheck → 最小相关测试 | 所有 Behaviors 均有有效 Red、实现全绿，formatter/typecheck 和最小相关测试通过 |
-| ③ **Verify** | [verify.md](references/verify.md) | 运行当前 issue 影响范围测试、必要 build、要求的真实运行验证；并行执行两个独立 reviewer（Standards-only + Spec-only） | 最终 diff 的相关证据通过，真实运行验证完成（如要求），两个 reviewer 结果齐全且无 blocking finding |
+| ③ **Verify** | [verify.md](references/verify.md) | 运行当前 issue 影响范围测试、必要 build、要求的真实运行验证；在最终 diff 稳定后调用一次 [code-review](.agents/skills/code-review/SKILL.md) | 最终 diff 的相关证据通过，真实运行验证完成（如要求），code-review 已完成且无 blocking finding |
 
 ## Finalize（非阶段）
 
@@ -38,7 +38,7 @@ Finalize 出口：commit 已创建、Acceptance Criteria 全部通过，Tracker 
 
 - 三个阶段都从入口连续执行到自身出口；Verify 出口满足后立即进入 Finalize：预告下一步后立即执行；进度输出并入工具调用序列，输出后继续执行。只有合规交互点、明确的外部阻塞或阶段出口条件结束当前回合。
 - 一个 seam 是公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 seam 可以包含多个 Behaviors。Seam/Behavior 的细节和 Todo 粒度只在进入 Step ② 时读取 [red-green.md](references/red-green.md)。
-- Verify 的正式 review round 必须并行启动两个独立 reviewer：一个只执行 Standards，一个只执行 Spec；同一个 reviewer invocation 不能同时计入两个轴。两份结果齐全前，review 不得标记完成；任一 reviewer 不可用时记录 `blocked/unavailable` 并保持 issue 未解决。Review 属于当前 issue 的 Verify，A3 层收敛不再启动正式 reviewer。
+- 每个 issue 只在 Verify 的最终 diff 稳定后调用一次 `code-review`；审查维度、reviewer 数量、提示词和输出格式全部由 `code-review` 自己定义，`tdd-implement` 不复制这些规则。`code-review` 未完成或存在 blocking finding 时 issue 不得收敛；A3 层收敛不再次调用 review。
 - 当前 issue 的范围、Acceptance Criteria、Out of Scope、测试/typecheck/build/真实运行证据和最终 commit 必须可追溯。Seam 或专项测试绿色不代表 issue 完成；三个阶段出口与 Finalize 全部满足后才可标记 `resolved`。
 - 多 issue 模式中，每个 issue 只提交一个独立 commit；issue 影响范围测试在 Step ③ 执行，全仓测试由 orchestration 的 A4 在全部 issue 完成后执行一次。
 
@@ -50,6 +50,7 @@ Finalize 出口：commit 已创建、Acceptance Criteria 全部通过，Tracker 
 - Contract：[contract.md](references/contract.md)
 - Red-Green：[red-green.md](references/red-green.md)
 - Verify：[verify.md](references/verify.md)
+- Review 方法：[code-review](.agents/skills/code-review/SKILL.md)
 - Finalize：[finalize.md](references/finalize.md)
 - 完整兼容规范：[stages.md](references/stages.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)

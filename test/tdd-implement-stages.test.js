@@ -69,7 +69,7 @@ test('Contract performs the required Preflight once', () => {
   assert.match(stages, /工作区状态/);
   assert.match(stages, /BASE_HEAD=\$\(git rev-parse HEAD\)/);
   assert.match(stages, /test、typecheck、build 命令/);
-  assert.match(stages, /subagent model/);
+  assert.match(stages, /`code-review` 可用性/);
   assert.match(stages, /browser 或 Playwright/);
   assert.match(stages, /真实运行验证方式/);
   assert.match(stages, /验证矩阵已建立/);
@@ -91,7 +91,7 @@ test('quality gates are explicit and non-optional', () => {
   assert.match(stages, /有效 Red/);
   assert.match(stages, /最终 diff.*typecheck/);
   assert.match(stages, /真实运行验证/);
-  assert.match(stages, /Standards.*Spec Review/);
+  assert.match(stages, /完成一次 `code-review`.*无 blocking finding/);
   assert.match(stages, /README\/docs/);
   assert.match(stages, /独立 commit/);
   assert.match(stages, /Tracker/);
@@ -134,7 +134,7 @@ test('Red-Green carries continuity and chunking rules', () => {
 });
 
 test('Verify follows test, build, runtime, and one review in order', () => {
-  const ordered = /当前 issue 影响范围测试[\s\S]*必要 build[\s\S]*必要真实运行验证[\s\S]*两个独立 reviewer/;
+  const ordered = /当前 issue 影响范围测试[\s\S]*必要 build[\s\S]*必要真实运行验证[\s\S]*调用一次 code-review/;
   assert.match(stages, ordered);
   assert.match(stages, /多 issue 模式只运行当前 issue 影响范围内的完整测试/);
   assert.match(stages, /单 issue 或单 spec 模式运行仓库完整测试/);
@@ -151,29 +151,24 @@ test('Verify records real process evidence and cleans it up', () => {
   assert.match(stages, /清理进程和临时目录/);
 });
 
-test('Verify requires two independent reviewer subagents, one axis per subagent', () => {
-  assert.match(stages, /两个独立.*reviewer/);
-  assert.match(stages, /Standards-only/);
-  assert.match(stages, /Spec-only/);
-  assert.match(stages, /并行/);
-  assert.match(stages, /同一.*reviewer.*不能.*两个轴/);
-  assert.match(stages, /两个 reviewer 都必须返回结果/);
-  assert.match(stages, /review_axes/);
-  assert.match(stages, /blocked\/unavailable/);
+test('Verify delegates review mechanics to code-review', () => {
+  assert.match(stages, /调用一次 \[code-review\]/);
+  assert.match(stages, /只负责 \*\*何时调用 review\*\*/);
+  assert.match(stages, /reviewer 数量/);
+  assert.match(stages, /以 `code-review` 为唯一事实源/);
+  assert.doesNotMatch(stages, /Standards-only reviewer/);
+  assert.doesNotMatch(stages, /Spec-only reviewer/);
+  assert.doesNotMatch(stages, /review_axes/);
 });
 
-test('Verify limits review to one round with two independent axis-specific reviewers', () => {
-  assert.match(stages, /每个 issue 恰好执行一次正式双轴 review round/);
-  assert.match(stages, /Standards-only reviewer/);
-  assert.match(stages, /Spec-only reviewer/);
-  assert.match(stages, /互不掩盖/);
-  assert.match(stages, /≤ 400 words \/ ≤ 40 行/);
-  assert.match(stages, /当前 issue blocking/);
-  assert.match(stages, /后续 ticket/);
-  assert.match(stages, /advisory/);
-  assert.match(stages, /out of scope/);
-  assert.match(stages, /不重新启动完整双轴 review/);
-  assert.match(stages, /不生成 `review-\*\.md`/);
+test('Verify calls code-review once and uses targeted delta recheck after findings', () => {
+  assert.match(stages, /最终 diff 稳定后.*调用一次 \[code-review\]/);
+  assert.match(stages, /blocking finding/);
+  assert.match(stages, /受影响测试\/typecheck/);
+  assert.match(stages, /finding delta recheck/);
+  assert.match(stages, /不再次调用完整 `code-review`/);
+  assert.match(stages, /新的 Behavior/);
+  assert.match(stages, /改变 Scope/);
 });
 
 test('Finalize commits directly after Verify without extra safety or staged-diff gates', () => {
@@ -206,7 +201,8 @@ test('cross-stage failure budget and evidence invalidation are explicit', () => 
   assert.match(stages, /timeout 或中断后缩小/);
   assert.match(stages, /验证证据失效/);
   assert.match(stages, /任何产品代码或测试文件再次变化/);
-  assert.match(stages, /旧的测试、typecheck、build 和 review 证据立即失效/);
+  assert.match(stages, /旧的测试、typecheck、build 等受影响证据立即失效/);
+  assert.match(stages, /正式 `code-review` 调用本身不因 finding 修复而重复/);
   assert.match(stages, /只能使用最后一次修改之后的结果/);
 });
 
@@ -272,9 +268,8 @@ test('orchestration A2 runs three stages then Finalize serially per issue', () =
   assert.match(orchestration, /Finalize（非阶段/);
   assert.match(orchestration, /独立 commit/);
   assert.match(orchestration, /全仓测试不在每个 issue 中重复执行/);
-  assert.match(orchestration, /一次正式 Review round/);
-  assert.match(orchestration, /两个独立 reviewer/);
-  assert.match(orchestration, /Standards-only 与 Spec-only/);
+  assert.match(orchestration, /只调用一次 `code-review`/);
+  assert.match(orchestration, /内部方法完全由 `code-review` 定义/);
   assert.match(orchestration, /回执卡片/);
   assert.match(orchestration, /Status\/Commit\/Review\/Tests/);
 });

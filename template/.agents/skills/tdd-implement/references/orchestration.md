@@ -80,7 +80,7 @@ for each layer Li in L1..Ln:
 全部层完成后进入 A4
 ```
 
-每个 issue 的 Verify 只运行当前 issue 影响范围内的完整测试；全仓测试不在每个 issue 中重复执行。每个 issue 只做一次正式 Review round；该 round 并行启动两个独立 reviewer：Standards-only 与 Spec-only。两份结果齐全前不得收敛 review；修复 blocking finding 后执行定向复核，不重新启动完整双轴 review。
+每个 issue 的 Verify 只运行当前 issue 影响范围内的完整测试；全仓测试不在每个 issue 中重复执行。当前 issue 的最终 diff 稳定后只调用一次 `code-review`；review 的内部方法完全由 `code-review` 定义。修复 blocking finding 后执行受影响验证和 finding delta recheck，不重复调用完整 `code-review`。
 
 主代理在层内和层间连续调度：一个 issue 的 Finalize 出口满足后，立即取下一个 issue，直到全部层完成或发生明确外部阻塞。进度输出并入执行序列，不在正常切换点等待用户“继续”。
 
@@ -102,7 +102,7 @@ Status: resolved
 Commit: <hash> — <message>
 Behaviors: <completed list>
 Acceptance Criteria: <checkbox result>
-Review: Standards-only reviewer + Spec-only reviewer, both completed, no blocking finding
+Review: code-review completed once, no blocking finding
 Tests: <targeted command and actual result>
 Runtime: <actual request/page-visible result or not required>
 Docs: <updated files or no update required>
@@ -117,7 +117,7 @@ Docs: <updated files or no update required>
 
 ## A3：层收敛
 
-A3 只做编排收敛，不启动 Standards/Spec reviewer；正式 review 已在每个 issue 的 Verify 中完成。
+A3 只做编排收敛，不再次调用 `code-review`；正式 review 已在每个 issue 的 Verify 中完成。
 
 每层全部 issue 串行完成后检查以下项目，全部通过才进入下一层：
 
@@ -161,7 +161,7 @@ A5 负责所有编排级失败，不把失败静默吞掉，也不把不相关�
 | 多 issue 预期修改同一文件 | 记录冲突，按编号串行；无法安全归属时暂停并请求用户决定 |
 | Git 历史祖先校验失败 | 立即停止写入，使用 `git reflog` 找回 `BASE_HEAD` 之后的提交，校验通过后继续 |
 
-主代理不跨 issue 无记录改动；不通过第二次完整双轴 review 来掩盖定向修复。外部权限、model、browser 或 tool 不可用时遵循 [stages.md](stages.md) 的 Tool Failure Budget，最多一次有依据的 fallback，仍失败则标记 `blocked/unavailable` 并报告实际状态。
+主代理不跨 issue 无记录改动；不通过第二次完整 `code-review` 来掩盖定向修复。外部权限、model、browser 或 tool 不可用时遵循 [stages.md](stages.md) 的 Tool Failure Budget，最多一次有依据的 fallback，仍失败则标记 `blocked/unavailable` 并报告实际状态。
 
 ### A5 出口
 
