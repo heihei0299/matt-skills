@@ -155,7 +155,7 @@ A5 负责所有编排级失败，不把失败静默吞掉，也不把不相关�
 | Contract 歧义、验收缺口、范围变化 | 回到该 issue 的 Contract，补 Scope Ledger、Behavior 和验证矩阵 |
 | Red-Green 的有效 Red、实现、typecheck 或 targeted test 失败 | 回到该 issue 的 Red-Green，修复当前 Behavior 并重新验证 |
 | Verify 的测试、build、真实运行或 review blocking finding 失败 | 回到受影响 issue 的对应阶段；修复后只做受影响检查和 delta review |
-| Finalize 的 docs、敏感扫描、commit 或 Tracker 失败 | 保持 issue 未 resolved，修复 Finalize 门禁后重新验证 |
+| Finalize 的必要 docs、commit 或 Tracker 失败 | 保持 issue 未 resolved，修复 Finalize 问题后重新验证 |
 | 全量测试失败 | 定位到引入失败的 issue，按上述路径修复；只在修复后重跑必要范围和全量测试 |
 | `Blocked by` 依赖未完成 | 后续 issue 保持 `blocked`，前置 issue resolved 后自动解阻 |
 | 多 issue 预期修改同一文件 | 记录冲突，按编号串行；无法安全归属时暂停并请求用户决定 |

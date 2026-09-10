@@ -30,7 +30,7 @@ disable-model-invocation: true
 
 ## Finalize（非阶段）
 
-Verify 出口满足后读取 [finalize.md](references/finalize.md) 并立即收尾。Finalize 不计入交付阶段，只负责 docs/README 对齐、敏感信息扫描、staged diff / Git history 检查、独立 commit 与 Tracker/progress 更新；若发现实现、测试或文档证据不完整，回到对应阶段修复后再 Finalize。
+Verify 出口满足后读取 [finalize.md](references/finalize.md) 并立即收尾。Finalize 不计入交付阶段，只负责必要的 docs/README 对齐、直接创建当前 issue 的独立 commit 与 Tracker/progress 更新；不执行额外安全扫描、staged diff 复核或 commit message 门禁。若发现实现、测试或文档证据不完整，回到对应阶段修复后再 Finalize。
 
 Finalize 出口：commit 已创建、Acceptance Criteria 全部通过，Tracker 与工作区反映真实完成状态。
 

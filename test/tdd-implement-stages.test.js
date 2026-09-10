@@ -71,7 +71,6 @@ test('Contract performs the required Preflight once', () => {
   assert.match(stages, /test、typecheck、build 命令/);
   assert.match(stages, /subagent model/);
   assert.match(stages, /browser 或 Playwright/);
-  assert.match(stages, /敏感信息扫描脚本/);
   assert.match(stages, /真实运行验证方式/);
   assert.match(stages, /验证矩阵已建立/);
 });
@@ -177,16 +176,13 @@ test('Verify limits review to one round with two independent axis-specific revie
   assert.match(stages, /不生成 `review-\*\.md`/);
 });
 
-test('Finalize contains docs, staged diff, history, and commit gates', () => {
-  assert.match(stages, /README\/docs\/config\/package 与实现一致/);
-  assert.match(stages, /Scope Ledger/);
-  assert.match(stages, /敏感信息检查/);
-  assert.match(stages, /git diff --cached/);
-  assert.match(stages, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
-  assert.match(stages, /暂存区只包含当前 issue/);
-  assert.match(stages, /独立 commit/);
-  assert.match(stages, /scan-sensitive\.sh/);
-  assert.match(stages, /Git history preservation/);
+test('Finalize commits directly after Verify without extra safety or staged-diff gates', () => {
+  assert.match(stages, /README\/docs\/config\/package 同步/);
+  assert.match(stages, /直接创建一个独立 commit/);
+  assert.match(stages, /不执行额外敏感信息\/安全扫描/);
+  assert.match(stages, /不做 `git diff --cached` 复核/);
+  assert.match(stages, /不设置额外 commit message 门禁/);
+  assert.match(stages, /仓库级 Git 安全与历史保护规则仍然适用/);
 });
 
 test('Finalize closes the tracker only after the three stages', () => {
@@ -298,7 +294,7 @@ test('orchestration A5 classifies rollback and conflicts', () => {
   assert.match(orchestration, /Contract 歧义/);
   assert.match(orchestration, /Red-Green 的有效 Red/);
   assert.match(orchestration, /Verify 的测试/);
-  assert.match(orchestration, /Finalize 的 docs/);
+  assert.match(orchestration, /Finalize 的必要 docs/);
   assert.match(orchestration, /全量测试失败/);
   assert.match(orchestration, /Blocked by/);
   assert.match(orchestration, /多 issue 预期修改同一文件/);
@@ -311,10 +307,11 @@ test('template mirrors the three tdd-implement files', () => {
   assert.equal(normalize(readFileSync(templateOrchestrationPath, 'utf8'), MAP_SKILL), orchestration);
 });
 
-test('tdd-implement owns Finalize checks without commit-check skill coupling', () => {
+test('tdd-implement keeps Finalize lightweight and avoids commit-check coupling', () => {
   assert.doesNotMatch(skill, /commit-check/);
   assert.doesNotMatch(stages, /\[commit-check\]/);
   assert.doesNotMatch(orchestration, /commit-check/);
-  assert.match(stages, /scan-sensitive\.sh/);
-  assert.match(stages, /敏感信息扫描脚本/);
+  assert.doesNotMatch(skill, /scan-sensitive\.sh/);
+  assert.doesNotMatch(stages, /scan-sensitive\.sh/);
+  assert.doesNotMatch(orchestration, /scan-sensitive\.sh/);
 });

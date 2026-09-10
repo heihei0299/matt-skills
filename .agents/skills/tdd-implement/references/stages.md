@@ -60,9 +60,8 @@ Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finaliz
    - 可用的 test、typecheck、build 命令；
    - 可用的 subagent model；
    - 可用的 browser 或 Playwright 路径；
-   - 可用的敏感信息扫描脚本；
    - ticket 要求的真实运行验证方式。
-6. 建立一次验证矩阵，列出 targeted tests、typecheck、全量测试、必要 build、smoke/package/security check 和真实运行验证，并记录各项的触发条件，后续只复用这份矩阵。
+6. 建立一次验证矩阵，列出 targeted tests、typecheck、全量测试、必要 build、smoke/package check 和真实运行验证，并记录各项的触发条件，后续只复用这份矩阵。
 7. 识别公共测试边界和 Behaviors。一个 Seam 是一个公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 Seam 可以包含多个 Behaviors。每个 Behavior 明确输入、可观察输出、对应 Acceptance Criterion 和验证层级。
 8. spec 已确认且未变化的 Seam 直接复用；只有出现需求歧义、验收缺口、范围变化、破坏性操作或互斥方案时才请求用户确认。
 
@@ -176,22 +175,13 @@ Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finaliz
 
 - Verify 出口条件满足。
 
-### Commit 前门禁
+### Commit
 
-按以下顺序完成并记录事实：
+1. 如本次实现要求 README/docs/config/package 同步，完成必要更新。
+2. 按当前 issue 范围直接创建一个独立 commit。
+3. 不执行额外敏感信息/安全扫描，不做 `git diff --cached` 复核，也不设置额外 commit message 门禁。
 
-1. 最终逐条检查 Acceptance Criteria；
-2. 检查 README/docs/config/package 与实现一致；
-3. 复核 Scope Ledger，确认没有未记录的范围扩张；
-4. 确认证据对应最后一次代码或测试修改；
-5. 检查临时文件、构建产物和未跟踪文件；
-6. 对 staged diff 执行敏感信息检查；
-7. 执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`；
-8. 检查 commit message；
-9. 确认暂存区只包含当前 issue；
-10. 执行 `git diff --cached`，再创建当前 issue 的独立 commit。
-
-执行敏感信息扫描脚本（`bash .agents/skills/tdd-implement/scripts/scan-sensitive.sh --staged-only`），检查 staged diff、commit message 和 Git history preservation，全部通过后创建当前 issue 的独立 commit。
+仓库级 Git 安全与历史保护规则仍然适用；Finalize 不重复定义或扩展这些规则。
 
 ### Tracker 收尾
 
@@ -202,19 +192,16 @@ Commit 成功后：
 - 追加实施总结；
 - 更新 `.scratch/<feature>/progress.md` 的 `Status`、`Commit`、`Review`、`Tests`；
 - 记录 commit hash、message、最终测试命令/数量/结果和真实运行结果；
-- 清理本次产生的临时进程、目录和一次性文件；
 - 确认下一 issue 的 blockers 已解除。
 
-Finalize 开始后不新增产品 Behavior。若实现、测试或文档不完整，回到对应阶段；不要在 Tracker 收尾后继续修改源码，也不要通过额外 docs-only commit 掩盖遗漏。只有三个阶段与 Finalize 全部通过，才可把 issue 标记为 `resolved`。
+Finalize 开始后不新增产品 Behavior。若实现、测试或文档不完整，回到对应阶段；只有三个阶段与 Finalize 全部通过，才可把 issue 标记为 `resolved`。
 
 ### 出口条件
 
 - commit 已创建且为当前 issue 的独立提交；
 - Acceptance Criteria 全部通过；
 - issue 状态为 `resolved`（无关联 issue 的直接 spec 则在会话中输出总结）；
-- 实施总结和 `progress.md` 已同步；
-- 工作区符合预期，无本次临时产物或残留未跟踪文件；
-- 文档与实现一致，Git 历史保护校验通过。
+- 实施总结和 `progress.md` 已同步。
 
 ---
 
@@ -266,6 +253,6 @@ Progress: pending | in_progress | done | blocked
 | ① Contract | 需求歧义、验收缺口、范围变化 | → ① 补充契约和验证矩阵 |
 | ② Red-Green | 有效 Red、实现、formatter、typecheck 或相关测试失败 | → ② 修复当前 Behavior |
 | ③ Verify | 测试、build、真实运行或 review finding 失败 | → ② 修复 Behavior；需求偏差 → ① |
-| Finalize | docs、敏感扫描、staged diff、commit message 或 Tracker 信息不完整 | → ①/③ 修复对应证据；仍在 Finalize 完成前解决 |
+| Finalize | 必要 docs 未同步、commit 失败或 Tracker 信息不完整 | → ①/③ 修复对应问题；仍在 Finalize 完成前解决 |
 
 多 issue 的层收敛、全量失败、依赖冲突和跨 issue 修改冲突按 [orchestration.md](orchestration.md) A5 回退，不跨 issue 无记录改动。
