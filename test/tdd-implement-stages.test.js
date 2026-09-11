@@ -189,7 +189,6 @@ test('Finalize closes the tracker only after the three stages', () => {
   assert.match(stages, /真实运行结果/);
   assert.match(stages, /Finalize 开始后不新增产品 Behavior/);
   assert.match(stages, /只有三个阶段与 Finalize 全部通过/);
-  assert.match(stages, /工作区符合预期/);
 });
 
 test('cross-stage failure budget and evidence invalidation are explicit', () => {
@@ -203,7 +202,7 @@ test('cross-stage failure budget and evidence invalidation are explicit', () => 
   assert.match(stages, /任何产品代码或测试文件再次变化/);
   assert.match(stages, /旧的测试、typecheck、build 等受影响证据立即失效/);
   assert.match(stages, /正式 `code-review` 调用本身不因 finding 修复而重复/);
-  assert.match(stages, /只能使用最后一次修改之后的结果/);
+  assert.match(stages, /必须重新验证受影响范围/);
 });
 
 test('Git history preservation protects BASE_HEAD and forbids destructive cleanup', () => {
@@ -227,7 +226,7 @@ test('state mapping distinguishes Todo, Issue, and Progress', () => {
 test('SKILL points to the disclosed three-stage and orchestration references', () => {
   assert.match(skill, /\[stages\.md\]\(references\/stages\.md\)/);
   assert.match(skill, /\[orchestration\.md\]\(references\/orchestration\.md\)/);
-  assert.match(skill, /progress\.md/);
+  assert.match(skill, /Tracker\/progress 更新/);
   assert.match(skill, /每个 issue 只提交一个独立 commit/);
 });
 

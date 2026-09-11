@@ -35,13 +35,13 @@ test('template excludes repo-local command while workspace keeps it', () => {
   assert.deepEqual(templateCommands, workspaceCommands);
 });
 
-test('distributed tdd-implement owns its sensitive scan dependency', () => {
-  const expected = path.join(ROOT, 'template/.agents/skills/tdd-implement/scripts/scan-sensitive.sh');
-  assert.equal(existsSync(expected), true);
+test('distributed tdd-implement delegates sensitive scan (no bundled script)', () => {
+  assert.equal(existsSync(path.join(ROOT, '.agents/skills/tdd-implement/scripts/scan-sensitive.sh')), false);
+  assert.equal(existsSync(path.join(ROOT, 'template/.agents/skills/tdd-implement/scripts/scan-sensitive.sh')), false);
   const content = readFileSync(
     path.join(ROOT, 'template/.agents/skills/tdd-implement/references/stages.md'),
     'utf8',
   );
-  assert.match(content, /tdd-implement\/scripts\/scan-sensitive\.sh/);
+  assert.doesNotMatch(content, /tdd-implement\/scripts\/scan-sensitive\.sh/);
   assert.doesNotMatch(content, /commit-check\/scripts\/scan-sensitive\.sh/);
 });
