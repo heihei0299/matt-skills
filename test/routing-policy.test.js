@@ -30,7 +30,6 @@ test('behavior routing lists the current intent branches', () => {
     assert.match(route, /原型 \/ PoC → `prototype`/);
     assert.match(route, /简单修改 → 直接实现/);
     assert.match(route, /TDD \/ 集成测试 → `tdd`/);
-    assert.match(route, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
     assert.match(route, /代码审查 → `code-review`/);
     assert.match(route, /设计质询 → `grilling`/);
     assert.match(route, /领域建模 → `domain-modeling`/);
@@ -51,4 +50,6 @@ test('behavior routing lists the current intent branches', () => {
     assert.doesNotMatch(route, /`implement`/);
     assert.doesNotMatch(route, /显式触发|可选（需 `--all`）/);
   }
+  assert.match(agents, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
+  assert.doesNotMatch(templateAgents, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
 });

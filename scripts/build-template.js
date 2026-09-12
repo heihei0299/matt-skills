@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cp, readdir, rm, mkdir, writeFile } from 'node:fs/promises';
+import { cp, readdir, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isRepoLocalSkill } from '../bin/skill-boundaries.js';
@@ -68,7 +68,13 @@ async function main() {
   }
   await tryCopy(path.join(ROOT, '.pi/prompts/issue-audit.md'), path.join(ROOT, 'template/.pi/prompts/issue-audit.md'));
   await tryCopyDir(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
-  await cp(path.join(ROOT, 'AGENTS.md'), path.join(ROOT, 'template/AGENTS.md'));
+  const agents = await readFile(path.join(ROOT, 'AGENTS.md'), 'utf8');
+  await writeFile(
+    path.join(ROOT, 'template/AGENTS.md'),
+    agents
+      .replace('* bug / 异常 / 性能 → `diagnose-fix`\n', '')
+      .replace('* 优先于 `Read`、`grep`、`rg`、`find` 和代码探索子代理。\n', ''),
+  );
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.opencode/docs/agents'));

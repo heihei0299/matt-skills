@@ -123,10 +123,13 @@ test('template/.pi/prompts carries the pi issue-audit command in sync', () => {
   assert.match(ocCommand, /^agent: /m, 'opencode source keeps its subagent delegation');
 });
 
-test('template/AGENTS.md mirrors the root AGENTS.md (path-mapped)', () => {
+test('template/AGENTS.md mirrors root AGENTS.md except intentional template omissions', () => {
+  const expected = readFileSync(root('AGENTS.md'), 'utf8')
+    .replace('* bug / 异常 / 性能 → `diagnose-fix`\n', '')
+    .replace('* 优先于 `Read`、`grep`、`rg`、`find` 和代码探索子代理。\n', '');
   assert.equal(
     normalize(readFileSync(root('template/AGENTS.md'), 'utf8'), MAP_AGENTS),
-    readFileSync(root('AGENTS.md'), 'utf8'),
+    expected,
   );
 });
 
