@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implement Review Loop"
+  short_description: "Implement with an independent review loop"
+policy:
+  allow_implicit_invocation: false
