@@ -1,6 +1,6 @@
 # 三阶段详细定义 + Finalize
 
-单 `spec` / 单 `task` 与多 `task` 共用下列三个交付阶段；Verify 通过后执行 Finalize 收尾，Finalize 不计入阶段。多 issue 的依赖图、Kahn 分层、层收敛、全量收敛和回退/冲突处理见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
+单 `spec` / 单 `task` 与多 `task` 共用下列三个交付阶段；Verify 通过后执行 Finalize 收尾，Finalize 不计入阶段。多 issue 的依赖图、Kahn 分层、层收敛、最终收敛和回退/冲突处理见 [orchestration.md](orchestration.md)。TDD 语义以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，不在此重写。
 
 ## 目录
 
@@ -61,7 +61,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finaliz
    - `code-review` 可用性；
    - 可用的 browser 或 Playwright 路径；
    - ticket 要求的真实运行验证方式。
-6. 建立一次验证矩阵，列出 targeted tests、typecheck、全量测试、必要 build、smoke/package check 和真实运行验证，并记录各项的触发条件，后续只复用这份矩阵。
+6. 建立一次验证矩阵，列出 targeted tests、typecheck、必要 build、smoke/package check 和真实运行验证，并记录各项的触发条件，后续只复用这份矩阵。
 7. 识别公共测试边界和 Behaviors。一个 Seam 是一个公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 Seam 可以包含多个 Behaviors。每个 Behavior 明确输入、可观察输出、对应 Acceptance Criterion 和验证层级。
 8. spec 已确认且未变化的 Seam 直接复用；只有出现需求歧义、验收缺口、范围变化、破坏性操作或互斥方案时才请求用户确认。
 
@@ -142,8 +142,7 @@ Seam 或专项测试绿色不等于 issue 完成；只有三个阶段与 Finaliz
 
 ### 测试与真实运行验证
 
-- 多 issue 模式只运行当前 issue 影响范围内的完整测试；不在每个 issue 重复运行全仓测试。全部 issues 完成后由 orchestration A4 运行一次全仓测试。
-- 单 issue 或单 spec 模式运行仓库完整测试。按照 Contract 的验证矩阵执行，不同时运行等价命令。
+- 单 issue / 单 spec 与多 issue 均只运行当前 issue 影响范围内的测试，按照 Contract 的验证矩阵执行，不同时运行等价命令；不因进入 Verify 自动扩大测试范围。
 - ticket 要求真实运行时，优先使用专用 browser 工具，其次使用项目已有 Playwright；HTTP/CLI 只能补充 API 验证，不能替代 WebUI 验证。
 - 真实进程验证使用隔离配置和临时端口，保存 PID，记录实际请求结果或页面可见结果，结束时清理进程和临时目录。
 
@@ -252,4 +251,4 @@ Progress: pending | in_progress | done | blocked
 | ③ Verify | 测试、build、真实运行或 review finding 失败 | → ② 修复 Behavior；需求偏差 → ① |
 | Finalize | 必要 docs 未同步、commit 失败或 Tracker 信息不完整 | → ①/③ 修复对应问题；仍在 Finalize 完成前解决 |
 
-多 issue 的层收敛、全量失败、依赖冲突和跨 issue 修改冲突按 [orchestration.md](orchestration.md) A5 回退，不跨 issue 无记录改动。
+多 issue 的层收敛、最终收敛、依赖冲突和跨 issue 修改冲突按 [orchestration.md](orchestration.md) A5 回退，不跨 issue 无记录改动。

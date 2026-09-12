@@ -16,7 +16,7 @@ disable-model-invocation: true
 - **多 issue**：`.scratch/<feature>/issues/` 下存在多个 `Type: task` 文件时，先读取 [orchestration.md](references/orchestration.md)，按 `Blocked by` 构建 DAG、Kahn 分层，再由主代理按层串行完成各 issue。
 - `Type: research`、`prototype`、`grilling` 分流到对应技能，不进入本技能。
 
-多 issue 的 A0-A5 是编排控制活动，不是额外的产品交付阶段：依赖图、分层、串行调度、层收敛、全量收敛和回退/冲突处理的详规只在 [orchestration.md](references/orchestration.md) 中维护。
+多 issue 的 A0-A5 是编排控制活动，不是额外的产品交付阶段：依赖图、分层、串行调度、层收敛、最终收敛和回退/冲突处理的详规只在 [orchestration.md](references/orchestration.md) 中维护。
 
 ## 三阶段 Steps
 
@@ -40,7 +40,7 @@ Finalize 出口：commit 已创建、Acceptance Criteria 全部通过，Tracker 
 - 一个 seam 是公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 seam 可以包含多个 Behaviors。Seam/Behavior 的细节和 Todo 粒度只在进入 Step ② 时读取 [red-green.md](references/red-green.md)。
 - 每个 issue 只在 Verify 的最终 diff 稳定后调用一次 `code-review`；审查维度、reviewer 数量、提示词和输出格式全部由 `code-review` 自己定义，`tdd-implement` 不复制这些规则。`code-review` 未完成或存在 blocking finding 时 issue 不得收敛；A3 层收敛不再次调用 review。
 - 当前 issue 的范围、Acceptance Criteria、Out of Scope、测试/typecheck/build/真实运行证据和最终 commit 必须可追溯。Seam 或专项测试绿色不代表 issue 完成；三个阶段出口与 Finalize 全部满足后才可标记 `resolved`。
-- 多 issue 模式中，每个 issue 只提交一个独立 commit；issue 影响范围测试在 Step ③ 执行，全仓测试由 orchestration 的 A4 在全部 issue 完成后执行一次。
+- 多 issue 模式中，每个 issue 只提交一个独立 commit；issue 影响范围测试在 Step ③ 执行，A4 只做最终编排收敛，不额外扩大测试范围。
 
 ## 引用
 

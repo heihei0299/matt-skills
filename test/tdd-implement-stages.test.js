@@ -16,6 +16,8 @@ const templateOrchestrationPath = path.join(dir, 'template', '.agents', 'skills'
 const skill = readFileSync(skillPath, 'utf8');
 const stages = readFileSync(stagesPath, 'utf8');
 const orchestration = readFileSync(orchestrationPath, 'utf8');
+const contract = readFileSync(path.join(dir, '.agents', 'skills', 'tdd-implement', 'references', 'contract.md'), 'utf8');
+const verify = readFileSync(path.join(dir, '.agents', 'skills', 'tdd-implement', 'references', 'verify.md'), 'utf8');
 
 test('frontmatter triggers on spec/ticket test-first implementation', () => {
   assert.match(skill, /name: tdd-implement/);
@@ -136,8 +138,8 @@ test('Red-Green carries continuity and chunking rules', () => {
 test('Verify follows test, build, runtime, and one review in order', () => {
   const ordered = /当前 issue 影响范围测试[\s\S]*必要 build[\s\S]*必要真实运行验证[\s\S]*调用一次 code-review/;
   assert.match(stages, ordered);
-  assert.match(stages, /多 issue 模式只运行当前 issue 影响范围内的完整测试/);
-  assert.match(stages, /单 issue 或单 spec 模式运行仓库完整测试/);
+  assert.match(stages, /单 issue \/ 单 spec 与多 issue 均只运行当前 issue 影响范围内的测试/);
+  assert.match(stages, /不因进入 Verify 自动扩大测试范围/);
   assert.match(stages, /不同时运行等价命令/);
   assert.match(stages, /专用 browser 工具/);
   assert.match(stages, /项目已有 Playwright/);
@@ -236,7 +238,7 @@ test('orchestration defines A0-A5 without adding delivery stages', () => {
   assert.match(orchestration, /A1：Kahn 拓扑分层/);
   assert.match(orchestration, /A2：分层串行调度/);
   assert.match(orchestration, /A3：层收敛/);
-  assert.match(orchestration, /A4：全量收敛/);
+  assert.match(orchestration, /A4：最终收敛/);
   assert.match(orchestration, /A5：回退与冲突处理/);
 });
 
@@ -266,20 +268,20 @@ test('orchestration A2 runs three stages then Finalize serially per issue', () =
   assert.match(orchestration, /③ Verify/);
   assert.match(orchestration, /Finalize（非阶段/);
   assert.match(orchestration, /独立 commit/);
-  assert.match(orchestration, /全仓测试不在每个 issue 中重复执行/);
+  assert.match(orchestration, /编排层不额外扩大测试范围/);
   assert.match(orchestration, /只调用一次 `code-review`/);
   assert.match(orchestration, /内部方法完全由 `code-review` 定义/);
   assert.match(orchestration, /回执卡片/);
   assert.match(orchestration, /Status\/Commit\/Review\/Tests/);
 });
 
-test('orchestration converges layers and runs full regression once', () => {
+test('orchestration converges layers without expanding test scope', () => {
   assert.match(orchestration, /A3：层收敛/);
   assert.match(orchestration, /所有 issue `Status: resolved`/);
   assert.match(orchestration, /git status/);
-  assert.match(orchestration, /A4：全量收敛/);
-  assert.match(orchestration, /一次仓库全量测试/);
-  assert.match(orchestration, /多 issue 流程唯一的全量回归点/);
+  assert.match(orchestration, /A4：最终收敛/);
+  assert.match(orchestration, /不额外扩大测试范围/);
+  assert.match(orchestration, /只重新验证受影响范围/);
   assert.match(orchestration, /汇总只在对话输出/);
 });
 
@@ -289,10 +291,16 @@ test('orchestration A5 classifies rollback and conflicts', () => {
   assert.match(orchestration, /Red-Green 的有效 Red/);
   assert.match(orchestration, /Verify 的测试/);
   assert.match(orchestration, /Finalize 的必要 docs/);
-  assert.match(orchestration, /全量测试失败/);
+  assert.match(orchestration, /验证证据失效/);
   assert.match(orchestration, /Blocked by/);
   assert.match(orchestration, /多 issue 预期修改同一文件/);
   assert.match(orchestration, /不跨 issue 无记录改动/);
+});
+
+test('tdd-implement does not prescribe repository-wide regression runs', () => {
+  for (const doc of [skill, contract, verify, stages, orchestration]) {
+    assert.doesNotMatch(doc, /全量测试|全仓测试|全量回归|仓库完整测试|全量收敛/);
+  }
 });
 
 test('template mirrors the three tdd-implement files', () => {

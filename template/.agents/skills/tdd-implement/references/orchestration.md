@@ -10,7 +10,7 @@
 - [A1：Kahn 拓扑分层](#a1kahn-拓扑分层)
 - [A2：分层串行调度](#a2分层串行调度)
 - [A3：层收敛](#a3层收敛)
-- [A4：全量收敛](#a4全量收敛)
+- [A4：最终收敛](#a4最终收敛)
 - [A5：回退与冲突处理](#a5回退与冲突处理)
 
 ---
@@ -80,7 +80,7 @@ for each layer Li in L1..Ln:
 全部层完成后进入 A4
 ```
 
-每个 issue 的 Verify 只运行当前 issue 影响范围内的完整测试；全仓测试不在每个 issue 中重复执行。当前 issue 的最终 diff 稳定后只调用一次 `code-review`；review 的内部方法完全由 `code-review` 定义。修复 blocking finding 后执行受影响验证和 finding delta recheck，不重复调用完整 `code-review`。
+每个 issue 的 Verify 只运行当前 issue 影响范围内的测试；编排层不额外扩大测试范围。当前 issue 的最终 diff 稳定后只调用一次 `code-review`；review 的内部方法完全由 `code-review` 定义。修复 blocking finding 后执行受影响验证和 finding delta recheck，不重复调用完整 `code-review`。
 
 主代理在层内和层间连续调度：一个 issue 的 Finalize 出口满足后，立即取下一个 issue，直到全部层完成或发生明确外部阻塞。进度输出并入执行序列，不在正常切换点等待用户“继续”。
 
@@ -129,11 +129,11 @@ A3 只做编排收敛，不再次调用 `code-review`；正式 review 已在每�
 
 任一项失败，定位到该层失败 issue，按 A5 回退并重做该 issue 的受影响阶段或 Behavior，然后重新收敛本层。
 
-## A4：全量收敛
+## A4：最终收敛
 
 全部层完成且各层收敛通过后：
 
-1. 按 A0 的验证矩阵运行一次仓库全量测试；这是多 issue 流程唯一的全量回归点。只有修复全量失败后才允许必要重跑；
+1. 汇总并确认各 issue 的相关测试、typecheck/build、真实运行和 review 证据仍对应最终状态；若后续改动使证据失效，只重新验证受影响范围；
 2. 执行 `git merge-base --is-ancestor $BASE_HEAD HEAD`；失败时按 A5 恢复后重验；
 3. 执行 `git status`，确认无 `[DEBUG-...]`、一次性脚本或未跟踪临时文件；
 4. 汇总各 issue 回执卡片的 commit、Behaviors、Acceptance Criteria、测试、真实运行和文档对齐结果；汇总只在对话输出，不另写汇总文件。
@@ -141,7 +141,7 @@ A3 只做编排收敛，不再次调用 `code-review`；正式 review 已在每�
 ### A4 出口
 
 - 全部 issue 已有独立 commit、实施总结和 `progress.md` 派生记录；
-- 全量测试通过；
+- 各 issue 的受影响验证证据仍对应最终状态；
 - 工作区卫生、历史校验和真实运行要求均满足；
 - `progress.md` 与 `issues/*.md` 一致，不一致时以 issue 真相源为准并修复派生视图。
 
@@ -156,7 +156,7 @@ A5 负责所有编排级失败，不把失败静默吞掉，也不把不相关�
 | Red-Green 的有效 Red、实现、typecheck 或 targeted test 失败 | 回到该 issue 的 Red-Green，修复当前 Behavior 并重新验证 |
 | Verify 的测试、build、真实运行或 review blocking finding 失败 | 回到受影响 issue 的对应阶段；修复后只做受影响检查和 delta review |
 | Finalize 的必要 docs、commit 或 Tracker 失败 | 保持 issue 未 resolved，修复 Finalize 问题后重新验证 |
-| 全量测试失败 | 定位到引入失败的 issue，按上述路径修复；只在修复后重跑必要范围和全量测试 |
+| A4 收敛发现验证证据失效 | 定位到受影响 issue，按上述路径修复；只重新验证受影响范围 |
 | `Blocked by` 依赖未完成 | 后续 issue 保持 `blocked`，前置 issue resolved 后自动解阻 |
 | 多 issue 预期修改同一文件 | 记录冲突，按编号串行；无法安全归属时暂停并请求用户决定 |
 | Git 历史祖先校验失败 | 立即停止写入，使用 `git reflog` 找回 `BASE_HEAD` 之后的提交，校验通过后继续 |

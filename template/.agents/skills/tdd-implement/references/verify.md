@@ -8,7 +8,7 @@
 
 ## 规则
 
-- 单 issue / 单 spec：按 Contract 验证矩阵运行完整相关测试；多 issue：只跑当前 issue 影响范围，全仓测试留给 orchestration A4。
+- 单 issue / 单 spec 与多 issue 均按 Contract 验证矩阵运行当前 issue 影响范围测试；不因进入 Verify 自动扩大测试范围。
 - ticket 要求真实运行时，优先专用 browser，其次项目已有 Playwright；HTTP/CLI 不能替代 WebUI 可见验证。
 - 临时进程必须使用隔离配置/端口，记录 PID 与实际结果，结束后清理。
 - 当前 issue 的最终 diff 稳定后，调用一次 [code-review](.agents/skills/code-review/SKILL.md)。`tdd-implement` 只规定调用时机；审查维度、reviewer 数量、提示词、上下文与输出格式以 `code-review` 为唯一事实源。
