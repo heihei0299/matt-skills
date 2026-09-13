@@ -16,24 +16,27 @@ test('grill-to-spec is a thin upstream orchestrator', () => {
   assert.match(skill, /to-spec/);
   assert.match(skill, /只做两个上游 skill 的编排/);
   assert.match(skill, /不写代码、不修改源码或测试/);
-  assert.match(skill, /只确认本次 seam|seam 提案/);
+  assert.match(skill, /seam 是共识的一部分/);
   assert.ok(skill.split(/\r?\n/).length < 65, 'orchestrator should stay concise');
 });
 
 test('grill-to-spec carries its own turn continuity rule', () => {
   assert.match(skill, /回合连续性/);
   assert.match(skill, /Long-Horizon Skill/);
-  assert.match(skill, /阶段 ① 达到出口后立即进入阶段 ②/);
-  assert.match(skill, /进度汇报.*不是回合终点/);
+  assert.match(skill, /阶段 ①.*阶段 ②/s);
+  assert.match(skill, /进度汇报和阶段切换不是回合终点/);
   assert.match(skill, /不要求用户额外回复“继续”/);
 });
 
 test('grill-to-spec writes artifacts after consensus without showing their bodies', () => {
-  assert.match(skill, /ADR：决策共识 → 直接落盘/);
-  assert.match(skill, /spec\/issue：共识与 seam 达成后直接写入\/发布/);
+  assert.match(skill, /最终决策清单确认后再写入/);
+  assert.match(skill, /按 ADR → spec → issue 的顺序执行/);
+  assert.match(skill, /不展示任何 ADR\/spec\/issue 正文或草稿/);
+  assert.match(skill, /不单独制造发布确认/);
   assert.match(skill, /ready-for-agent/);
-  assert.match(rules, /不向用户展示 ADR 正文/);
-  assert.match(rules, /issue 正文不在对话中展示/);
+  assert.match(rules, /feature slug.*幂等键/);
+  assert.match(rules, /重跑从第一个未完成出口继续/);
+  assert.match(rules, /不自动创建 Git commit/);
   assert.doesNotMatch(skill, /展示完整草稿/);
   assert.doesNotMatch(skill, /用户明确确认后才写入/);
   assert.doesNotMatch(skill, /一次明确确认/);

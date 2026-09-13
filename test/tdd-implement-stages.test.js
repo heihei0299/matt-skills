@@ -297,10 +297,10 @@ test('orchestration A5 classifies rollback and conflicts', () => {
   assert.match(orchestration, /不跨 issue 无记录改动/);
 });
 
-test('tdd-implement does not prescribe repository-wide regression runs', () => {
-  for (const doc of [skill, contract, verify, stages, orchestration]) {
-    assert.doesNotMatch(doc, /全量测试|全仓测试|全量回归|仓库完整测试|全量收敛/);
-  }
+test('Verify keeps validation scoped to the current issue', () => {
+  assert.match(verify, /当前 issue 影响范围测试/);
+  assert.match(stages, /不因进入 Verify 自动扩大测试范围/);
+  assert.match(orchestration, /编排层不额外扩大测试范围/);
 });
 
 test('template mirrors the three tdd-implement files', () => {
