@@ -2,7 +2,42 @@
 
 面向项目仓库的 Agent skills 与配置模板。模板包含共享 skills、`AGENTS.md`、项目上下文占位文件，以及 pi / opencode 所需的项目配置。
 
-## 快速开始
+## 模板内容
+
+```text
+template/
+├── AGENTS.md                 Agent 行为路由与项目上下文入口
+├── PROJECT.md                目标项目填写的目标、范围和主要入口
+├── .agents/skills/           共享 skills 的唯一项目级来源
+├── .opencode/                opencode agents、commands、docs
+└── .pi/                      pi prompts、docs 与项目自定义 skills 占位
+```
+
+- `PROJECT.md` 描述项目是什么；操作规则放在 `AGENTS.md`。
+- `.opencode/CONTEXT.md` / `.pi/CONTEXT.md` 保存领域术语与边界。
+- `.opencode/skills/` 与 `.pi/skills/` 仅用于项目自定义 skills。
+- `ci-guard`、`commit-check` 是本仓库维护用的 repo-local skills，不会分发到目标项目。
+
+## 独有 skill 分发边界
+
+本仓库有 7 个独有（proprietary）skills：
+
+### 可分发的 5 个
+
+- `tdd-implement`
+- `diagnose-fix`
+- `grill-to-spec`
+- `scaffold-functional-test`
+- `show-me`
+
+### 仓库内部的 2 个
+
+- `ci-guard`
+- `commit-check`
+
+repo-local skills 不会通过 `init`、`install`、`sync` 分发到用户项目。
+
+## 初始化
 
 在目标仓库根目录执行：
 
@@ -21,21 +56,7 @@ npx @heihei0299/matt-skills sync --dry-run --json
 
 `init` 默认保护已有 `AGENTS.md`；需要刷新完整模板时使用 `init --all`。`sync` 不删除目标项目的额外文件或自定义 skills。
 
-## 模板内容
-
-```text
-template/
-├── AGENTS.md                 Agent 行为路由与项目上下文入口
-├── PROJECT.md                目标项目填写的目标、范围和主要入口
-├── .agents/skills/           共享 skills 的唯一项目级来源
-├── .opencode/                opencode agents、commands、docs
-└── .pi/                      pi prompts、docs 与项目自定义 skills 占位
-```
-
-- `PROJECT.md` 描述项目是什么；操作规则放在 `AGENTS.md`。
-- `.opencode/CONTEXT.md` / `.pi/CONTEXT.md` 保存领域术语与边界。
-- `.opencode/skills/` 与 `.pi/skills/` 仅用于项目自定义 skills。
-- `ci-guard`、`commit-check` 是本仓库维护用的 repo-local skills，不会分发到目标项目。
+默认 programming 范围中的 4 个独有 skills 是 `tdd-implement`、`diagnose-fix`、`grill-to-spec`、`show-me`。
 
 ## CLI
 
@@ -54,6 +75,17 @@ npx @heihei0299/matt-skills check [--all] [--json] [--upstream <url>] [--ref <re
 - `--tools <list>`：选择 `codex`、`pi`、`opencode` 或 `claude`；项目级共享 skills 统一写入 `.agents/skills/`。
 - `--global`：写入用户级 skills 目录。
 - `--dry-run`：只检查差异，不写入；`--json` 输出机器可读结果。
+
+## Codex CLI 支持
+
+Codex 与其他 harness 共用项目级 `.agents/skills/` 唯一共享源；全局 skills 位于 `~/.codex/skills`。
+
+```sh
+npm run codex:smoke
+CODEX_E2E=1 npm run codex:smoke
+```
+
+本项目不包含 Codex Cloud、Codex 专用 commands、plugins 或 MCP 配置。
 
 ## 上游同步
 
