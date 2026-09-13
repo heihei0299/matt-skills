@@ -23,6 +23,7 @@ const SKILL_NAMES = [
   'grilling',
   'handoff',
   'implement',
+  'implement-review-loop',
   'improve-codebase-architecture',
   'instance-test',
   'prototype',
