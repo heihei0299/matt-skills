@@ -1,231 +1,92 @@
 # matt-skills
 
-mattpocock/skills（`skills/engineering` + `skills/productivity`）的配置仓库：工作区维护完整 skill 集合，其中一部分 proprietary skill 只供本仓库使用；`template/` 只包含可分发内容，以 npm 包 `@heihei0299/matt-skills` 分发，目标仓库一条命令即完成初始化。
+面向项目仓库的 Agent skills 与配置模板。模板包含共享 skills、`AGENTS.md`、项目上下文占位文件，以及 pi / opencode 所需的项目配置。
 
-## 模板结构
+## 快速开始
 
+在目标仓库根目录执行：
+
+```sh
+npx @heihei0299/matt-skills init              # 安装默认 programming skills
+npx @heihei0299/matt-skills init --all       # 安装全部可分发 skills
 ```
+
+已有项目同步：
+
+```sh
+npx @heihei0299/matt-skills sync             # 安全增量同步默认范围
+npx @heihei0299/matt-skills sync --all       # 同步全部可分发 skills
+npx @heihei0299/matt-skills sync --dry-run --json
+```
+
+`init` 默认保护已有 `AGENTS.md`；需要刷新完整模板时使用 `init --all`。`sync` 不删除目标项目的额外文件或自定义 skills。
+
+## 模板内容
+
+```text
 template/
-├── AGENTS.md         项目级全局配置（行为路由 + 分文件指针）
-├── PROJECT.md        目标项目填写的项目目标、范围和入口
-├── .agents/
-│   └── skills/       workspace 的完整 skill 单一源；template 只携带可分发 skill，默认安装 programming 范围，--all 展开全部可分发 skill
-├── .pi/              pi-agent 项目配置
-│   ├── skills/       空占位（项目自定义技能，含 .gitkeep + README.md）
-│   ├── prompts/      issue-audit 命令（prompt template）
-│   ├── docs/agents/  5 个分文件镜像
-│   └── CONTEXT.md    术语表镜像
-└── .opencode/        opencode 项目配置
-    ├── skills/       空占位（项目自定义技能，含 .gitkeep + README.md）
-    ├── agents/       issue-audit 子代理定义
-    ├── commands/     issue-audit + 可分发的显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents）
-    ├── docs/agents/  5 个分文件（运行时纪律 / 技能设计 / issue tracker / triage labels / domain）
-    ├── CONTEXT.md    术语表
-    ├── package.json  插件依赖清单
-    └── .gitignore
+├── AGENTS.md                 Agent 行为路由与项目上下文入口
+├── PROJECT.md                目标项目填写的目标、范围和主要入口
+├── .agents/skills/           共享 skills 的唯一项目级来源
+├── .opencode/                opencode agents、commands、docs
+└── .pi/                      pi prompts、docs 与项目自定义 skills 占位
 ```
 
-## 独有 skill 分发边界
+- `PROJECT.md` 描述项目是什么；操作规则放在 `AGENTS.md`。
+- `.opencode/CONTEXT.md` / `.pi/CONTEXT.md` 保存领域术语与边界。
+- `.opencode/skills/` 与 `.pi/skills/` 仅用于项目自定义 skills。
+- `ci-guard`、`commit-check` 是本仓库维护用的 repo-local skills，不会分发到目标项目。
 
-本仓库维护 7 个独有（proprietary）skill：
-
-### 可分发的 5 个
-
-- `tdd-implement`
-- `diagnose-fix`
-- `grill-to-spec`
-- `scaffold-functional-test`
-- `show-me`
-
-默认 programming 范围中的 4 个独有 skill 是 `tdd-implement`、`diagnose-fix`、`grill-to-spec`、`show-me`；`scaffold-functional-test` 可分发但默认可选。
-
-### 仓库内部的 2 个
-
-- `ci-guard`
-- `commit-check`
-
-`ci-guard` 和 `commit-check` 只服务 matt-skills 仓库自身，不会通过 `list`、`install`、`init`、`sync`、`--all` 或 global install 分发到用户项目。workspace 保留完整集合，template 只包含可分发集合。
-
-## 初始化
-
-在目标仓库根目录执行一条命令：
+## CLI
 
 ```sh
-npx @heihei0299/matt-skills init              # 默认 programming 范围
-npx @heihei0299/matt-skills init --all       # 安装全部可分发 skill（含 productivity）
+npx @heihei0299/matt-skills list [--all] [--json]
+npx @heihei0299/matt-skills install [--all] [--tools <list>] [--global] [--dest <dir>]
+npx @heihei0299/matt-skills init [--all] [--dest <dir>]
+npx @heihei0299/matt-skills sync [--all] [--dry-run] [--json] [--dest <dir>]
+npx @heihei0299/matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
 ```
 
-`init` 默认只在目标没有 `AGENTS.md` 时初始化；已有项目默认跳过以保护定制，显式 `init --all` 会刷新模板并安装/覆盖全部可分发 skill。模板已经包含可分发内容，无需二次拉取上游；repo-local skill 不会进入目标项目。
+常用选项：
 
-选项：`--dest <path>` 指定目标目录（默认当前目录）；`--all` 包含全部可分发的非默认 skill（包括 productivity 和 optional proprietary）；已有目标使用 `init --all` 刷新，普通 `init` 跳过。
-**增量同步（已有项目）**：已有项目更新到最新模板与技能：
+- `--all`：包含全部可分发 skills，默认范围只包含 programming skills。
+- `--dest <dir>`：指定目标目录。
+- `--tools <list>`：选择 `codex`、`pi`、`opencode` 或 `claude`；项目级共享 skills 统一写入 `.agents/skills/`。
+- `--global`：写入用户级 skills 目录。
+- `--dry-run`：只检查差异，不写入；`--json` 输出机器可读结果。
+
+## 上游同步
+
+非独有 skills 来自 [mattpocock/skills](https://github.com/mattpocock/skills)。
 
 ```sh
-npx @heihei0299/matt-skills sync                                 # 默认安全增量：同步默认 programming skill（不删多余）
-npx @heihei0299/matt-skills sync --all                           # 同步全部可分发 skill（不删多余）
-npx @heihei0299/matt-skills sync --dry-run --json                # 预演：只比对不写盘（默认范围，--all 可透传）
-npx @heihei0299/matt-skills sync --dest <path> --upstream <url> --ref <ref> --json  # 选项可组合
+npx @heihei0299/matt-skills sync --dry-run --json  # 检查上游差异
+npx @heihei0299/matt-skills sync                   # 同步默认范围
+npx @heihei0299/matt-skills sync --all             # 同步全部可分发范围
 ```
 
-`sync` 专为已有项目设计，两档语义：写盘模式下默认同步默认 programming 范围，`--all` 同步全部可分发 skill；`--dry-run` 仅对比上游、不写盘，默认比较 engineering + required 的上游部分，`--all` 比较全量上游范围，打印“上游 HEAD / 本地非独有 vs 上游 / 新增/更新/删除/一致”表，`--json` 可解析，有差异 `exit 1`。上游 dry-run/check 不比较 proprietary，因为它们不属于上游；默认安全增量写盘不删多余，模板配置增量更新，旧镜像中的共享 skill 自动清理但保留项目自定义。repo-local skill 永远不新增、不覆盖、不删除，发现历史副本时只提示保留。`--dest`、`--upstream`、`--ref`、`--json`、`--all`、`--dry-run` 可透传。
-目标仓库会话即自动加载可分发共享技能（`.agents/skills/` 单一源）与项目级全局配置（行为路由表、分文件约定）；项目自定义技能可按需放入 `.pi/skills/` 或 `.opencode/skills/`（按 harness 自动发现）；`issue-audit` 以子代理 + 命令形式分发（`.opencode/agents/`、`.opencode/commands/`）；可分发的显式触发技能注册为 opencode 命令（`.opencode/commands/`，`/命令名` 触发）。
-**pi-agent 用户**：初始化命令完全相同。pi 从 `.agents/skills/` 自动发现全部可分发共享技能，无需额外指向；`.pi/skills/` 仅用于项目自定义。首次在目标仓库交互启动时 pi 会询问项目信任，用 `/trust` 保存即可。
-
-**手动方式（备选）**：无 npx 环境时，将 `template/` 整个文件夹复制到目标仓库根目录即可（已含全部可分发 skill）：
-
-```sh
-cp -r template/. /path/to/target/
-```
-
-旧的手动拉取上游步骤已不再需要；若需单独验证上游，仍可：
-
-```sh
-git clone --depth 1 https://github.com/mattpocock/skills.git /tmp/mattpocock-skills
-```
-
-## 维护约定
-
-改动工作区后，必须同步到 `template/` 对应路径，路径映射如下（同步方向单向：工作区 → 模板快照）：
-
-| 工作区 | 模板 |
-|--------|------|
-| `.agents/skills/`（workspace 完整 skill 集合：upstream + proprietary） | `template/.agents/skills/`（仅可分发 skill） |
-| `.agents/skills/` 的 harness 占位说明 | `template/.pi/skills/.gitkeep` + `README.md`、`template/.opencode/skills/.gitkeep` + `README.md`（空目录占位，供项目自定义） |
-│   │   ├── commands/     issue-audit + 可分发的显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents）
-| `.pi/prompts/issue-audit.md`（pi 命令：opencode 版适配，去 subagent frontmatter） | `template/.pi/prompts/issue-audit.md` |
-| `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
-| `scripts/build-template.js` 中的项目上下文占位模板 | `template/PROJECT.md` |
-| `CONTEXT.md` | `template/.opencode/CONTEXT.md` + `template/.pi/CONTEXT.md` |
-| `docs/agents/*` | `template/.opencode/docs/agents/*` + `template/.pi/docs/agents/*`（引用映射为 `.opencode/` 路径） |
-
-共享技能统一在 `.agents/skills` 单一源，不再双份镜像到 `.opencode/skills` / `.pi/skills`。
-`test/template-sync.test.js` 守护同步（含路径映射），漏同步测试即红。
-
-新增技能前先查上游 `mattpocock/skills` 是否已存在；仅上游没有的技能才作为 proprietary skill 落在本仓库。Proprietary skill 再分为 distributable 和 repo-local：后者只服务本仓库，不进入 template 或任何用户安装路径。上游技能通过 `scripts/sync-upstream.js` 同步到 `.agents/skills` 后，只有可分发内容会进入模板。
-
-## harness 支持
-
-模板同时面向 opencode 与 pi-agent 两种 harness：技能（Agent Skills 标准）与 `AGENTS.md` 行为路由跨 harness 通用，同一份配置两处均可运行。
-
-以下为 opencode 专属能力，**pi 下不可用**（不移植，仅文档注明）：
-
-- `issue-audit`：opencode 以 subagent + command 形式分发（`.opencode/agents/`、`.opencode/commands/`）；pi 无 subagent 机制，以 prompt template 命令分发（`.pi/prompts/issue-audit.md`，去 subagent 委托、保留完整审计流程）
-- codegraph MCP：`opencode.jsonc` 配置的代码图服务，pi 无原生 MCP
-- `explore` 子代理、`firecrawl` 网页抓取：opencode 会话能力
-
-pi 下对应能力以内置工具或已装扩展为准（`AGENTS.md`「能力边界」已按此表述）。
-
-## Codex CLI 支持
-
-本仓库将 Codex CLI 作为一等本地 harness 支持。Codex 与 pi、opencode、Claude 共用项目级 `.agents/skills/`，项目级 `AGENTS.md` 继续作为通用行为路由和约束入口。
-
-- **项目级技能**：`.agents/skills/`（唯一共享源）
-- **全局技能**：`~/.codex/skills/`
-- **不创建**：项目级 `.codex/skills/` 副本；Codex 技能不单独分叉
-- **安装映射**：`--tools codex` 使用 `.agents/skills/`，`--global --tools codex` 使用 `~/.codex/skills/`
-
-使用真实 Codex CLI 验证支持：
-
-```sh
-npm run codex:smoke                         # 默认 SKIP，不需要 Codex 凭证
-CODEX_E2E=1 npm run codex:smoke             # 显式运行真实 smoke test
-```
-
-真实 smoke test 使用临时 fixture、ephemeral 会话、read-only sandbox 和 JSONL 输出，验证 `AGENTS.md` 与最小 `codex-probe` skill 的 sentinel。结果分为 `PASS`、`SKIP`、`FAIL_ENV` 和 `FAIL_CONTRACT`；环境问题与契约失败分别返回非零退出码。运行结果会记录 `codex --version`，但不绑定最低 CLI 版本。
-
-本期不包含 Codex Cloud、Codex-specific commands、plugins 或 MCP 配置。
-## harness 目录结构
-
-两个 harness 的技能加载目录结构如下（本项目只分发项目级目录，全局目录由用户自备）：
-
-### pi-agent
-
-- **全局**：`~/.pi/agent/skills/`、`~/.agents/skills/`（用户级技能，自动发现）；配置在 `~/.pi/agent/settings.json`
-- **项目**：
-  - `.agents/skills/` — 可分发共享技能单一源（默认 programming，`--all` 全部可分发，自动发现）
-  - `.pi/skills/` — 项目自定义技能（pi 标准结构，自动发现，仅放项目本地技能）
-  - `.pi/prompts/` — pi 命令（prompt template）自动发现，如 `issue-audit.md` → `/issue-audit`
-  - `.pi/settings.json` — 已简化为空对象（历史指向 `.opencode/skills` 已移除，共享技能走 `.agents/skills`）
-### opencode
-
-- **项目**：`.agents/skills/`（可分发共享技能单一源，默认 programming，`--all` 全部可分发）、`.opencode/skills/`（项目自定义技能）、`.opencode/agents/`（子代理）、`.opencode/commands/`（命令：issue-audit + 可分发显式触发技能，`/命令名` 触发）、`.opencode/docs/`（文档）
-
-同一份技能（Agent Skills 标准）与 `AGENTS.md` 行为路由在两种 harness 下均可加载：pi 与 codex/claude 从 `.agents/skills/` 自动发现；opencode 按本模板约定同样优先读取 `.agents/skills/`（`.opencode/skills/` 仅用于项目自定义）。
-
-## 仓库 CLI
-
-仓库内提供安装管理 CLI（`bin/cli.js`，依赖 `prompts`，见 `package.json`），同时作为 npm 包 `@heihei0299/matt-skills` 分发（`npx @heihei0299/matt-skills <command>`）：
-
-```sh
-node bin/cli.js init [--dest <dir>] [--all]                               # 初始化项目：默认 programming 或全部可分发 skill
-node bin/cli.js sync [--all] [--dry-run] [--dest <path>] [--upstream <url>] [--ref <ref>] [--json]  # 同步已有项目到最新（默认编程，--all 仅同名 upsert + AGENTS.md）
-node bin/cli.js list [--json] [--all]                                            # 列出技能（默认编程）
-node bin/cli.js install [选项]                                                 # 把技能复制到目标工具目录（交互式选择，默认编程）
-node bin/cli.js check [--json] [--all] [--upstream <url>] [--ref <ref>]          # 只读检查上游技能是否最新（等价 sync --dry-run，默认范围）
-```
-
-`init` 选项：`--dest <path>` 指定目标目录（默认当前目录）；`--all` 包含全部可分发 skill，见「初始化」。
-`sync` 选项：写盘时 `--all` 更新全部可分发同名技能内容（存在则覆盖，不存在则新增）并更新 `AGENTS.md`（不跳过定制），不删多余；默认写盘只同步默认 programming；`--dry-run` 只比对上游、不写盘（默认 engineering + required 上游范围，`--all` 为全量上游范围，`--json` 可解析，有差异 `exit 1`）；`--dest <path>` 目标目录；`--upstream <url>` 上游地址；`--ref <ref>` 上游分支；`--json` JSON 输出；默认安全增量会保留目标定制。
-`check` 选项：`--json`、`--all`（默认只比较 engineering + required 上游范围；proprietary 不参与上游 compare）、`--upstream <url>`、`--ref <ref>`（等价 `sync --dry-run`）。
-
-`install` 选项：
-
-- `--dest <dir>`：复制到指定目录（覆盖工具映射）
-- `--tools <t1,t2>`：指定工具，项目级已统一 `codex/pi/opencode/claude → .agents/skills`（共享技能单一源，`.pi/skills`/`.opencode/skills` 仅用于项目自定义）
-- `--global`：安装到全局目录（`~/.codex/skills`、`~/.pi/agent/skills`、`~/.config/opencode/skills`、`~/.claude/skills`）；`--project` 回到项目级
-- `--all`：安装全部可分发 skill（交互勾选时默认只列 programming 范围）；`--force`：覆盖已存在的技能
-
-
-### 上游同步（自动更新）
-
-本仓库的 `.agents/skills/` 中 **非独有技能** 来自 `mattpocock/skills` 上游。已实现双通道自动同步：
-
-- **本地 CLI**：`matt-skills sync` 两档——`--dry-run` 只读比对（有差异 `exit 1`，`--json` 可解析）、默认安全增量与 `sync --all` 仅同名 upsert + `AGENTS.md`；`matt-skills check [--json] [--upstream <url>] [--ref <ref>]` 为只读别名（等价 `sync --dry-run`）；`matt-skills update` 已合并到 `sync`（执行提示 `update 已合并到 sync` 且 `exit 1`）
-```sh
-npx @heihei0299/matt-skills sync --dry-run --json              # 预演只读检查，JSON 输出：{ head, counts, result: { added, updated, renamed, removed, same } }
-npx @heihei0299/matt-skills sync                               # 默认安全增量（AGENTS.md 定制跳过，默认 programming）
-npx @heihei0299/matt-skills sync --all                         # 仅同名 upsert + AGENTS.md
-npx @heihei0299/matt-skills check --json             # 等价 sync --dry-run
-node scripts/sync-upstream.js --check               # 等价底层脚本（CLI sync/check 的实现）
-node scripts/sync-upstream.js --apply --dry-run
-```
-
-实现细节：`scripts/sync-upstream.js` 为单一事实源（CLI 与 Actions 共用），以 proprietary 分类契约排除本仓库独有 skill，以 `config/engineering.json` 为编程白名单，以 `config/required.json` 为独有所需白名单；上游通过 `git clone --depth 1 https://github.com/mattpocock/skills.git` 获取，比对 `SKILL.md` 的 sha256，自动处理新增/更新/重命名/删除。上游同步只维护 workspace，模板生成时再按 distributable 边界投影。
-上游重命名映射：`RENAMES = { "writing-great-skills": "writing-for-agents" }`，Actions/CLI 均会删除旧目录并复制新目录。
 ## 发布
 
-推送 `v*` 标签自动发布到 npm（GitHub Actions，见 `.github/workflows/ci.yml`）：
+推送 `v*` 标签会触发 GitHub Actions：全量测试、模板检查和 npm 发布。
 
 ```sh
-# 1. 确保 main 分支为最新且测试全绿
-git checkout main && git pull
 npm test
-
-# 2. 打标签并推送（标签即版本，v 前缀自动去除）
-git tag v1.0.1
-git push origin v1.0.1
+npm run build:template
+git tag vX.Y.Z
+git push origin main vX.Y.Z
 ```
 
-Action 流程：`checkout` → 校验标签在 `main` 分支 → `Node 24` → `npm ci` → `npm test` 全绿 → 以标签为准 `npm version <tag> --no-git-tag-version` → `npm publish --access public`（需在 GitHub Secrets 配置 `NPM_TOKEN`）。
-
-本地手动发布（备选）：
-
-```sh
-npm version <patch|minor|major>
-npm publish
-```
-
-- `prepublishOnly` 自动跑全量测试（`node --test test/*.test.js`）
-- 发布内容 = `bin/` + `template/` + `.agents/skills/` + `scripts/` + `config/` + `README.md`，由 `package.json` 的 `files` 白名单控制，`npm pack` 可预览
-- `template/` 与 `.agents/skills/` 是包内容：改动后需重新发版才对目标仓库生效
+发布需要 GitHub Secrets 中配置 `NPM_TOKEN`。模板或共享 skills 的改动需要新版本才会分发给目标项目。
 
 ## 开发
 
 ```sh
-npm test                          # 全量测试
-npm run build:template            # 从 workspace 生成仅含可分发 skill 的 template + 空占位
+npm test
+npm run build:template
 ```
 
-交互模式依赖 `prompts`（见 `package.json`）；测试见 `test/cli.test.js`、`test/cli-init.test.js`、`test/template-sync.test.js`。
+测试位于 `test/`；模板由 `scripts/build-template.js` 从工作区生成，提交前应确保模板同步测试通过。
 
-用户手动触发的功能测试：`/instance-test`（matt-skills 专属示范，见 `.agents/skills/instance-test/SKILL.md`）——验证 sync 合并 update 后的行为，`references/instances.md` 由 `scaffold-functional-test` 从 spec 生成；通用模板已废弃。新增生成器 `/scaffold-functional-test`（见 `.agents/skills/scaffold-functional-test/SKILL.md`）——读 spec 生成定制化功能测试 skill。
+## 许可证
+
+MIT
