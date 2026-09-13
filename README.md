@@ -117,7 +117,7 @@ npm test
 npm run build:template
 ```
 
-测试位于 `test/`；模板由 `scripts/build-template.js` 从工作区生成，提交前应确保模板同步测试通过。
+测试位于 `test/`；模板由 `scripts/build-template.js` 生成，`template/AGENTS.md` 的独立源是 `config/template-AGENTS.md`。提交前应确保模板同步测试通过。
 
 ## 许可证
 

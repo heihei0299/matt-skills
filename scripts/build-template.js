@@ -72,14 +72,8 @@ async function main() {
   }
   await tryCopy(path.join(ROOT, '.pi/prompts/issue-audit.md'), path.join(ROOT, 'template/.pi/prompts/issue-audit.md'));
   await tryCopyDir(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
-  const agents = await readFile(path.join(ROOT, 'AGENTS.md'), 'utf8');
-  await writeFile(
-    path.join(ROOT, 'template/AGENTS.md'),
-    agents
-      .replace('* bug / 异常 / 性能 → `diagnose-fix`\n', '')
-      .replace('* 优先于 `Read`、`grep`、`rg`、`find` 和代码探索子代理。\n', '')
-      .replace('- `CONTEXT.md`（若存在）：领域术语与边界', '- `.opencode/CONTEXT.md`（若存在）：领域术语与边界'),
-  );
+  const templateAgents = await readFile(path.join(ROOT, 'config/template-AGENTS.md'), 'utf8');
+  await writeFile(path.join(ROOT, 'template/AGENTS.md'), templateAgents);
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.opencode/docs/agents'));
