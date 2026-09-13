@@ -23,3 +23,8 @@ spec/
 .opencode.bak/
 .pi.bak/
 .scratch/
+
+# Agent harness 目录：已跟踪配置继续纳入版本控制，后续本地新增文件默认忽略
+.pi/
+.opencode/
+.agents/
