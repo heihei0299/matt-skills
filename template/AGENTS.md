@@ -11,6 +11,13 @@
 * 领域建模 → `domain-modeling`
 * 无法归类 → `ask-matt`
 \仅当关键歧义会改变结果时询问用户。
+
+## 项目上下文
+开始任务前按需读取：
+- `PROJECT.md`（若存在）：项目目标、范围和主要入口
+- `README.md`（若存在）：用户视角的使用与开发说明
+- `.opencode/CONTEXT.md`（若存在）：领域术语与边界
+
 ## CodeGraph
 仓库内代码理解首先使用：
 ```bash

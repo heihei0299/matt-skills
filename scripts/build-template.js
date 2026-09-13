@@ -29,6 +29,10 @@ async function tryCopyDir(src, dest) {
 async function main() {
   await rm(path.join(ROOT, 'template'), { recursive: true, force: true });
   await mkdir(path.join(ROOT, 'template'), { recursive: true });
+  await writeFile(
+    path.join(ROOT, 'template/PROJECT.md'),
+    '# Project Context\n\n<!-- 请在目标仓库中填写项目目标、范围、主要入口和关键约束。代理操作规则放在 AGENTS.md。 -->\n',
+  );
   // Distribution snapshot: workspace skills minus repo-local skills.
   const skillsSrc = path.join(ROOT, '.agents/skills');
   const entries = await readdir(skillsSrc, { withFileTypes: true });
@@ -73,7 +77,8 @@ async function main() {
     path.join(ROOT, 'template/AGENTS.md'),
     agents
       .replace('* bug / 异常 / 性能 → `diagnose-fix`\n', '')
-      .replace('* 优先于 `Read`、`grep`、`rg`、`find` 和代码探索子代理。\n', ''),
+      .replace('* 优先于 `Read`、`grep`、`rg`、`find` 和代码探索子代理。\n', '')
+      .replace('- `CONTEXT.md`（若存在）：领域术语与边界', '- `.opencode/CONTEXT.md`（若存在）：领域术语与边界'),
   );
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));

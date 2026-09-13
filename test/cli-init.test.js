@@ -76,6 +76,7 @@ const PROGRAMMING_SKILL_NAMES = [
 // Template files that must land in the target project root (single-source) — default programming scope.
 const TEMPLATE_FILES_PROGRAMMING = [
   'AGENTS.md',
+  'PROJECT.md',
   '.agents/skills/tdd-implement/SKILL.md',
   '.agents/skills/diagnose-fix/SKILL.md',
   '.agents/skills/tdd/SKILL.md',
@@ -89,6 +90,7 @@ const TEMPLATE_FILES_PROGRAMMING = [
 ];
 const TEMPLATE_FILES = [
   'AGENTS.md',
+  'PROJECT.md',
   '.agents/skills/tdd-implement/SKILL.md',
   '.agents/skills/diagnose-fix/SKILL.md',
   '.agents/skills/grilling/SKILL.md',

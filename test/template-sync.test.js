@@ -168,9 +168,16 @@ test('template/.pi/docs/agents mirrors the root docs/agents (path-mapped)', () =
   }
 });
 
+test('template provides a project context placeholder referenced by AGENTS.md', () => {
+  const agents = readFileSync(root('template/AGENTS.md'), 'utf8');
+  const project = readFileSync(root('template/PROJECT.md'), 'utf8');
+  assert.match(agents, /PROJECT\.md/);
+  assert.match(project, /项目目标、范围、主要入口和关键约束/);
+});
+
 test('template/ carries exactly the inheritable items', () => {
   const entries = readdirSync(root('template')).sort();
-  assert.deepEqual(entries, ['.agents', '.opencode', '.pi', 'AGENTS.md']);
+  assert.deepEqual(entries, ['.agents', '.opencode', '.pi', 'AGENTS.md', 'PROJECT.md']);
 });
 
 test('template/ internal markdown links resolve (except upstream skill refs)', () => {

@@ -7,6 +7,7 @@ mattpocock/skills（`skills/engineering` + `skills/productivity`）的配置仓�
 ```
 template/
 ├── AGENTS.md         项目级全局配置（行为路由 + 分文件指针）
+├── PROJECT.md        目标项目填写的项目目标、范围和入口
 ├── .agents/
 │   └── skills/       workspace 的完整 skill 单一源；template 只携带可分发 skill，默认安装 programming 范围，--all 展开全部可分发 skill
 ├── .pi/              pi-agent 项目配置
@@ -93,6 +94,7 @@ git clone --depth 1 https://github.com/mattpocock/skills.git /tmp/mattpocock-ski
 │   │   ├── commands/     issue-audit + 可分发的显式触发技能命令（grill-to-spec/wayfinder/to-spec/to-tickets/triage/improve-codebase-architecture/teach/handoff/writing-for-agents）
 | `.pi/prompts/issue-audit.md`（pi 命令：opencode 版适配，去 subagent frontmatter） | `template/.pi/prompts/issue-audit.md` |
 | `AGENTS.md` | `template/AGENTS.md`（引用映射为 `.opencode/` 路径） |
+| `scripts/build-template.js` 中的项目上下文占位模板 | `template/PROJECT.md` |
 | `CONTEXT.md` | `template/.opencode/CONTEXT.md` + `template/.pi/CONTEXT.md` |
 | `docs/agents/*` | `template/.opencode/docs/agents/*` + `template/.pi/docs/agents/*`（引用映射为 `.opencode/` 路径） |
 
