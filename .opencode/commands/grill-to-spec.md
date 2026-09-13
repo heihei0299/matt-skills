@@ -10,4 +10,4 @@ description: 编排 grill-with-docs → to-spec，把设计打磨成共识并发
 
 - 只编排与产出：设计打磨成共识 → 综合成 spec 发布，不写代码、不动源码
 - 产出物限：领域文档（glossary/ADR）与 spec
-- ADR 落盘必须经用户显式确认
+- 共识达成后直接写入/发布 ADR、spec 与 issue，不向用户展示正文；只报告路径或标识、状态和范围摘要

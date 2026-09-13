@@ -9,6 +9,7 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (file) => path.join(dir, file);
 const skill = readFileSync(root('.agents/skills/grill-to-spec/SKILL.md'), 'utf8');
 const rules = readFileSync(root('.agents/skills/grill-to-spec/references/rules.md'), 'utf8');
+const command = readFileSync(root('.opencode/commands/grill-to-spec.md'), 'utf8');
 
 test('grill-to-spec is a thin upstream orchestrator', () => {
   assert.match(skill, /grill-with-docs/);
@@ -27,12 +28,16 @@ test('grill-to-spec carries its own turn continuity rule', () => {
   assert.match(skill, /不要求用户额外回复“继续”/);
 });
 
-test('grill-to-spec keeps only its durable confirmation gates', () => {
-  assert.match(skill, /ADR 必须先展示完整草稿/);
-  assert.match(skill, /用户明确确认后才写入/);
-  assert.match(skill, /spec 草稿/);
-  assert.match(skill, /一次明确确认/);
+test('grill-to-spec writes artifacts after consensus without showing their bodies', () => {
+  assert.match(skill, /ADR：决策共识 → 直接落盘/);
+  assert.match(skill, /spec\/issue：共识与 seam 达成后直接写入\/发布/);
   assert.match(skill, /ready-for-agent/);
+  assert.match(rules, /不向用户展示 ADR 正文/);
+  assert.match(rules, /issue 正文不在对话中展示/);
+  assert.doesNotMatch(skill, /展示完整草稿/);
+  assert.doesNotMatch(skill, /用户明确确认后才写入/);
+  assert.doesNotMatch(skill, /一次明确确认/);
+  assert.doesNotMatch(command, /展示给用户确认|ADR 落盘必须经用户显式确认/);
   assert.doesNotMatch(skill, /完整七节模板/);
   assert.doesNotMatch(skill, /Problem Statement \/ Solution \/ User Stories/);
   assert.doesNotMatch(skill, /\| Glossary \|.*\| ADR \|.*\| Spec \|/s);
