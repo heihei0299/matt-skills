@@ -6,51 +6,76 @@ disable-model-invocation: true
 
 # TDD Implement
 
-`seam` + `red-green` 是本技能的领衔词。它把一个 spec 或 task issue 编排成三个交付阶段，并在 Verify 后执行一次非阶段的 Finalize 收尾；TDD 的红-绿语义、测试质量和 mock 边界以 [tdd 技能](.agents/skills/tdd/SKILL.md) 为唯一事实源，本技能只定义交付编排。
+完成已确认的 spec/task。TDD 的红绿语义、测试质量、seam 和 mock 规则以 [tdd](.agents/skills/tdd/SKILL.md) 为唯一事实源；本技能只负责 issue 级实现、验证、Review 与收尾编排。
 
-本技能是 **Long-Horizon Skill**：阶段按顺序连续执行，并自带 **Turn Continuity** 与 **Chunking**。术语见 `CONTEXT.md`，技能设计规则见 `docs/agents/skill-design.md`。
+## 入口
 
-## 入口与分支
+- **单 issue**：直接按下方 Steps 执行。
+- **多 issue**：存在多个 `Type: task` 时，读取 [orchestration.md](references/orchestration.md) 后按依赖顺序逐个完成。
+- `research`、`prototype`、`grilling` 类型任务分流到对应技能。
 
-- **单 issue**：单个 `.scratch/<feature>/spec.md`、等价 spec 或 `Type: task` issue，按下方三个 Steps 完成验证，再执行 Finalize 收尾。
-- **多 issue**：`.scratch/<feature>/issues/` 下存在多个 `Type: task` 文件时，先读取 [orchestration.md](references/orchestration.md)，按 `Blocked by` 构建 DAG、Kahn 分层，再由主代理按层串行完成各 issue。
-- `Type: research`、`prototype`、`grilling` 分流到对应技能，不进入本技能。
+## Steps
 
-多 issue 的 A0-A5 是编排控制活动，不是额外的产品交付阶段：依赖图、分层、串行调度、层收敛、最终收敛和回退/冲突处理的详规只在 [orchestration.md](references/orchestration.md) 中维护。
+### ① Red-Green
 
-## 三阶段 Steps
+按 `tdd` 完成当前 issue 的所有 Acceptance Criteria。
 
-按序执行；每步达到可验证出口条件后立即进入下一步。每步只读取自己的轻量 reference，避免在每个阶段重复注入完整 `stages.md`。
+将需要实现或修改的内容拆成可独立验证的 Behavior。一次只推进一个 Behavior：每个尚未实现的 Behavior 都必须分别完成 `tdd` 的 Red → Green cycle，完成后才能进入下一个 Behavior。
 
-| Step | Reference | 做什么 | 出口条件 |
-|---|---|---|---|
-| ① **Contract** | [contract.md](references/contract.md) | 读取入口，提取 Acceptance Criteria，建立 Scope Ledger、Preflight、验证矩阵和 Behavior/Seam 边界 | 需求无待决歧义，验证命令已确定；知道做什么、从哪里验证、什么不做 |
-| ② **Red-Green** | [red-green.md](references/red-green.md) | 以 Behavior 为粒度执行有效 Red → 最小 Green → formatter/typecheck → 最小相关测试 | 所有 Behaviors 均有有效 Red、实现全绿，formatter/typecheck 和最小相关测试通过 |
-| ③ **Verify** | [verify.md](references/verify.md) | 运行当前 issue 影响范围测试、必要 build、要求的真实运行验证；在最终 diff 稳定后调用一次 [code-review](.agents/skills/code-review/SKILL.md) | 最终 diff 的相关证据通过，真实运行验证完成（如要求），code-review 已完成且无 blocking finding |
+前一个 Behavior 已完成 TDD，不代表后续 Behavior 可以直接修改实现代码。
 
-## Finalize（非阶段）
+已有行为若无需修改且已由现有测试充分覆盖，不强制制造 Red。
 
-Verify 出口满足后读取 [finalize.md](references/finalize.md) 并立即收尾。Finalize 不计入交付阶段，只负责必要的 docs/README 对齐、直接创建当前 issue 的独立 commit 与 Tracker/progress 更新；不执行额外安全扫描、staged diff 复核或 commit message 门禁。若发现实现、测试或文档证据不完整，回到对应阶段修复后再 Finalize。
+**出口：**
 
-Finalize 出口：commit 已创建、Acceptance Criteria 全部通过，Tracker 与工作区反映真实完成状态。
+- 所有需要实现或修改的 Behavior 均完成各自的 Red → Green cycle；
+- Acceptance Criteria 对应行为通过相关验证。
 
-## 运行时纪律
+### ② Verify
 
-- 三个阶段都从入口连续执行到自身出口；Verify 出口满足后立即进入 Finalize：预告下一步后立即执行；进度输出并入工具调用序列，输出后继续执行。只有合规交互点、明确的外部阻塞或阶段出口条件结束当前回合。
-- 一个 seam 是公共可观察边界；一个 Behavior 是一个红-绿 cycle；一个 seam 可以包含多个 Behaviors。Seam/Behavior 的细节和 Todo 粒度只在进入 Step ② 时读取 [red-green.md](references/red-green.md)。
-- 每个 issue 只在 Verify 的最终 diff 稳定后调用一次 `code-review`；审查维度、reviewer 数量、提示词和输出格式全部由 `code-review` 自己定义，`tdd-implement` 不复制这些规则。`code-review` 未完成或存在 blocking finding 时 issue 不得收敛；A3 层收敛不再次调用 review。
-- 当前 issue 的范围、Acceptance Criteria、Out of Scope、测试/typecheck/build/真实运行证据和最终 commit 必须可追溯。Seam 或专项测试绿色不代表 issue 完成；三个阶段出口与 Finalize 全部满足后才可标记 `resolved`。
-- 多 issue 模式中，每个 issue 只提交一个独立 commit；issue 影响范围测试在 Step ③ 执行，A4 只做最终编排收敛，不额外扩大测试范围。
+读取 [verify.md](references/verify.md)，执行当前 issue 所需的最终验证。
 
-## 引用
+最终验证通过且 diff 稳定后执行完整 `code-review`。
 
-- TDD 核心规则：[tdd 技能](.agents/skills/tdd/SKILL.md)
-- 测试标准：[tdd/tests.md](.agents/skills/tdd/tests.md)
-- Mock 指南：[tdd/mocking.md](.agents/skills/tdd/mocking.md)
-- Contract：[contract.md](references/contract.md)
-- Red-Green：[red-green.md](references/red-green.md)
+#### Review
+
+每个 issue 只在 Verify 的最终 diff 稳定后调用一次完整 `code-review`；审查维度、reviewer 数量、提示词和输出格式全部由 `code-review` 自己定义，`tdd-implement` 不复制这些规则。`code-review` 未完成或存在 blocking finding 时 issue 不得收敛；多 issue 层收敛不再次调用完整 Review。
+
+若完整 Review 存在 blocking finding：
+
+1. 仅修复对应 finding，不扩大当前 issue 范围；
+2. 修复后仅对该 finding 及其直接影响执行增量 Review；
+3. 未受影响的 Review 结论继续有效；
+4. 不重新执行完整双轴 Review；
+5. 若增量 Review 仍存在问题，仅继续修复并复核剩余 finding。
+
+所有 blocking finding 关闭后 Review 才算通过。
+
+**出口：**
+
+- 当前 issue 所需最终验证通过；
+- 要求的真实运行验证完成；
+- 完整 Review 已完成；
+- 所有 blocking finding 已关闭。
+
+## Finalize
+
+Verify 通过后读取 [finalize.md](references/finalize.md)，完成当前 issue 的必要同步、独立 commit 与 tracker/progress 收尾。
+
+Finalize 不新增产品 Behavior；若发现实现或验证遗漏，回到对应 Step 完成后再收尾。
+
+## 运行纪律
+
+- Red-Green 必须覆盖当前 issue 的全部待实现 Behavior，不能只对第一个改动执行 TDD。
+- 一个 Behavior 完成后继续下一个 Behavior，直到 Step ① 出口满足。
+- Verify 只做当前 issue 必要的最终验证；已通过的等价验证不机械重复。
+- 完整双轴 Review 每个 issue 只执行一次；后续修复只执行受影响 finding 的增量 Review。
+- 当前 Step 达到出口后继续进入下一 Step；仅在需要用户决策或存在外部阻塞时暂停。
+
+## References
+
+- TDD：[tdd](.agents/skills/tdd/SKILL.md)
 - Verify：[verify.md](references/verify.md)
-- Review 方法：[code-review](.agents/skills/code-review/SKILL.md)
 - Finalize：[finalize.md](references/finalize.md)
-- 完整兼容规范：[stages.md](references/stages.md)
+- Review：[code-review](.agents/skills/code-review/SKILL.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)
