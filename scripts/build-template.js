@@ -21,14 +21,6 @@ async function tryCopy(src, dest) {
   try { await cp(src, dest); } catch {}
 }
 
-async function tryCopyDir(src, dest, filter = () => true) {
-  try {
-    await copyDirRecursive(src, dest, filter);
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
-}
-
 async function main() {
   await rm(path.join(ROOT, 'template'), { recursive: true, force: true });
   await mkdir(path.join(ROOT, 'template'), { recursive: true });
@@ -50,8 +42,8 @@ async function main() {
     '# 项目技能（opencode）\n\n此目录用于存放项目自定义技能（project-local skills）。\n共享技能统一在 `.agents/skills/`。\n',
   );
 
-  await tryCopyDir(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.opencode/agents'));
-  await tryCopyDir(
+  await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.opencode/agents'));
+  await copyDirRecursive(
     path.join(ROOT, '.opencode/commands'),
     path.join(ROOT, 'template/.opencode/commands'),
     (source) => path.basename(source) !== 'commit-check.md',
@@ -59,8 +51,10 @@ async function main() {
   for (const name of ['.gitignore', 'package.json', 'package-lock.json']) {
     await tryCopy(path.join(ROOT, '.opencode', name), path.join(ROOT, 'template/.opencode', name));
   }
-  await tryCopy(path.join(ROOT, '.pi/prompts/issue-audit.md'), path.join(ROOT, 'template/.pi/prompts/issue-audit.md'));
-  await tryCopyDir(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
+  const issueAuditPrompt = path.join(ROOT, 'template/.pi/prompts/issue-audit.md');
+  await mkdir(path.dirname(issueAuditPrompt), { recursive: true });
+  await cp(path.join(ROOT, '.pi/prompts/issue-audit.md'), issueAuditPrompt);
+  await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
   const templateAgents = await readFile(path.join(ROOT, 'config/template-AGENTS.md'), 'utf8');
   await writeFile(path.join(ROOT, 'template/AGENTS.md'), templateAgents);
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
