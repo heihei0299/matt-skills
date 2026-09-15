@@ -6,12 +6,11 @@ import { fileURLToPath } from 'node:url';
 import prompts from 'prompts';
 import {
   PROPRIETARY_SKILLS,
-  isDefaultProgrammingSkill,
-  isDistributableProprietarySkill,
   isDistributableSkill,
   isRepoLocalSkill,
   REPO_LOCAL_SKILLS,
 } from './skill-boundaries.js';
+import { resolveSkillNames } from './skill-selection.js';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
@@ -38,12 +37,6 @@ async function loadRequiredSkills() {
     REQUIRED_SKILLS = new Set(['grilling', 'grill-me', 'handoff']);
   }
   return REQUIRED_SKILLS;
-}
-function isProgrammingSkill(name, engineering, required) {
-  return isDefaultProgrammingSkill(name, engineering, required);
-}
-function isProgrammingAll(name, engineering) {
-  return isDistributableProprietarySkill(name) || engineering.has(name);
 }
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);
@@ -156,20 +149,22 @@ function parseFrontmatter(text) {
   return fields;
 }
 
-async function listSkillNames({ onlyProgramming = false } = {}) {
+async function listAvailableSkillNames() {
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-  let names = entries
+  return entries
     .filter((entry) => entry.isDirectory())
     .filter((entry) => !entry.name.endsWith('.bak'))
     .filter((entry) => entry.name !== 'skill-creator' && entry.name !== '.git')
-    .filter((entry) => !isRepoLocalSkill(entry.name))
     .map((entry) => entry.name);
-  if (onlyProgramming) {
-    const engineering = await loadEngineeringSkills();
-    const required = await loadRequiredSkills();
-    names = names.filter((name) => isProgrammingSkill(name, engineering, required));
-  }
-  return names.sort();
+}
+
+async function listSkillNames({ onlyProgramming = false } = {}) {
+  return resolveSkillNames({
+    availableNames: await listAvailableSkillNames(),
+    mode: onlyProgramming ? 'default' : 'all',
+    engineering: onlyProgramming ? await loadEngineeringSkills() : [],
+    required: onlyProgramming ? await loadRequiredSkills() : [],
+  });
 }
 
 async function listSkills({ onlyProgramming = false } = {}) {
@@ -249,11 +244,8 @@ async function promptSkills(skills) {
 
 async function installCommand({ dest, all, force, tools, global }) {
   const onlyProgramming = !all;
-  const engineering = onlyProgramming ? await loadEngineeringSkills() : null;
-  const required = onlyProgramming ? await loadRequiredSkills() : null;
   const skillNames = await listSkillNames({ onlyProgramming });
-  const skillsAll = await listSkills({ onlyProgramming: false });
-  const skills = onlyProgramming ? skillsAll.filter(s => isProgrammingSkill(s.name, engineering, required)) : skillsAll;
+  const skills = await listSkills({ onlyProgramming });
   let targets;
   if (dest) {
     targets = [{ tool: null, dir: path.resolve(process.cwd(), dest) }];
@@ -338,11 +330,10 @@ async function initCommand({ dest, all }) {
     installed = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== '.git' && e.name !== 'skill-creator' && !isRepoLocalSkill(e.name)).length;
   } catch {}
   const allSkillsFull = await listSkills({ onlyProgramming: false });
-  const engineeringForStats = await loadEngineeringSkills();
-  const requiredForStats = await loadRequiredSkills();
-  const programmingCount = allSkillsFull.filter(s => isProgrammingSkill(s.name, engineeringForStats, requiredForStats)).length;
+  const programmingSkills = await listSkills({ onlyProgramming: true });
+  const programmingCount = programmingSkills.length;
   const upstreamFull = allSkillsFull.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
-  const upstreamProg = allSkillsFull.filter((s) => !PROPRIETARY_SKILLS.has(s.name) && (engineeringForStats.has(s.name) || requiredForStats.has(s.name))).length;
+  const upstreamProg = programmingSkills.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
   const displayTotal = onlyProgramming ? programmingCount : allSkillsFull.length;
   const displayUpstream = onlyProgramming ? upstreamProg : upstreamFull;
   if (path.resolve(skillsDir) === path.resolve(SKILLS_DIR)) {
