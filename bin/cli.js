@@ -11,31 +11,12 @@ import {
   REPO_LOCAL_SKILLS,
 } from './skill-boundaries.js';
 import { resolveSkillNames } from './skill-selection.js';
+import { loadSkillSet } from './skill-config.js';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
 const ENGINEERING_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'engineering.json');
 const REQUIRED_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'required.json');
-async function loadSkillSet(file, label) {
-  let raw;
-  try {
-    raw = await readFile(file, 'utf8');
-  } catch (error) {
-    throw new Error(`unable to read ${label} skill config: ${error.message}`);
-  }
-
-  let value;
-  try {
-    value = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`invalid ${label} skill config: ${error.message}`);
-  }
-  if (!Array.isArray(value) || value.some((name) => typeof name !== 'string')) {
-    throw new Error(`invalid ${label} skill config: expected an array of strings`);
-  }
-  return new Set(value);
-}
-
 let ENGINEERING_SKILLS = null;
 async function loadEngineeringSkills() {
   if (!ENGINEERING_SKILLS) ENGINEERING_SKILLS = await loadSkillSet(ENGINEERING_PATH, 'engineering');

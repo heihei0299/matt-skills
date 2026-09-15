@@ -6,6 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { PROPRIETARY_SKILLS } from '../bin/skill-boundaries.js';
+import { loadSkillSet } from '../bin/skill-config.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_SKILLS_DIR = path.join(ROOT, '.agents', 'skills');
@@ -23,20 +24,10 @@ async function loadProprietary() {
 }
 
 async function loadEngineering() {
-  try {
-    const raw = await readFile(ENGINEERING_PATH, 'utf8');
-    return new Set(JSON.parse(raw));
-  } catch {
-    return new Set(['ask-matt','code-review','codebase-design','diagnosing-bugs','domain-modeling','grill-with-docs','implement','improve-codebase-architecture','prototype','research','resolving-merge-conflicts','setup-matt-pocock-skills','tdd','to-spec','to-tickets','triage','wayfinder','wizard']);
-  }
+  return loadSkillSet(ENGINEERING_PATH, 'engineering');
 }
 async function loadRequired() {
-  try {
-    const raw = await readFile(REQUIRED_PATH, 'utf8');
-    return new Set(JSON.parse(raw));
-  } catch {
-    return new Set(['grilling', 'grill-me', 'handoff']);
-  }
+  return loadSkillSet(REQUIRED_PATH, 'required');
 }
 
 async function hashFile(filePath) {
