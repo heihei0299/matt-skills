@@ -39,7 +39,7 @@ test('distributed tdd-implement delegates sensitive scan (no bundled script)', (
   assert.equal(existsSync(path.join(ROOT, '.agents/skills/tdd-implement/scripts/scan-sensitive.sh')), false);
   assert.equal(existsSync(path.join(ROOT, 'template/.agents/skills/tdd-implement/scripts/scan-sensitive.sh')), false);
   const content = readFileSync(
-    path.join(ROOT, 'template/.agents/skills/tdd-implement/references/stages.md'),
+    path.join(ROOT, 'template/.agents/skills/tdd-implement/SKILL.md'),
     'utf8',
   );
   assert.doesNotMatch(content, /tdd-implement\/scripts\/scan-sensitive\.sh/);

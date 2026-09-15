@@ -8,7 +8,7 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (file) => path.join(dir, file);
 const skill = readFileSync(root('.agents/skills/tdd-implement/SKILL.md'), 'utf8');
 
-const refs = ['contract.md', 'red-green.md', 'verify.md'];
+const refs = ['orchestration.md', 'verify.md', 'finalize.md'];
 const finalizeRef = 'finalize.md';
 
 test('tdd-implement routes each stage to a focused reference', () => {
@@ -17,10 +17,10 @@ test('tdd-implement routes each stage to a focused reference', () => {
     assert.ok(existsSync(root(`template/.agents/skills/tdd-implement/references/${ref}`)), `template ${ref} must exist`);
     assert.match(skill, new RegExp(`references/${ref.replace('.', '\\.')}`));
   }
-  assert.match(skill, /Finalize（非阶段）/);
+  assert.match(skill, /## Finalize/);
   assert.match(skill, /references\/finalize\.md/);
-  assert.match(skill, /每步只读取自己的轻量 reference/);
-  assert.doesNotMatch(skill, /每步开始前读取 \[stages\.md\]/);
+  assert.match(skill, /references\/verify\.md/);
+  assert.doesNotMatch(skill, /references\/(contract|red-green|stages)\.md/);
 });
 
 test('focused references stay mirrored exactly', () => {
@@ -31,7 +31,9 @@ test('focused references stay mirrored exactly', () => {
   }
 });
 
-test('full stages document remains available as compatibility reference', () => {
-  assert.ok(existsSync(root('.agents/skills/tdd-implement/references/stages.md')));
-  assert.match(skill, /完整兼容规范/);
+test('obsolete stage references are no longer distributed', () => {
+  for (const ref of ['contract.md', 'red-green.md', 'stages.md']) {
+    assert.equal(existsSync(root(`.agents/skills/tdd-implement/references/${ref}`)), false);
+    assert.equal(existsSync(root(`template/.agents/skills/tdd-implement/references/${ref}`)), false);
+  }
 });
