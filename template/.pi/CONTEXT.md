@@ -33,7 +33,7 @@ The one-time action of setting up a Target Repository: copying the Template Snap
 _Avoid_: inherit, bootstrap
 
 **Sync** (同步):
-`matt-skills sync` 同步 Target Repository 的 skeleton 与 Skills：`--dry-run` 仅对比不写盘（`check`，`--json` 可解析，有差异 `exit 1`），默认安全增量（`AGENTS.md` 有定制如 `tdd-implement` 则跳过，canonical shared Skills 按默认 programming 范围覆盖但不删多余，Template Snapshot 的 `.opencode` / `.pi` 配置增量 add/update，历史 harness mirror 中残留的共享 Skill 自动清理但保留项目自定义）、`--all` 仅更新同名可分发 Skill 内容（存在则覆盖，不存在则新增）并更新 `AGENTS.md`（不跳过定制），不删多余 Skill。Repo-local Skill 永远不新增、不覆盖、不删除，只在发现历史副本时提示保留。`update` 已合并到 `sync` 并删除。
+`matt-skills sync` 同步 Target Repository 的 skeleton 与 Skills：`--dry-run` 仅对比不写盘（`check`，`--json` 可解析，有差异 `exit 1`），默认安全增量（`AGENTS.md` 有定制如 `tdd-implement` 则跳过，canonical shared Skills 按默认 programming 范围覆盖但不删多余，Template Snapshot 的 `.opencode` / `.pi` 配置增量 add/update，`.pi/skills` 与 `.opencode/skills` 中已有的 project-local Skill 不按名称删除，避免把项目自定义 Skill 误删）、`--all` 仅更新同名可分发 Skill 内容（存在则覆盖，不存在则新增）并更新 `AGENTS.md`（不跳过定制），不删多余 Skill。Repo-local Skill 永远不新增、不覆盖、不删除，只在发现历史副本时提示保留。`update` 已合并到 `sync` 并删除。
 _Avoid_: update, force sync
 
 ## Skill Design

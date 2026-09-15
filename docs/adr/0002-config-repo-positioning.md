@@ -15,7 +15,7 @@ The workspace is the complete maintenance source: it contains the upstream skill
 
 The Template Snapshot is a distribution projection of the workspace's project configuration and skeleton. It does not contain shared Skills. A Target Repository initializes by copying the skeleton and then having the CLI assemble the selected distributable Skills directly from the canonical Workspace source; it does not need a separate manual upstream fetch.
 
-`list`, `install`, `init`, and `sync` operate on the canonical Skill source and the distribution boundary for user-facing paths. Repo-local Skills remain available in the Workspace for maintaining matt-skills itself. Existing repo-local copies in a Target Repository are preserved and may receive a migration notice; this boundary does not authorize destructive cleanup.
+`list`, `install`, `init`, and `sync` operate on the canonical Skill source and the distribution boundary for user-facing paths. Repo-local Skills remain available in the Workspace for maintaining matt-skills itself. Existing repo-local and project-local Skill copies in a Target Repository are preserved; `sync` does not infer ownership from a directory name and delete a harness Skill that happens to match a canonical Skill. This boundary does not authorize destructive cleanup.
 
 ## Trade-offs
 

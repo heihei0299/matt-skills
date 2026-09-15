@@ -933,3 +933,33 @@ refactor: decouple skill distribution from template snapshots
 ```
 
 说明架构重新产生了 Change Amplification，需要阻止。
+
+# 12. 实施结果
+
+本计划已按 `T1 → T2 → T3 → T4` 完成，`T5` 负责本节的长期维护收敛：
+
+- `T1`（`c856461`）：CLI 初始化从 canonical Skill source 组装，并同步更新分发边界文档。
+- `T2`（`1478efe`）：删除 Template Snapshot 中的共享 Skill mirror，生成器只构建 skeleton。
+- `T3`（`73ad948`）：`init`、`sync`、`install` 统一使用 canonical Skill selection；同步不删除 harness 目录中的项目自定义 Skill。
+- `T4`（`19eaf9a`）：删除 Skill/template/dependency mirror exact-match 测试，保留 lifecycle、dependency safety、skeleton 和最终 distribution contract。
+
+长期维护规则补充：
+
+1. `.agents/skills` 是共享 Skill 的唯一 canonical source。
+2. Template Snapshot 不持有共享 Skill 副本；Target Repository 的 Skill 目录由 CLI 组装。
+3. `.pi/skills` 与 `.opencode/skills` 视为 project-local Skill 目录；`sync` 不因名称与共享 Skill 相同而删除其中已有的 project-local Skill。
+4. 变更验证以最终 Target Repository 行为为主，不以中间目录 mirror 为证据。
+5. 普通 Skill/reference 措辞变化不应触发 Template、mirror test 或无关 orchestration test 修改。
+
+# 13. 场景验证记录
+
+以下验证使用最高 seam：实际 CLI 调用与最终 Target Repository 文件系统，而不是 Workspace/Template 中间副本。
+
+| 场景 | 可重复验证 | 结果 |
+|---|---|---|
+| 普通 Skill/reference 措辞 | `node --test test/build-template.test.js test/template-sync.test.js`，并确认 Template Snapshot 不包含共享 Skill mirror | 生成器 skeleton 检查 1 项、Template structure/contract 检查 11 项通过（共 12 项） |
+| Skill 行为 contract | `node --test test/tdd-implement-stages.test.js test/tdd-implement-dependencies.test.js test/tdd-implement-context-routing.test.js` | 9 项 lifecycle、reference 和 dependency safety 测试通过；不依赖 Template Skill 副本 |
+| 新增 distributable Skill | `node --test test/cli-init.test.js`，其中 `init --all includes every distributable source skill directory` 使用临时 canonical source Skill 验证 | 临时 Skill 无需创建 Template mirror 即进入最终 Target Repository |
+| Initialize / Sync | `node --test test/cli-init.test.js test/distribution-boundaries.test.js` | 初始化、`--all`、同步、repo-local 排除和 project-local 保留均通过 |
+
+变更面规则由实现和测试共同固定：普通文案只改 canonical source；行为 contract 才增加对应 contract test；新增 Skill 只增加 canonical source 与必要 boundary/config，不增加 Template Skill 副本。
