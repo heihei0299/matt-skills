@@ -18,7 +18,7 @@ disable-model-invocation: true
 
 ### ① Red-Green
 
-读取 [red-green.md](references/red-green.md)，按 `tdd` 完成当前 issue 的所有 Acceptance Criteria。
+按 `tdd` 完成当前 issue 的所有 Acceptance Criteria。
 
 将需要实现或修改的内容拆成可独立验证的 Behavior。一次只推进一个 Behavior：每个尚未实现的 Behavior 都必须分别完成 `tdd` 的 Red → Green cycle，完成后才能进入下一个 Behavior。
 
@@ -35,9 +35,7 @@ disable-model-invocation: true
 
 读取 [verify.md](references/verify.md)，执行当前 issue 所需的最终验证。
 
-验证通过后不重复或扩大验证范围，除非新的修改、失败或未解决问题需要重新验证。
-
-最终 diff 稳定后执行完整 `code-review`。
+最终验证通过且 diff 稳定后执行完整 `code-review`。
 
 #### Review
 
@@ -77,7 +75,6 @@ Finalize 不新增产品 Behavior；若发现实现或验证遗漏，回到对�
 ## References
 
 - TDD：[tdd](.agents/skills/tdd/SKILL.md)
-- Red-Green：[red-green.md](references/red-green.md)
 - Verify：[verify.md](references/verify.md)
 - Finalize：[finalize.md](references/finalize.md)
 - Review：[code-review](.agents/skills/code-review/SKILL.md)
