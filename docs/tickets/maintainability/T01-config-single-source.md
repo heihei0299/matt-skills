@@ -100,6 +100,9 @@ missing / invalid JSON / invalid shape
 ## Resolution
 
 - Commit：`c479907 fix(config): make skill config loading fail closed`
+- Commit：`c8cafee refactor(config): share skill config loader`
+- `bin/skill-config.js` 成为 config loader 唯一事实源，`cli.js` 与 `sync-upstream.js` 共同消费。
 - 发布白名单补充 `config/required.json`，避免 npm 包缺少正常 CLI 所需配置。
-- 直接验证：`node --test test/cli-config-loading.test.js test/skill-selection.test.js test/cli.test.js test/cli-init.test.js test/distribution-boundaries.test.js`，67/67 通过。
-- 完整 Review 后修复两个 blocking finding，并完成直接影响范围的增量 Review：PASS。
+- 新增 `sync-upstream --check` 缺少 `required.json` 的 public contract，明确失败且不 fallback。
+- 直接验证：CLI/selection/distribution/upstream check 相关测试 `71/71` 通过。
+- 完整 Review 后修复两个 blocking finding；共享 loader 扩展完成增量 Review：PASS。
