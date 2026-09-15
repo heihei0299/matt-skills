@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url';
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(dir, file), 'utf8');
 const orchestration = read('.agents/skills/tdd-implement/references/orchestration.md');
-const template = read('template/.agents/skills/tdd-implement/references/orchestration.md');
 
 test('tdd-implement stops when Blocked by cannot be parsed', () => {
   assert.match(orchestration, /`Blocked by` 无法解析[\s\S]*停止受影响调度并报告/);
@@ -23,8 +22,4 @@ test('tdd-implement stops on missing dependency nodes', () => {
 test('invalid dependencies cannot silently continue as no dependency', () => {
   assert.match(orchestration, /字段无法解析、依赖节点不存在或出现环时/);
   assert.match(orchestration, /不降级为无依赖/);
-});
-
-test('template keeps the dependency safety contract exactly', () => {
-  assert.equal(template, orchestration);
 });

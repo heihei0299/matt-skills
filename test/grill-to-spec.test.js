@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MAP_SKILL, normalize } from './mirror-utils.js';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (file) => path.join(dir, file);
@@ -56,15 +55,4 @@ test('rules contain only local deltas and delegate spec schema upstream', () => 
   assert.doesNotMatch(rules, /完整七节模板/);
   assert.doesNotMatch(rules, /Problem Statement/);
   assert.doesNotMatch(rules, /As an <actor>/);
-});
-
-test('grill-to-spec template mirror stays path-mapped and exact', () => {
-  assert.equal(
-    normalize(readFileSync(root('template/.agents/skills/grill-to-spec/SKILL.md'), 'utf8'), MAP_SKILL),
-    skill,
-  );
-  assert.equal(
-    normalize(readFileSync(root('template/.agents/skills/grill-to-spec/references/rules.md'), 'utf8'), MAP_SKILL),
-    rules,
-  );
 });

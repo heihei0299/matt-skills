@@ -42,15 +42,3 @@ test('tdd-implement avoids obsolete stage and commit-check coupling', () => {
   assert.doesNotMatch(skill, /commit-check|scan-sensitive\.sh/);
   assert.doesNotMatch(orchestration, /commit-check|scan-sensitive\.sh/);
 });
-
-test('template mirrors the current tdd-implement files', () => {
-  for (const file of ['SKILL.md', ...refs]) {
-    const templateFile = file === 'SKILL.md'
-      ? `template/.agents/skills/tdd-implement/${file}`
-      : `template/.agents/skills/tdd-implement/references/${file}`;
-    const workspaceFile = file === 'SKILL.md'
-      ? `.agents/skills/tdd-implement/${file}`
-      : `.agents/skills/tdd-implement/references/${file}`;
-    assert.equal(read(templateFile), read(workspaceFile), `${file} mirror must stay exact`);
-  }
-});

@@ -48,14 +48,3 @@ test('diagnose-fix preserves continuity and upstream cleanup ownership', () => {
   assert.match(anti, /不绕过 red-capable regression evidence/);
   assert.match(anti, /不遗留探针/);
 });
-
-test('diagnose-fix template mirror stays exact', () => {
-  assert.equal(
-    readFileSync(root('template/.agents/skills/diagnose-fix/SKILL.md'), 'utf8'),
-    skill,
-  );
-  assert.equal(
-    readFileSync(root('template/.agents/skills/diagnose-fix/references/anti-patterns.md'), 'utf8'),
-    anti,
-  );
-});

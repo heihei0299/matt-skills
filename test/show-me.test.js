@@ -8,7 +8,6 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(dir, file), 'utf8');
 
 const skill = read('.agents/skills/show-me/SKILL.md');
-const templateSkill = read('template/.agents/skills/show-me/SKILL.md');
 
 test('show-me is a read-only real-evidence display skill', () => {
   assert.match(skill, /只读展示/);
@@ -24,8 +23,4 @@ test('show-me defines a compact reproducible report', () => {
   }
   assert.match(skill, /不默认写报告文件/);
   assert.match(skill, /清理本次创建的资源/);
-});
-
-test('show-me template mirror stays exact', () => {
-  assert.equal(templateSkill, skill);
 });

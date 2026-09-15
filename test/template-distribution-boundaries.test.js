@@ -5,8 +5,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const config = JSON.parse(readFileSync(path.join(ROOT, 'config/proprietary.json'), 'utf8'));
-const repoLocal = new Set(config.repoLocal);
 
 function directoryNames(relative) {
   return readdirSync(path.join(ROOT, relative), { withFileTypes: true })
@@ -15,31 +13,16 @@ function directoryNames(relative) {
     .sort();
 }
 
-test('template skill snapshot contains distributable skills and excludes repo-local skills', () => {
-  const workspace = directoryNames('.agents/skills');
-  const template = directoryNames('template/.agents/skills');
-  for (const name of config.all) {
-    assert.equal(existsSync(path.join(ROOT, '.agents/skills', name)), true);
-  }
-  assert.deepEqual(template, workspace.filter((name) => !repoLocal.has(name)));
-  for (const name of repoLocal) {
-    assert.equal(existsSync(path.join(ROOT, 'template/.agents/skills', name)), false);
-  }
+test('template snapshot contains no shared Skill mirror', () => {
+  assert.ok(directoryNames('.agents/skills').length > 0);
+  assert.equal(existsSync(path.join(ROOT, 'template/.agents')), false);
 });
 
-test('template excludes repo-local command while workspace keeps it', () => {
-  assert.equal(existsSync(path.join(ROOT, '.opencode/commands/commit-check.md')), true);
-  assert.equal(existsSync(path.join(ROOT, 'template/.opencode/commands/commit-check.md')), false);
-  const workspaceCommands = readdirSync(path.join(ROOT, '.opencode/commands')).filter((name) => name !== 'commit-check.md').sort();
-  const templateCommands = readdirSync(path.join(ROOT, 'template/.opencode/commands')).sort();
-  assert.deepEqual(templateCommands, workspaceCommands);
-});
 
-test('distributed tdd-implement delegates sensitive scan (no bundled script)', () => {
+test('canonical tdd-implement delegates sensitive scan (no bundled script)', () => {
   assert.equal(existsSync(path.join(ROOT, '.agents/skills/tdd-implement/scripts/scan-sensitive.sh')), false);
-  assert.equal(existsSync(path.join(ROOT, 'template/.agents/skills/tdd-implement/scripts/scan-sensitive.sh')), false);
   const content = readFileSync(
-    path.join(ROOT, 'template/.agents/skills/tdd-implement/SKILL.md'),
+    path.join(ROOT, '.agents/skills/tdd-implement/SKILL.md'),
     'utf8',
   );
   assert.doesNotMatch(content, /tdd-implement\/scripts\/scan-sensitive\.sh/);

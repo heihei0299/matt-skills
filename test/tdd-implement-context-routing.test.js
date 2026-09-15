@@ -14,7 +14,6 @@ const finalizeRef = 'finalize.md';
 test('tdd-implement routes each stage to a focused reference', () => {
   for (const ref of [...refs, finalizeRef]) {
     assert.ok(existsSync(root(`.agents/skills/tdd-implement/references/${ref}`)), `${ref} must exist`);
-    assert.ok(existsSync(root(`template/.agents/skills/tdd-implement/references/${ref}`)), `template ${ref} must exist`);
     assert.match(skill, new RegExp(`references/${ref.replace('.', '\\.')}`));
   }
   assert.match(skill, /## Finalize/);
@@ -23,17 +22,9 @@ test('tdd-implement routes each stage to a focused reference', () => {
   assert.doesNotMatch(skill, /references\/(contract|red-green|stages)\.md/);
 });
 
-test('focused references stay mirrored exactly', () => {
-  for (const ref of [...refs, finalizeRef]) {
-    const workspace = readFileSync(root(`.agents/skills/tdd-implement/references/${ref}`), 'utf8');
-    const template = readFileSync(root(`template/.agents/skills/tdd-implement/references/${ref}`), 'utf8');
-    assert.equal(template, workspace, `${ref} mirror must stay exact`);
-  }
-});
 
 test('obsolete stage references are no longer distributed', () => {
   for (const ref of ['contract.md', 'red-green.md', 'stages.md']) {
     assert.equal(existsSync(root(`.agents/skills/tdd-implement/references/${ref}`)), false);
-    assert.equal(existsSync(root(`template/.agents/skills/tdd-implement/references/${ref}`)), false);
   }
 });

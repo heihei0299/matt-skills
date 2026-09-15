@@ -77,12 +77,6 @@ test('opt-in smoke passes with a real Codex CLI when enabled', {
   assert.match(result.stdout, /AGENTS\.md and codex-probe skill sentinels verified/);
 });
 
-test('template keeps Codex on the shared project skill source', () => {
-  assert.ok(fs.existsSync(path.join(REPO_ROOT, 'template', 'AGENTS.md')));
-  assert.ok(fs.existsSync(path.join(REPO_ROOT, 'template', '.agents', 'skills', 'tdd-implement', 'SKILL.md')));
-  assert.equal(fs.existsSync(path.join(REPO_ROOT, 'template', '.codex')), false);
-});
-
 test('Codex is an accepted target with shared project/global mappings and skill metadata', () => {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-codex-project-'));
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-codex-home-'));
