@@ -1,6 +1,6 @@
 # T01 — Config Single Source
 
-状态：Ready
+状态：Resolved
 优先级：P1 Maintainability
 依赖：无
 
@@ -71,14 +71,14 @@ missing / invalid JSON / invalid shape
 
 ## 验收
 
-- [ ] engineering 只有 JSON 一份事实源。
-- [ ] required 只有 JSON 一份事实源。
-- [ ] CLI 不再包含对应完整 fallback 列表。
-- [ ] 缺失配置会失败。
-- [ ] 非法 JSON 会失败。
-- [ ] 非字符串数组会失败。
-- [ ] 正常 list/init/install/sync selection 行为不变。
-- [ ] 没有新增配置框架或抽象层。
+- [x] engineering 只有 JSON 一份事实源。
+- [x] required 只有 JSON 一份事实源。
+- [x] CLI 不再包含对应完整 fallback 列表。
+- [x] 缺失配置会失败。
+- [x] 非法 JSON 会失败。
+- [x] 非字符串数组会失败。
+- [x] 正常 list/init/install/sync selection 行为不变。
+- [x] 没有新增配置框架或抽象层。
 
 ## 验证
 
@@ -96,3 +96,10 @@ missing / invalid JSON / invalid shape
 - 是否把 fallback 转移到了另一个文件。
 - 错误是否可定位。
 - 是否意外改变 default/all selection。
+
+## Resolution
+
+- Commit：`c479907 fix(config): make skill config loading fail closed`
+- 发布白名单补充 `config/required.json`，避免 npm 包缺少正常 CLI 所需配置。
+- 直接验证：`node --test test/cli-config-loading.test.js test/skill-selection.test.js test/cli.test.js test/cli-init.test.js test/distribution-boundaries.test.js`，67/67 通过。
+- 完整 Review 后修复两个 blocking finding，并完成直接影响范围的增量 Review：PASS。
