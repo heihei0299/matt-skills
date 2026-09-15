@@ -10,16 +10,14 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 
 function createBuilderFixture() {
   const root = mkdtempSync(path.join(os.tmpdir(), 'matt-skills-template-'));
-  for (const name of ['scripts', 'bin', 'config', 'docs/agents', '.opencode/agents', '.opencode/commands', '.pi/prompts']) {
+  for (const name of ['scripts', 'config', 'docs/agents', '.opencode/agents', '.opencode/commands', '.pi/prompts']) {
     mkdirSync(path.join(root, name), { recursive: true });
   }
   cpSync(path.join(REPO_ROOT, 'scripts/build-template.js'), path.join(root, 'scripts/build-template.js'));
   cpSync(path.join(REPO_ROOT, '.opencode/agents'), path.join(root, '.opencode/agents'), { recursive: true });
   cpSync(path.join(REPO_ROOT, '.opencode/commands'), path.join(root, '.opencode/commands'), { recursive: true });
   cpSync(path.join(REPO_ROOT, '.pi/prompts'), path.join(root, '.pi/prompts'), { recursive: true });
-  cpSync(path.join(REPO_ROOT, 'bin/skill-boundaries.js'), path.join(root, 'bin/skill-boundaries.js'));
   cpSync(path.join(REPO_ROOT, 'config/template-AGENTS.md'), path.join(root, 'config/template-AGENTS.md'));
-  cpSync(path.join(REPO_ROOT, 'config/proprietary.json'), path.join(root, 'config/proprietary.json'));
   cpSync(path.join(REPO_ROOT, 'CONTEXT.md'), path.join(root, 'CONTEXT.md'));
   cpSync(path.join(REPO_ROOT, 'docs/agents'), path.join(root, 'docs/agents'), { recursive: true });
   cpSync(path.join(REPO_ROOT, 'package.json'), path.join(root, 'package.json'));
