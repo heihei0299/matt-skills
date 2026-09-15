@@ -16,26 +16,35 @@ const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..',
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
 const ENGINEERING_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'engineering.json');
 const REQUIRED_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'required.json');
+async function loadSkillSet(file, label) {
+  let raw;
+  try {
+    raw = await readFile(file, 'utf8');
+  } catch (error) {
+    throw new Error(`unable to read ${label} skill config: ${error.message}`);
+  }
+
+  let value;
+  try {
+    value = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`invalid ${label} skill config: ${error.message}`);
+  }
+  if (!Array.isArray(value) || value.some((name) => typeof name !== 'string')) {
+    throw new Error(`invalid ${label} skill config: expected an array of strings`);
+  }
+  return new Set(value);
+}
+
 let ENGINEERING_SKILLS = null;
 async function loadEngineeringSkills() {
-  if (ENGINEERING_SKILLS) return ENGINEERING_SKILLS;
-  try {
-    const raw = await readFile(ENGINEERING_PATH, 'utf8');
-    ENGINEERING_SKILLS = new Set(JSON.parse(raw));
-  } catch {
-    ENGINEERING_SKILLS = new Set(['ask-matt','code-review','codebase-design','diagnosing-bugs','domain-modeling','grill-with-docs','implement','improve-codebase-architecture','prototype','research','resolving-merge-conflicts','setup-matt-pocock-skills','tdd','to-spec','to-tickets','triage','wayfinder','wizard']);
-  }
+  if (!ENGINEERING_SKILLS) ENGINEERING_SKILLS = await loadSkillSet(ENGINEERING_PATH, 'engineering');
   return ENGINEERING_SKILLS;
 }
+
 let REQUIRED_SKILLS = null;
 async function loadRequiredSkills() {
-  if (REQUIRED_SKILLS) return REQUIRED_SKILLS;
-  try {
-    const raw = await readFile(REQUIRED_PATH, 'utf8');
-    REQUIRED_SKILLS = new Set(JSON.parse(raw));
-  } catch {
-    REQUIRED_SKILLS = new Set(['grilling', 'grill-me', 'handoff']);
-  }
+  if (!REQUIRED_SKILLS) REQUIRED_SKILLS = await loadSkillSet(REQUIRED_PATH, 'required');
   return REQUIRED_SKILLS;
 }
 process.stdout.on('error', (err) => {

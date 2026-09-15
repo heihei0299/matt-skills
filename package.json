@@ -14,6 +14,7 @@
     "scripts/codex-smoke.js",
     "config/proprietary.json",
     "config/engineering.json",
+    "config/required.json",
     "README.md"
   ],
   "scripts": {
