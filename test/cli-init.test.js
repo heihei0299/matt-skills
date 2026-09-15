@@ -131,10 +131,9 @@ test('`init` assembles skills from the canonical source, not the template mirror
   const source = createCliFixture();
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
-    fs.writeFileSync(
-      path.join(source, 'template', '.agents', 'skills', 'tdd-implement', 'SKILL.md'),
-      'TEMPLATE MIRROR ONLY',
-    );
+    const mirror = path.join(source, 'template', '.agents', 'skills', 'tdd-implement');
+    fs.mkdirSync(mirror, { recursive: true });
+    fs.writeFileSync(path.join(mirror, 'SKILL.md'), 'TEMPLATE MIRROR ONLY');
 
     const result = spawnSync(process.execPath, [path.join(source, 'bin', 'cli.js'), 'init', '--dest', dest], {
       cwd: source,

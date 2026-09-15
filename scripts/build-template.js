@@ -2,7 +2,6 @@
 import { cp, readdir, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isRepoLocalSkill } from '../bin/skill-boundaries.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -22,8 +21,12 @@ async function tryCopy(src, dest) {
   try { await cp(src, dest); } catch {}
 }
 
-async function tryCopyDir(src, dest) {
-  try { await copyDirRecursive(src, dest); } catch {}
+async function tryCopyDir(src, dest, filter = () => true) {
+  try {
+    await copyDirRecursive(src, dest, filter);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
 }
 
 async function main() {
@@ -33,20 +36,6 @@ async function main() {
     path.join(ROOT, 'template/PROJECT.md'),
     '# Project Context\n\n<!-- 请在目标仓库中填写项目目标、范围、主要入口和关键约束。代理操作规则放在 AGENTS.md。 -->\n',
   );
-  // Distribution snapshot: workspace skills minus repo-local skills.
-  const skillsSrc = path.join(ROOT, '.agents/skills');
-  const entries = await readdir(skillsSrc, { withFileTypes: true });
-  const skills = entries
-    .filter((entry) => entry.isDirectory())
-    .filter((entry) => !entry.name.endsWith('.bak'))
-    .filter((entry) => entry.name !== 'skill-creator' && entry.name !== '.git')
-    .filter((entry) => !isRepoLocalSkill(entry.name))
-    .map((entry) => entry.name);
-  for (const skill of skills) {
-    const src = path.join(skillsSrc, skill);
-    await copyDirRecursive(src, path.join(ROOT, 'template/.agents/skills', skill));
-  }
-
   // Harness skill dirs remain empty placeholders for project-local custom skills.
   await mkdir(path.join(ROOT, 'template/.pi/skills'), { recursive: true });
   await mkdir(path.join(ROOT, 'template/.opencode/skills'), { recursive: true });
@@ -61,8 +50,8 @@ async function main() {
     '# 项目技能（opencode）\n\n此目录用于存放项目自定义技能（project-local skills）。\n共享技能统一在 `.agents/skills/`。\n',
   );
 
-  await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.opencode/agents'));
-  await copyDirRecursive(
+  await tryCopyDir(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.opencode/agents'));
+  await tryCopyDir(
     path.join(ROOT, '.opencode/commands'),
     path.join(ROOT, 'template/.opencode/commands'),
     (source) => path.basename(source) !== 'commit-check.md',
@@ -78,7 +67,7 @@ async function main() {
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.opencode/docs/agents'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.pi/docs/agents'));
-  console.log('template built: distributable', skills.length, 'skills to template/.agents/skills');
+  console.log('template built: skeleton');
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });
