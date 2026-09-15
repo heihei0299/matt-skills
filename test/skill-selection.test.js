@@ -22,6 +22,18 @@ test('default selection merges engineering, required, and default proprietary sk
   );
 });
 
+test('repo-local names stay excluded from default selection even when requested', () => {
+  assert.deepEqual(
+    [...resolveSkillNames({
+      availableNames: ['tdd-implement', 'ci-guard', 'commit-check'],
+      mode: 'default',
+      engineering: ['ci-guard'],
+      required: ['commit-check'],
+    })],
+    ['tdd-implement'],
+  );
+});
+
 test('all selection includes available distributable skills and excludes repo-local skills', () => {
   assert.deepEqual(
     [...resolveSkillNames({
