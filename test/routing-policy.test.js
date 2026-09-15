@@ -37,7 +37,6 @@ test('workspace keeps the direct route and commit policy', () => {
 
 test('template uses its independent workflow and commit policy', () => {
   assert.match(templateAgents, /## Workflow/);
-  assert.match(templateAgents, /实现 \+ 独立验收 → `implement-review-loop`/);
   assert.match(templateAgents, /## Development/);
   assert.match(templateAgents, /默认使用 `tdd`/);
   assert.match(templateAgents, /## Git/);
@@ -62,7 +61,6 @@ test('workspace and template expose their intended routing branches', () => {
   assert.match(templateAgents, /理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
   assert.match(templateAgents, /多来源调研 \/ 方案比较 \/ 技术选型 → `research`/);
   assert.match(templateAgents, /原型 \/ PoC → `prototype`/);
-  assert.match(templateAgents, /实现 \+ 独立验收 → `implement-review-loop`/);
   assert.match(templateAgents, /代码审查 → `code-review`/);
   assert.match(templateAgents, /设计质询 → `grilling`/);
   assert.match(templateAgents, /领域建模 → `domain-modeling`/);

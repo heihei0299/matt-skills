@@ -7,7 +7,6 @@
 * 理解 / 定位 / 调用链 → `codegraph explore`
 * 多来源调研 / 方案比较 / 技术选型 → `research`
 * 原型 / PoC → `prototype`
-* 实现 + 独立验收 → `implement-review-loop`
 * 代码审查 → `code-review`
 * 设计质询 → `grilling`
 * 领域建模 → `domain-modeling`
@@ -52,7 +51,6 @@ codegraph node "<符号>"
 * 先建立最小测试或复现，再做最小实现。
 * 优先复用现有抽象、接口和依赖方向。
 * 不创建平行实现，不扩大任务范围。
-* `implement-review-loop` 的实现阶段同样使用 `tdd`。
 * 文案、格式、注释、机械重命名及不改变行为的配置可直接实现。
 
 ## Validation

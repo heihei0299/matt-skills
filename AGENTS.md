@@ -4,7 +4,6 @@
 * 外部调研 / 方案比较 → `research`
 * 原型 / PoC → `prototype`
 * 简单修改 → 直接实现
-* 实现 + 独立验收闭环 → `implement-review-loop`
 * TDD / 集成测试 → `tdd`
 * bug / 异常 / 性能 → `diagnose-fix`
 * 代码审查 → `code-review`
