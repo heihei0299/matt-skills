@@ -100,18 +100,26 @@ node --test \
 
 验收清单：
 
-- [ ] install 历史产品语义得到确认。
-- [ ] 如存在回归，已恢复原行为。
-- [ ] interactive catalog 行为正确。
-- [ ] `--all` 行为没有改变。
-- [ ] repo-local 仍然无法分发。
-- [ ] `resolveSkillNames()` 没有承担 UI policy。
-- [ ] init/sync 没有受到影响。
-- [ ] 没有引入新的 selection 事实源。
-- [ ] 没有扩大修改范围。
-- [ ] CLI contract test 覆盖该行为。
-- [ ] 直接受影响测试通过。
-- [ ] 增量 Review 无新增 finding。
+- [x] install 历史产品语义得到确认。
+- [x] 历史语义为 default programming，未发生生产行为回归，无需改动生产逻辑。
+- [x] interactive catalog 行为正确。
+- [x] `--all` 行为没有改变。
+- [x] repo-local 仍然无法分发。
+- [x] `resolveSkillNames()` 没有承担 UI policy。
+- [x] init/sync 没有受到影响。
+- [x] 没有引入新的 selection 事实源。
+- [x] 没有扩大修改范围。
+- [x] CLI contract test 覆盖该行为。
+- [x] 直接受影响测试通过。
+- [x] 增量 Review 无新增 finding。
+
+## Resolution
+
+- 历史核对：`be2807e:bin/cli.js` 中普通 `install` 的交互候选来自全量 catalog 后再按 default programming 过滤，确认历史语义为 B。
+- 生产代码保持不变；新增 `test/cli.test.js` 的真实 CLI contract，输入 `a\n` 时断言只安装 default programming catalog，并排除 `teach` 等 optional productivity Skill。
+- `install --all` 的既有分发 contract 未改变，repo-local 排除仍由现有测试覆盖。
+- 验证：`node --test test/skill-selection.test.js test/cli.test.js test/cli-init.test.js test/distribution-boundaries.test.js`，63/63 通过。
+- 增量 Review：PASS，无新增 finding。
 
 完成条件：
 

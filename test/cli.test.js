@@ -243,6 +243,24 @@ test('`install --force` overwrites existing skills', () => {
   }
 });
 
+test('interactive install exposes the default programming catalog', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-interactive-install-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--tools', 'codex'], cwd, { input: 'a\n' });
+    assert.equal(status, 0, stderr);
+    const installed = fs
+      .readdirSync(path.join(cwd, '.agents', 'skills'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    assert.deepEqual(installed, [...PROGRAMMING_SKILL_NAMES].sort());
+    assert.match(stdout, new RegExp(`codex：已装 ${PROGRAMMING_SKILL_NAMES.length}、跳过 0`));
+    assert.ok(!installed.includes('teach'), 'interactive install should not expose optional productivity skills');
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
 test('`install --tools codex` without --all prints a no-skill message and exits 0', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
   try {
