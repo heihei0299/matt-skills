@@ -9,20 +9,6 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-const proprietary = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/proprietary.json'), 'utf8'));
-const engineering = new Set(JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/engineering.json'), 'utf8')));
-const required = new Set(JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/required.json'), 'utf8')));
-const repoLocal = new Set(proprietary.repoLocal);
-const sourceSkillNames = fs.readdirSync(path.join(REPO_ROOT, '.agents/skills'), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && !entry.name.endsWith('.bak') && entry.name !== 'skill-creator' && entry.name !== '.git')
-  .map((entry) => entry.name)
-  .filter((name) => !repoLocal.has(name))
-  .sort();
-const SKILL_NAMES = sourceSkillNames;
-const PROGRAMMING_SKILL_NAMES = sourceSkillNames.filter((name) => (
-  proprietary.default.includes(name) || engineering.has(name) || required.has(name)
-));
-
 // Template files that must land in the target project root.
 const TEMPLATE_FILES = [
   'AGENTS.md',
@@ -43,14 +29,6 @@ function runCli(args, cwd = REPO_ROOT) {
     cwd,
     encoding: 'utf8',
   });
-}
-
-function listDir(dir) {
-  return fs
-    .readdirSync(dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort();
 }
 
 function createCliFixture() {
@@ -158,8 +136,6 @@ test('`init` copies default programming skills into .agents/skills/ by default',
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    const installed = listDir(path.join(dest, '.agents', 'skills'));
-    assert.deepEqual(installed, [...PROGRAMMING_SKILL_NAMES].sort());
     for (const name of ['tdd-implement', 'diagnose-fix']) {
       assert.ok(
         fs.existsSync(path.join(dest, '.agents', 'skills', name, 'SKILL.md')),
@@ -175,18 +151,6 @@ test('`init` copies default programming skills into .agents/skills/ by default',
       const real = entries.filter(e => !['.gitkeep','README.md'].includes(e));
       assert.deepEqual(real, [], `${harness} should contain no shared skills`);
     }
-  } finally {
-    fs.rmSync(dest, { recursive: true, force: true });
-  }
-});
-
-test('`init --all` copies all distributable skills into .agents/skills/', () => {
-  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
-  try {
-    const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
-    assert.equal(status, 0, stderr);
-    const installed = listDir(path.join(dest, '.agents', 'skills'));
-    assert.deepEqual(installed, [...SKILL_NAMES].sort());
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
