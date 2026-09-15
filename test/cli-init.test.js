@@ -9,85 +9,21 @@ import os from 'node:os';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
-// Independent literal: the distributable skills shipped to user projects.
-const SKILL_NAMES = [
-  'ask-matt',
-  'codebase-design',
-  'code-review',
-  'diagnose-fix',
-  'diagnosing-bugs',
-  'domain-modeling',
-  'grill-me',
-  'grill-to-spec',
-  'grill-with-docs',
-  'grilling',
-  'handoff',
-  'implement',
-  'implement-review-loop',
-  'improve-codebase-architecture',
-  'instance-test',
-  'prototype',
-  'research',
-  'resolving-merge-conflicts',
-  'scaffold-functional-test',
-  'setup-matt-pocock-skills',
-  'show-me',
-  'tdd',
-  'tdd-implement',
-  'teach',
-  'to-spec',
-  'to-tickets',
-  'triage',
-  'wayfinder',
-  'to-questionnaire',
-  'wait-what',
-  'wizard',
-  'writing-for-agents',
-];
+const proprietary = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/proprietary.json'), 'utf8'));
+const engineering = new Set(JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/engineering.json'), 'utf8')));
+const required = new Set(JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/required.json'), 'utf8')));
+const repoLocal = new Set(proprietary.repoLocal);
+const sourceSkillNames = fs.readdirSync(path.join(REPO_ROOT, '.agents/skills'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && !entry.name.endsWith('.bak') && entry.name !== 'skill-creator' && entry.name !== '.git')
+  .map((entry) => entry.name)
+  .filter((name) => !repoLocal.has(name))
+  .sort();
+const SKILL_NAMES = sourceSkillNames;
+const PROGRAMMING_SKILL_NAMES = sourceSkillNames.filter((name) => (
+  proprietary.default.includes(name) || engineering.has(name) || required.has(name)
+));
 
-const PROGRAMMING_SKILL_NAMES = [
-  'ask-matt',
-  'code-review',
-  'codebase-design',
-  'diagnose-fix',
-  'diagnosing-bugs',
-  'domain-modeling',
-  'grill-me',
-  'grill-to-spec',
-  'grill-with-docs',
-  'grilling',
-  'handoff',
-  'implement',
-  'improve-codebase-architecture',
-  'prototype',
-  'research',
-  'resolving-merge-conflicts',
-  'setup-matt-pocock-skills',
-  'show-me',
-  'tdd',
-  'tdd-implement',
-  'to-spec',
-  'to-tickets',
-  'triage',
-  'wayfinder',
-  'wizard',
-];
-
-// Template files that must land in the target project root (single-source) — default programming scope.
-const TEMPLATE_FILES_PROGRAMMING = [
-  'AGENTS.md',
-  'PROJECT.md',
-  '.agents/skills/tdd-implement/SKILL.md',
-  '.agents/skills/diagnose-fix/SKILL.md',
-  '.agents/skills/tdd/SKILL.md',
-  '.agents/skills/grilling/SKILL.md',
-  '.opencode/CONTEXT.md',
-  '.opencode/commands/issue-audit.md',
-  '.opencode/docs/agents/runtime-discipline.md',
-  '.pi/prompts/issue-audit.md',
-  '.pi/skills/.gitkeep',
-  '.opencode/skills/.gitkeep',
-];
+// Template files that must land in the target project root.
 const TEMPLATE_FILES = [
   'AGENTS.md',
   'PROJECT.md',
@@ -193,7 +129,7 @@ test('`init` copies the default programming template into the target', () => {
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板：已(复制|备份)/);
     assert.match(stdout, /技能：已装/);
-    for (const rel of TEMPLATE_FILES_PROGRAMMING) {
+    for (const rel of TEMPLATE_FILES) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
     // 独有所需 grilling/grill-me/handoff/show-me 默认安装，其余 productivity 默认不装

@@ -197,6 +197,30 @@ test('sync default and --all do not add repo-local skills', () => {
   }
 });
 
+test('sync updates shared skills from the canonical source', () => {
+  for (const args of [['sync'], ['sync', '--all']]) {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-update-'));
+    const sharedSkill = path.join(dest, '.agents/skills/tdd-implement/SKILL.md');
+    const projectLocalSkill = path.join(dest, '.pi/skills/tdd-implement/SKILL.md');
+    try {
+      fs.mkdirSync(path.dirname(sharedSkill), { recursive: true });
+      fs.writeFileSync(sharedSkill, 'STALE SHARED COPY');
+      fs.mkdirSync(path.dirname(projectLocalSkill), { recursive: true });
+      fs.writeFileSync(projectLocalSkill, 'PROJECT-LOCAL COPY');
+
+      const result = runCli([...args, '--dest', dest]);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(
+        fs.readFileSync(sharedSkill, 'utf8'),
+        fs.readFileSync(path.join(ROOT, '.agents/skills/tdd-implement/SKILL.md'), 'utf8'),
+      );
+      assert.equal(fs.readFileSync(projectLocalSkill, 'utf8'), 'PROJECT-LOCAL COPY');
+    } finally {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
+  }
+});
+
 test('sync preserves repo-local and project-local skills', () => {
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-preserve-'));

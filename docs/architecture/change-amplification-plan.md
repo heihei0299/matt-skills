@@ -957,9 +957,9 @@ refactor: decouple skill distribution from template snapshots
 
 | 场景 | 可重复验证 | 结果 |
 |---|---|---|
-| 普通 Skill/reference 措辞 | `node --test test/build-template.test.js test/template-sync.test.js`，并确认 Template Snapshot 不包含共享 Skill mirror | 生成器 skeleton 检查 1 项、Template structure/contract 检查 11 项通过（共 12 项） |
+| 普通 Skill/reference 措辞 | `node --test test/build-template.test.js test/template-sync.test.js`；在隔离 Git fixture 中修改一句 canonical Skill 文案后执行 `git diff --name-only` | 生成器 skeleton 检查 1 项、Template structure/contract 检查 11 项通过（共 12 项）；变更面只包含 `.agents/skills/example/SKILL.md` |
 | Skill 行为 contract | `node --test test/tdd-implement-stages.test.js test/tdd-implement-dependencies.test.js test/tdd-implement-context-routing.test.js` | 9 项 lifecycle、reference 和 dependency safety 测试通过；不依赖 Template Skill 副本 |
-| 新增 distributable Skill | `node --test test/cli-init.test.js`，其中 `init --all includes every distributable source skill directory` 使用临时 canonical source Skill 验证 | 临时 Skill 无需创建 Template mirror 即进入最终 Target Repository |
-| Initialize / Sync | `node --test test/cli-init.test.js test/distribution-boundaries.test.js` | 初始化、`--all`、同步、repo-local 排除和 project-local 保留均通过 |
+| 新增 distributable Skill | `node --test test/cli-init.test.js`，其中 `init --all includes every distributable source skill directory` 使用临时 canonical source Skill 验证；初始化清单从 canonical source/config 计算 | 临时 Skill 无需创建 Template mirror 即进入最终 Target Repository；新增 Skill 不需要同步维护测试清单 |
+| Initialize / Sync | `node --test test/cli-init.test.js test/distribution-boundaries.test.js` | 初始化、`--all`、同步、canonical 内容更新、repo-local 排除和 project-local 保留均通过 |
 
 变更面规则由实现和测试共同固定：普通文案只改 canonical source；行为 contract 才增加对应 contract test；新增 Skill 只增加 canonical source 与必要 boundary/config，不增加 Template Skill 副本。
