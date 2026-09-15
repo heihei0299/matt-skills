@@ -46,14 +46,6 @@ export function isDefaultProprietarySkill(name) {
   return DEFAULT_PROPRIETARY_SKILLS.has(name);
 }
 
-export function isDefaultProgrammingSkill(name, engineering, required) {
-  return (
-    DEFAULT_PROPRIETARY_SKILLS.has(name) ||
-    engineering.has(name) ||
-    (required && required.has(name))
-  );
-}
-
 export function isDistributableSkill(name, knownNames) {
   if (!knownNames) return isDistributableProprietarySkill(name);
   const known = knownNames instanceof Set ? knownNames : new Set(knownNames);
