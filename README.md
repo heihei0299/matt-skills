@@ -1,6 +1,6 @@
 # matt-skills
 
-面向项目仓库的 Agent skills 与配置模板。模板包含共享 skills、`AGENTS.md`、项目上下文占位文件，以及 pi / opencode 所需的项目配置。
+面向项目仓库的 Agent skills 与配置模板。模板包含项目 skeleton、`AGENTS.md`、项目上下文占位文件，以及 pi / opencode 所需的项目配置；共享 Skills 由 CLI 从 Workspace 的 canonical source 直接组装到目标项目。
 
 ## 模板内容
 
@@ -8,10 +8,11 @@
 template/
 ├── AGENTS.md                 Agent 行为路由与项目上下文入口
 ├── PROJECT.md                目标项目填写的目标、范围和主要入口
-├── .agents/skills/           共享 skills 的唯一项目级来源
 ├── .opencode/                opencode agents、commands、docs
 └── .pi/                      pi prompts、docs 与项目自定义 skills 占位
 ```
+
+共享 Skills 不作为 Template Snapshot 的持久化副本；`init`、`sync` 和 `install` 根据 distribution boundary 从 Workspace 的 canonical source 分发到目标项目的 `.agents/skills/`。
 
 - `PROJECT.md` 描述项目是什么；操作规则放在 `AGENTS.md`。
 - `.opencode/CONTEXT.md` / `.pi/CONTEXT.md` 保存领域术语与边界。

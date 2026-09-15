@@ -117,6 +117,76 @@ function listDir(dir) {
     .sort();
 }
 
+function createCliFixture() {
+  const source = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-source-'));
+  for (const name of ['.agents', 'bin', 'config', 'template']) {
+    fs.cpSync(path.join(REPO_ROOT, name), path.join(source, name), { recursive: true });
+  }
+  fs.cpSync(path.join(REPO_ROOT, 'package.json'), path.join(source, 'package.json'));
+  fs.symlinkSync(path.join(REPO_ROOT, 'node_modules'), path.join(source, 'node_modules'), 'dir');
+  return source;
+}
+
+test('`init` assembles skills from the canonical source, not the template mirror', () => {
+  const source = createCliFixture();
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
+  try {
+    fs.writeFileSync(
+      path.join(source, 'template', '.agents', 'skills', 'tdd-implement', 'SKILL.md'),
+      'TEMPLATE MIRROR ONLY',
+    );
+
+    const result = spawnSync(process.execPath, [path.join(source, 'bin', 'cli.js'), 'init', '--dest', dest], {
+      cwd: source,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(
+      fs.readFileSync(path.join(dest, '.agents', 'skills', 'tdd-implement', 'SKILL.md'), 'utf8'),
+      fs.readFileSync(path.join(source, '.agents', 'skills', 'tdd-implement', 'SKILL.md'), 'utf8'),
+    );
+  } finally {
+    fs.rmSync(source, { recursive: true, force: true });
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('`init --all` can refresh the workspace root without copying skills onto themselves', () => {
+  const source = createCliFixture();
+  try {
+    const result = spawnSync(process.execPath, [path.join(source, 'bin', 'cli.js'), 'init', '--all'], {
+      cwd: source,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+});
+
+test('`init --all` includes every distributable source skill directory', () => {
+  const source = createCliFixture();
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
+  try {
+    const skillDir = path.join(source, '.agents', 'skills', 'fixture-skill');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), 'not listable yet');
+
+    const result = spawnSync(process.execPath, [path.join(source, 'bin', 'cli.js'), 'init', '--all', '--dest', dest], {
+      cwd: source,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(
+      fs.readFileSync(path.join(dest, '.agents', 'skills', 'fixture-skill', 'SKILL.md'), 'utf8'),
+      'not listable yet',
+    );
+  } finally {
+    fs.rmSync(source, { recursive: true, force: true });
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
 test('`init` copies the default programming template into the target', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {

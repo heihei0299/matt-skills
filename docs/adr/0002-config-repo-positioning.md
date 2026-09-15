@@ -13,14 +13,14 @@ The workspace is the complete maintenance source: it contains the upstream skill
 - 5 distributable skills: `tdd-implement`, `diagnose-fix`, `grill-to-spec`, `scaffold-functional-test`, and `show-me`;
 - 2 repo-local skills: `ci-guard` and `commit-check`.
 
-The Template Snapshot is a distribution projection of the workspace. It contains project configuration, all distributable shared skills, distributable commands and prompts, and no repo-local skill or command. A Target Repository initializes by copying this snapshot and does not need a separate manual upstream fetch.
+The Template Snapshot is a distribution projection of the workspace's project configuration and skeleton. It does not contain shared Skills. A Target Repository initializes by copying the skeleton and then having the CLI assemble the selected distributable Skills directly from the canonical Workspace source; it does not need a separate manual upstream fetch.
 
-`list`, `install`, `init`, and `sync` operate on the distributable projection for user-facing paths. Repo-local skills remain available in the workspace for maintaining matt-skills itself. Existing repo-local copies in a Target Repository are preserved and may receive a migration notice; this boundary does not authorize destructive cleanup.
+`list`, `install`, `init`, and `sync` operate on the canonical Skill source and the distribution boundary for user-facing paths. Repo-local Skills remain available in the Workspace for maintaining matt-skills itself. Existing repo-local copies in a Target Repository are preserved and may receive a migration notice; this boundary does not authorize destructive cleanup.
 
 ## Trade-offs
 
-The workspace and Template Snapshot no longer have identical skill listings. This is intentional: the workspace remains complete for maintenance, while the template is safe to distribute. The explicit classification adds a small configuration and testing surface, but prevents repo-specific skills and commands from leaking into user projects.
+The Workspace and Template Snapshot intentionally have different responsibilities: the Workspace remains the complete maintenance source, while the Template Snapshot remains a skeleton and the CLI performs Skill assembly. The explicit classification adds a small configuration and testing surface, but prevents repo-specific Skills and commands from leaking into user projects.
 
 ## Verification
 
-The classification invariant tests, CLI distribution-boundary fixtures, template mirror tests, and documentation contract tests guard this decision. The template generator is the single projection path and must keep distributable and repo-local contents separate.
+The classification invariant tests, CLI distribution-boundary fixtures, canonical Skill contract tests and Template Snapshot structure tests guard this decision. The CLI is the Skill assembly path; the Template Snapshot generator must not create a persistent shared Skill mirror.

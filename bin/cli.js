@@ -156,27 +156,33 @@ function parseFrontmatter(text) {
   return fields;
 }
 
-async function listSkills({ onlyProgramming = false } = {}) {
+async function listSkillNames({ onlyProgramming = false } = {}) {
   const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+  let names = entries
+    .filter((entry) => entry.isDirectory())
+    .filter((entry) => !entry.name.endsWith('.bak'))
+    .filter((entry) => entry.name !== 'skill-creator' && entry.name !== '.git')
+    .filter((entry) => !isRepoLocalSkill(entry.name))
+    .map((entry) => entry.name);
+  if (onlyProgramming) {
+    const engineering = await loadEngineeringSkills();
+    const required = await loadRequiredSkills();
+    names = names.filter((name) => isProgrammingSkill(name, engineering, required));
+  }
+  return names.sort();
+}
+
+async function listSkills({ onlyProgramming = false } = {}) {
   const skills = [];
-  let engineering = null;
-  let required = null;
-  if (onlyProgramming) engineering = await loadEngineeringSkills();
-  if (onlyProgramming) required = await loadRequiredSkills();
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    if (entry.name.endsWith('.bak')) continue;
-    if (entry.name === 'skill-creator') continue;
-    if (isRepoLocalSkill(entry.name)) continue;
-    if (onlyProgramming && !isProgrammingSkill(entry.name, engineering, required)) continue;
+  for (const name of await listSkillNames({ onlyProgramming })) {
     let content;
     try {
-      content = await readFile(path.join(SKILLS_DIR, entry.name, 'SKILL.md'), 'utf8');
+      content = await readFile(path.join(SKILLS_DIR, name, 'SKILL.md'), 'utf8');
     } catch {
       continue;
     }
-    const { name, description } = parseFrontmatter(content);
-    if (name && description) skills.push({ name, description });
+    const { name: frontmatterName, description } = parseFrontmatter(content);
+    if (frontmatterName && description) skills.push({ name: frontmatterName, description });
   }
   return skills.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
@@ -193,7 +199,7 @@ async function pathExists(p) {
 function shouldCopyTemplatePath(src) {
   const relative = path.relative(TEMPLATE_DIR, src);
   const parts = relative.split(path.sep);
-  return !(parts[0] === '.agents' && parts[1] === 'skills' && isRepoLocalSkill(parts[2]));
+  return !(parts[0] === '.agents' && parts[1] === 'skills');
 }
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
@@ -312,23 +318,16 @@ async function initCommand({ dest, all }) {
       force: true,
       filter: shouldCopyTemplatePath,
     });
-    process.stdout.write('模板：已复制（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
-    // 默认范围（engineering + 独有所需 + 默认独有），--all 才保留其余 productivity
-    if (onlyProgramming && path.resolve(target) !== path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), '..'))) {
-      const engineering = await loadEngineeringSkills();
-      const required = await loadRequiredSkills();
-      const skillsDirFilter = path.join(target, '.agents', 'skills');
-      try {
-        const entries = await readdir(skillsDirFilter, { withFileTypes: true });
-        for (const e of entries) {
-          if (!e.isDirectory()) continue;
-          if (e.name.endsWith('.bak') || e.name === '.git' || e.name === 'skill-creator') continue;
-          if (!isProgrammingSkill(e.name, engineering, required)) {
-            await rm(path.join(skillsDirFilter, e.name), { recursive: true, force: true });
-          }
-        }
-      } catch {}
+    const selectedSkills = await listSkillNames({ onlyProgramming });
+    const skillsDir = path.join(target, '.agents', 'skills');
+    await mkdir(skillsDir, { recursive: true });
+    for (const name of selectedSkills) {
+      const source = path.join(SKILLS_DIR, name);
+      const destination = path.join(skillsDir, name);
+      if (path.resolve(source) === path.resolve(destination)) continue;
+      await cp(source, destination, { recursive: true, force: true });
     }
+    process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
   }
   // 统计（区分编程 vs 全量）
   const skillsDir = path.join(target, '.agents', 'skills');
