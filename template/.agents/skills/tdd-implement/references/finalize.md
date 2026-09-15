@@ -14,11 +14,11 @@
 
 Commit 成功后：
 
-- 勾选 Acceptance Criteria；
-- issue 标记 `resolved`；
 - 写实施总结并同步 `.scratch/<feature>/progress.md` 的 Status/Commit/Review/Tests；
 - 记录 commit hash/message、最终测试和真实运行结果；
-- 确认后续 blockers 是否解除。
+- 确认后续 blockers 是否解除；
+- 勾选 Acceptance Criteria；
+- issue 标记 `resolved`。
 
 ## 出口
 
