@@ -68,6 +68,32 @@ test('list --all exposes all distributable skills and no repo-local skills', () 
   assert.equal(json.stdout.includes('commit-check'), false);
 });
 
+test('list uses canonical Skill directory names when frontmatter differs', () => {
+  const source = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-source-'));
+  try {
+    for (const name of ['.agents', 'bin', 'config']) {
+      fs.cpSync(path.join(ROOT, name), path.join(source, name), { recursive: true });
+    }
+    fs.cpSync(path.join(ROOT, 'package.json'), path.join(source, 'package.json'));
+    fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(source, 'node_modules'), 'dir');
+    const skillFile = path.join(source, '.agents', 'skills', 'tdd-implement', 'SKILL.md');
+    fs.writeFileSync(
+      skillFile,
+      fs.readFileSync(skillFile, 'utf8').replace(/^name: tdd-implement$/m, 'name: renamed-skill'),
+    );
+
+    const result = spawnSync(process.execPath, [path.join(source, 'bin', 'cli.js'), 'list', '--all'], {
+      cwd: source,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^tdd-implement —/m);
+    assert.doesNotMatch(result.stdout, /^renamed-skill —/m);
+  } finally {
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+});
+
 test('install --all --dest copies only distributable skills', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-distribution-'));
   try {
@@ -171,7 +197,7 @@ test('sync default and --all do not add repo-local skills', () => {
   }
 });
 
-test('sync preserves repo-local sentinels and only cleans shared harness mirrors', () => {
+test('sync preserves repo-local and project-local skills', () => {
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-preserve-'));
     try {
@@ -192,7 +218,8 @@ test('sync preserves repo-local sentinels and only cleans shared harness mirrors
       const result = runCli([...args, '--dest', dest]);
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /不再分发|已保留/);
-      assert.equal(fs.existsSync(sharedMirror), false);
+      assert.equal(fs.existsSync(sharedMirror), true);
+      assert.equal(fs.readFileSync(path.join(sharedMirror, 'SKILL.md'), 'utf8'), 'LEGACY SHARED MIRROR');
       for (const [harness, name] of [
         ['.agents/skills', 'commit-check'],
         ['.pi/skills', 'commit-check'],
