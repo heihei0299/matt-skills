@@ -11,8 +11,6 @@ const orchestration = read('.agents/skills/tdd-implement/references/orchestratio
 const verify = read('.agents/skills/tdd-implement/references/verify.md');
 const finalize = read('.agents/skills/tdd-implement/references/finalize.md');
 
-const refs = ['orchestration.md', 'verify.md', 'finalize.md'];
-
 test('tdd-implement exposes the current two-stage delivery lifecycle', () => {
   assert.match(skill, /name: tdd-implement/);
   assert.match(skill, /spec\/task/);
@@ -29,16 +27,32 @@ test('current references define the issue delivery contract', () => {
   assert.match(skill, /\[finalize\.md\]\(references\/finalize\.md\)/);
   assert.match(orchestration, /每个 issue 仍按 `Red-Green → Verify → Finalize` 独立完成/);
   assert.match(verify, /当前 issue 的必要验证通过/);
-  assert.match(finalize, /仅在 Verify 通过后执行/);
+  assert.match(finalize, /仅在 Verify 与 Review 通过后执行/);
 });
 
-test('Finalize updates progress before closing acceptance', () => {
-  assert.match(finalize, /3\. 更新 progress\/tracker[\s\S]*4\. 将 Acceptance Criteria 标记完成/);
-  assert.doesNotMatch(finalize, /3\. 将 Acceptance Criteria 标记完成[\s\S]*4\. 更新 progress\/tracker/);
+test('review becomes incremental after the one full review', () => {
+  assert.match(skill, /full_review_done = false/);
+  assert.match(skill, /open_findings = \[\]/);
+  assert.match(skill, /full_review_done = true[\s\S]*不得再次启动完整双轴 Review/);
+  assert.match(skill, /增量 Review 不调用完整 `code-review`/);
+  assert.match(skill, /full_review_done = true[\s\S]*open_findings[\s\S]*为空/);
 });
 
-test('tdd-implement avoids obsolete stage and commit-check coupling', () => {
+test('git commit granularity belongs to repository policy', () => {
+  assert.match(skill, /Git 提交数量与粒度服从当前仓库规则和用户指令/);
+  assert.match(finalize, /Git 提交数量与粒度由当前仓库规则和用户指令决定/);
+  assert.match(orchestration, /Git 提交数量与粒度始终服从当前仓库规则和用户指令/);
+  assert.doesNotMatch(skill, /独立 commit/);
+  assert.doesNotMatch(finalize, /独立 commit/);
+  assert.doesNotMatch(orchestration, /每个完成的 issue 均有独立 commit/);
+});
+
+test('Finalize updates progress before resolving the issue', () => {
+  assert.match(finalize, /2\. 更新 Acceptance Criteria 与 progress\/tracker[\s\S]*3\. 将 issue 标记 `resolved`/);
+});
+
+test('tdd-implement avoids obsolete references and commit-check coupling', () => {
   assert.doesNotMatch(skill, /references\/(contract|red-green|stages)\.md/);
+  assert.doesNotMatch(orchestration, /red-green\.md|commit-check|scan-sensitive\.sh/);
   assert.doesNotMatch(skill, /commit-check|scan-sensitive\.sh/);
-  assert.doesNotMatch(orchestration, /commit-check|scan-sensitive\.sh/);
 });

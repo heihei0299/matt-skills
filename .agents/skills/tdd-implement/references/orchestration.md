@@ -25,19 +25,19 @@ for each layer:
 
 一个 issue Finalize 完成后立即进入下一个可调度 issue。前置 issue 未完成时，其依赖项保持 `blocked`。
 
-每个 issue 的 TDD、验证、Review 与 Finalize 规则分别以 `SKILL.md`、`red-green.md`、`verify.md`、`finalize.md` 为准，本文件不重复定义。
+每个 issue 的 Red-Green 与 Review 编排以 `SKILL.md` 为准；验证与 Finalize 分别以 `verify.md`、`finalize.md` 为准，本文件不重复定义。
 
 ## 3. 状态收敛
 
 每个 issue 完成后同步：
 
 - `Status`；
-- commit；
 - Review 状态；
 - 验证结果；
-- 已解除的 blockers。
+- 已解除的 blockers；
+- commit（仅当当前仓库 Git policy 已产生对应 commit 时）。
 
-当前层所有 issue 完成后进入下一层。全部层完成后，确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。
+当前层所有 issue 完成后进入下一层。全部层完成后，确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。Git 提交数量与粒度始终服从当前仓库规则和用户指令。
 
 ## 冲突与失败
 
@@ -49,6 +49,6 @@ for each layer:
 ## 出口
 
 - 所有可执行 issue 均按依赖顺序完成；
-- 每个完成的 issue 均有独立 commit；
 - issue、依赖状态与 progress 一致；
+- Git 行为符合当前仓库规则与用户指令；
 - 不存在被误当作已完成的 blocked issue。

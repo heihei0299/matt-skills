@@ -35,32 +35,37 @@ disable-model-invocation: true
 
 读取 [verify.md](references/verify.md)，执行当前 issue 所需的最终验证。
 
-最终验证通过且 diff 稳定后执行完整 `code-review`。
+最终验证通过且 diff 稳定后进入 Review。
 
 #### Review
 
-每个 issue 只在 Verify 的最终 diff 稳定后调用一次完整 `code-review`；审查维度、reviewer 数量、提示词和输出格式全部由 `code-review` 自己定义，`tdd-implement` 不复制这些规则。`code-review` 未完成或存在 blocking finding 时 issue 不得收敛；多 issue 层收敛不再次调用完整 Review。
+每个 issue 维护以下 Review 状态：
 
-若完整 Review 存在 blocking finding：
+- `full_review_done = false`
+- `open_findings = []`
+
+当 `full_review_done = false` 时，只调用一次完整 `code-review`。完成后立即设置 `full_review_done = true`，并将 blocking findings 写入 `open_findings`。
+
+当 `full_review_done = true` 时，完整 `code-review` 路径关闭，不得再次启动完整双轴 Review。后续仅处理 `open_findings`：
 
 1. 仅修复对应 finding，不扩大当前 issue 范围；
-2. 修复后仅对该 finding 及其直接影响执行增量 Review；
-3. 未受影响的 Review 结论继续有效；
-4. 不重新执行完整双轴 Review；
-5. 若增量 Review 仍存在问题，仅继续修复并复核剩余 finding。
+2. 重新验证该修复直接影响的证据；
+3. 直接针对该 finding 与修复 diff 做增量 Review；增量 Review 不调用完整 `code-review`；
+4. 复核通过后从 `open_findings` 移除该 finding；
+5. 若修复产生新的 Behavior，返回 Red-Green 对该 Behavior 执行 TDD，再回 Verify 验证受影响范围；`full_review_done` 保持为 `true`。
 
-所有 blocking finding 关闭后 Review 才算通过。
+`full_review_done = true` 且 `open_findings` 为空时 Review 才算通过。审查维度、reviewer 数量、提示词和输出格式仍以 `code-review` 为唯一事实源。
 
 **出口：**
 
 - 当前 issue 所需最终验证通过；
 - 要求的真实运行验证完成；
-- 完整 Review 已完成；
-- 所有 blocking finding 已关闭。
+- `full_review_done = true`；
+- `open_findings` 为空。
 
 ## Finalize
 
-Verify 通过后读取 [finalize.md](references/finalize.md)，完成当前 issue 的必要同步、独立 commit 与 tracker/progress 收尾。
+Verify 与 Review 通过后读取 [finalize.md](references/finalize.md)，完成当前 issue 的必要同步、tracker/progress 与仓库 Git policy 收尾。
 
 Finalize 不新增产品 Behavior；若发现实现或验证遗漏，回到对应 Step 完成后再收尾。
 
@@ -69,7 +74,8 @@ Finalize 不新增产品 Behavior；若发现实现或验证遗漏，回到对�
 - Red-Green 必须覆盖当前 issue 的全部待实现 Behavior，不能只对第一个改动执行 TDD。
 - 一个 Behavior 完成后继续下一个 Behavior，直到 Step ① 出口满足。
 - Verify 只做当前 issue 必要的最终验证；已通过的等价验证不机械重复。
-- 完整双轴 Review 每个 issue 只执行一次；后续修复只执行受影响 finding 的增量 Review。
+- 每个 issue 的完整双轴 Review 只允许从 `full_review_done = false` 进入一次；之后只处理 `open_findings` 的增量 Review。
+- Git 提交数量与粒度服从当前仓库规则和用户指令，本技能不另行规定。
 - 当前 Step 达到出口后继续进入下一 Step；仅在需要用户决策或存在外部阻塞时暂停。
 
 ## References
