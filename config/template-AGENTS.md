@@ -75,7 +75,6 @@ codegraph node "<符号>"
 ## Git
 
 * 仅在用户要求时 commit。
-* 同一请求最多一个 commit。
 * commit 前检查 diff。
 * 只 stage 本次任务文件。
 * 不使用 `git add .` / `git add -A`。

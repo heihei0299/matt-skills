@@ -19,7 +19,7 @@ for each layer:
   for each issue:
     Red-Green
     Verify
-    Finalize
+    Finalize  # 包含当前 issue 独立 commit
     更新 issue 与 progress
 ```
 
@@ -35,9 +35,9 @@ for each layer:
 - Review 状态；
 - 验证结果；
 - 已解除的 blockers；
-- commit（仅当当前仓库 Git policy 已产生对应 commit 时）。
+- 当前 issue 的独立 commit。
 
-当前层所有 issue 完成后进入下一层。全部层完成后，确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。Git 提交数量与粒度始终服从当前仓库规则和用户指令。
+当前 issue 的完整 Review 通过并完成独立 commit 后，才进入下一个 issue。当前层所有 issue 完成后进入下一层。全部层完成后，确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。
 
 ## 冲突与失败
 
@@ -50,5 +50,5 @@ for each layer:
 
 - 所有可执行 issue 均按依赖顺序完成；
 - issue、依赖状态与 progress 一致；
-- Git 行为符合当前仓库规则与用户指令；
+- 每个完成的 issue 均有独立 commit；
 - 不存在被误当作已完成的 blocked issue。

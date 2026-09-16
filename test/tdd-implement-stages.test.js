@@ -38,17 +38,15 @@ test('review becomes incremental after the one full review', () => {
   assert.match(skill, /full_review_done = true[\s\S]*open_findings[\s\S]*为空/);
 });
 
-test('git commit granularity belongs to repository policy', () => {
-  assert.match(skill, /Git 提交数量与粒度服从当前仓库规则和用户指令/);
-  assert.match(finalize, /Git 提交数量与粒度由当前仓库规则和用户指令决定/);
-  assert.match(orchestration, /Git 提交数量与粒度始终服从当前仓库规则和用户指令/);
-  assert.doesNotMatch(skill, /独立 commit/);
-  assert.doesNotMatch(finalize, /独立 commit/);
-  assert.doesNotMatch(orchestration, /每个完成的 issue 均有独立 commit/);
+test('each issue gets one full review and one independent commit', () => {
+  assert.match(skill, /每个 issue 的完整 Review 通过后创建一个独立 commit/);
+  assert.match(finalize, /2\. 为当前 issue 创建一个独立 commit/);
+  assert.match(orchestration, /当前 issue 的完整 Review 通过并完成独立 commit 后，才进入下一个 issue/);
+  assert.match(orchestration, /每个完成的 issue 均有独立 commit/);
 });
 
-test('Finalize updates progress before resolving the issue', () => {
-  assert.match(finalize, /2\. 更新 Acceptance Criteria 与 progress\/tracker[\s\S]*3\. 将 issue 标记 `resolved`/);
+test('Finalize commits before tracker sync and resolves only after state sync', () => {
+  assert.match(finalize, /2\. 为当前 issue 创建一个独立 commit[\s\S]*3\. 更新 Acceptance Criteria 与 progress\/tracker[\s\S]*4\. 收尾状态同步成功后，将 issue 标记 `resolved`/);
 });
 
 test('tdd-implement avoids obsolete references and commit-check coupling', () => {

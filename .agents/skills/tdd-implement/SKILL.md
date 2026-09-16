@@ -65,7 +65,7 @@ disable-model-invocation: true
 
 ## Finalize
 
-Verify 与 Review 通过后读取 [finalize.md](references/finalize.md)，完成当前 issue 的必要同步、tracker/progress 与仓库 Git policy 收尾。
+Verify 与 Review 通过后读取 [finalize.md](references/finalize.md)，完成当前 issue 的必要同步、独立 commit 与 tracker/progress 收尾。
 
 Finalize 不新增产品 Behavior；若发现实现或验证遗漏，回到对应 Step 完成后再收尾。
 
@@ -75,7 +75,7 @@ Finalize 不新增产品 Behavior；若发现实现或验证遗漏，回到对�
 - 一个 Behavior 完成后继续下一个 Behavior，直到 Step ① 出口满足。
 - Verify 只做当前 issue 必要的最终验证；已通过的等价验证不机械重复。
 - 每个 issue 的完整双轴 Review 只允许从 `full_review_done = false` 进入一次；之后只处理 `open_findings` 的增量 Review。
-- Git 提交数量与粒度服从当前仓库规则和用户指令，本技能不另行规定。
+- 每个 issue 的完整 Review 通过后创建一个独立 commit；该 commit 完成后才能进入下一个 issue。
 - 当前 Step 达到出口后继续进入下一 Step；仅在需要用户决策或存在外部阻塞时暂停。
 
 ## References

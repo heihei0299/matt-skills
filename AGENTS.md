@@ -56,7 +56,6 @@ codegraph explore "<问题>"
 ## Harness
 同类问题反复出现时，优先将约束落实到测试、lint、类型、工具或代码结构，而不是继续扩充本文件。
 ## Git
-有实际改动且满足全局规则时，每个用户请求最多一次 commit。
 * 提交前检查 diff。
 * 只 stage 本次任务文件。
 * 不使用 `git add .` / `git add -A`。
