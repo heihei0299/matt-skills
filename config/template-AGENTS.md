@@ -21,7 +21,7 @@
 
 * `README.md`
 * `PROJECT.md`
-* `.opencode/CONTEXT.md`
+* `CONTEXT.md`
   以当前代码、配置、测试和版本化文档为事实来源。
 
 ## Code Navigation
