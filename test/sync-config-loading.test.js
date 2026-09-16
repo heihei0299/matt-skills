@@ -37,14 +37,18 @@ test('sync-upstream check fails when required config is missing', () => {
   const upstream = createUpstream();
   try {
     fs.rmSync(path.join(root, 'config/required.json'));
+    const tmpDir = path.join(root, 'upstream-tmp');
     const result = spawnSync(process.execPath, [
       path.join(root, 'scripts/sync-upstream.js'),
       '--check',
       '--upstream',
       upstream,
+      '--tmp',
+      tmpDir,
     ], { cwd: root, encoding: 'utf8' });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /unable to read required skill config/);
+    assert.equal(fs.existsSync(tmpDir), false, 'invalid local config must fail before upstream fetch');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
     fs.rmSync(upstream, { recursive: true, force: true });

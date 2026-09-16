@@ -111,12 +111,12 @@ async function collectLocalSkills(proprietary) {
 export async function compare({ upstreamUrl, tmpDir, ref, onlyProgramming = true } = {}) {
   const proprietary = await loadProprietary();
   const engineering = await loadEngineering();
+  const required = await loadRequired();
   const fetched = await fetchUpstream({ tmpDir, upstreamUrl, ref });
   const upstreamRoot = fetched.dest;
   const upstreamMapFull = await collectUpstreamSkills(upstreamRoot);
   const localMapFull = await collectLocalSkills(proprietary);
   // 默认范围：engineering 桶（编程）+ 独有所需（config/required.json，如 grill-to-spec 经 grill-with-docs 所需的 grilling）；--all 则含全部 productivity
-  const required = await loadRequired();
   const upstreamMap = onlyProgramming
     ? new Map([...upstreamMapFull.entries()].filter(([name, v]) => v.bucket === 'engineering' || required.has(name)))
     : upstreamMapFull;
