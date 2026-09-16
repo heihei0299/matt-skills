@@ -57,9 +57,9 @@ test('sync --all --force 同样拒绝', () => {
   }
 });
 
-// --all 强制更新 AGENTS.md，即使含 tdd-implement 也不跳过，且不产生 .bak
-test('sync --all 强制更新 AGENTS.md（即使含 tdd-implement）且不产生 .bak', () => {
-  const custom = 'LOCAL EDIT tdd-implement custom routing\nunique-line-12345';
+// --all 明确要求整文件刷新，不受 managed marker 约束，且不产生 .bak
+test('sync --all 强制整体刷新 AGENTS.md 且不产生 .bak', () => {
+  const custom = 'LOCAL EDIT custom routing\nunique-line-12345';
   const dest = createDestWithCustomAgents(custom);
   try {
     const { status } = runCli(['sync', '--all', '--dest', dest]);
@@ -68,20 +68,55 @@ test('sync --all 强制更新 AGENTS.md（即使含 tdd-implement）且不产生
     assert.ok(!fs.existsSync(bakPath), '.bak 不应产生（已移除硬盖）');
     const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
     const template = fs.readFileSync(path.join(REPO_ROOT, 'template/AGENTS.md'), 'utf8');
-    assert.equal(after, template, '--all 应覆盖含 tdd-implement 的 AGENTS.md');
+    assert.equal(after, template, '--all 应整体刷新 AGENTS.md');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
 });
 
-test('sync 默认（无 --all）含 tdd-implement 时跳过 AGENTS.md', () => {
-  const custom = 'LOCAL EDIT tdd-implement\nkeep me';
+test('sync 默认保留没有 managed marker 的现有 AGENTS.md', () => {
+  const custom = 'LOCAL EDIT without sentinel\nkeep me';
   const dest = createDestWithCustomAgents(custom);
   try {
-    runCli(['sync', '--dest', dest]);
+    const { stdout } = runCli(['sync', '--dest', dest]);
     const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
-    assert.equal(after, custom, '默认应跳过含 tdd-implement 的 AGENTS.md');
+    assert.equal(after, custom, '未受管的 AGENTS.md 应原样保留');
+    assert.match(stdout, /AGENTS\.md 未受管，已原样保留/);
     assert.ok(!fs.existsSync(path.join(dest, 'AGENTS.md.bak')));
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('sync 默认只刷新 managed block 并保留标记外的项目规则', () => {
+  const current = [
+    '# AGENTS.md',
+    '',
+    'project-prefix-rule',
+    '',
+    '<!-- matt-skills:managed:start -->',
+    'OLD MANAGED CONTENT',
+    '<!-- matt-skills:managed:end -->',
+    '',
+    '## Project Local Rules',
+    'keep-this-rule',
+    '',
+  ].join('\n');
+  const dest = createDestWithCustomAgents(current);
+  try {
+    const { stdout } = runCli(['sync', '--dest', dest]);
+    const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
+    const template = fs.readFileSync(path.join(REPO_ROOT, 'template/AGENTS.md'), 'utf8');
+    const start = template.indexOf('<!-- matt-skills:managed:start -->');
+    const endMarker = '<!-- matt-skills:managed:end -->';
+    const end = template.indexOf(endMarker) + endMarker.length;
+    const managed = template.slice(start, end);
+
+    assert.ok(after.includes(managed), '应刷新为当前模板的 managed block');
+    assert.match(after, /project-prefix-rule/);
+    assert.match(after, /## Project Local Rules[\s\S]*keep-this-rule/);
+    assert.doesNotMatch(after, /OLD MANAGED CONTENT/);
+    assert.match(stdout, /AGENTS\.md 受管区块已更新/);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }

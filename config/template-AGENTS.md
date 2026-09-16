@@ -1,5 +1,7 @@
 # AGENTS.md
 
+<!-- matt-skills:managed:start -->
+
 ## Workflow
 
 按任务目标选择 skill / 工具，并用一行声明：
@@ -82,3 +84,5 @@ codegraph node "<符号>"
 ## Completion
 
 有实际修改时说明：改动、验证、未验证项 / 风险、commit hash（如有）。
+
+<!-- matt-skills:managed:end -->

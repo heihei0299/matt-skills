@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, cp, stat, rm, mkdir } from 'node:fs/promises';
+import { readdir, readFile, writeFile, cp, stat, rm, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,7 +71,7 @@ Sync options:
   --dest <path>   Target directory (default: current directory)
   --help, -h      Show this help
 
-说明：默认不带 --all 仅增量同步默认 programming skill 且 AGENTS.md 有定制则跳过；--all 时同步全部可分发 skill 并强制更新 AGENTS.md。
+说明：默认不带 --all 增量同步默认 programming skill，并只更新 AGENTS.md 的 matt-skills 受管区块；没有受管标记的现有 AGENTS.md 原样保留。--all 时同步全部可分发 skill 并强制刷新 AGENTS.md。
 
 提示：matt-skills --help 查看全量
 `;
@@ -185,6 +185,34 @@ function shouldCopyTemplatePath(src) {
   const relative = path.relative(TEMPLATE_DIR, src);
   const parts = relative.split(path.sep);
   return !(parts[0] === '.agents' && parts[1] === 'skills');
+}
+
+const AGENTS_MANAGED_START = '<!-- matt-skills:managed:start -->';
+const AGENTS_MANAGED_END = '<!-- matt-skills:managed:end -->';
+
+function findManagedBlock(content) {
+  const start = content.indexOf(AGENTS_MANAGED_START);
+  if (start < 0 || content.indexOf(AGENTS_MANAGED_START, start + AGENTS_MANAGED_START.length) >= 0) return null;
+  const endStart = content.indexOf(AGENTS_MANAGED_END, start + AGENTS_MANAGED_START.length);
+  if (endStart < 0 || content.indexOf(AGENTS_MANAGED_END, endStart + AGENTS_MANAGED_END.length) >= 0) return null;
+  return { start, end: endStart + AGENTS_MANAGED_END.length };
+}
+
+function mergeManagedAgents(current, template) {
+  const currentBlock = findManagedBlock(current);
+  const templateBlock = findManagedBlock(template);
+  if (!currentBlock || !templateBlock) return null;
+  const managed = template.slice(templateBlock.start, templateBlock.end);
+  return current.slice(0, currentBlock.start) + managed + current.slice(currentBlock.end);
+}
+
+async function syncManagedAgents(targetFile) {
+  const current = await readFile(targetFile, 'utf8');
+  const template = await readFile(path.join(TEMPLATE_DIR, 'AGENTS.md'), 'utf8');
+  const merged = mergeManagedAgents(current, template);
+  if (merged === null) return false;
+  if (merged !== current) await writeFile(targetFile, merged);
+  return true;
 }
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
@@ -382,26 +410,25 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
     process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
   } else {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
-    let skipAgents = false;
-    // --all 时强制更新 AGENTS.md，不跳过
-    if (!all) {
-      try {
-        const content = await readFile(path.join(target, 'AGENTS.md'), 'utf8');
-        if (content.includes('tdd-implement')) skipAgents = true;
-      } catch {}
-    }
-    if (skipAgents) {
-      await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
-      await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
-      process.stdout.write('模板：已同步（AGENTS.md 跳过，已含定制）\n');
-    } else {
-      if (onlyProgramming) await copyTemplateFiltered();
-      else await cp(TEMPLATE_DIR, target, {
+    if (all) {
+      await cp(TEMPLATE_DIR, target, {
         recursive: true,
         force: true,
         filter: shouldCopyTemplatePath,
       });
-      process.stdout.write('模板：已同步（AGENTS.md、.agents/skills、.opencode/、.pi/）\n');
+      process.stdout.write('模板：已同步（AGENTS.md 整体刷新、.opencode/、.pi/）\n');
+    } else {
+      let agentsManaged = false;
+      try {
+        agentsManaged = await syncManagedAgents(marker);
+      } catch {}
+      await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
+      await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
+      if (agentsManaged) {
+        process.stdout.write('模板：已同步（AGENTS.md 受管区块已更新，项目自定义内容已保留）\n');
+      } else {
+        process.stdout.write('模板：已同步（AGENTS.md 未受管，已原样保留）\n');
+      }
     }
   }
   // 技能同步：--all 仅更新同名可分发技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围为默认 programming，不删多余
