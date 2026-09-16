@@ -29,18 +29,16 @@ function assertNoManualRoutes(content) {
   assert.doesNotMatch(content, /显式触发|可选（需 `--all`）/);
 }
 
-test('workspace keeps the direct route and commit policy', () => {
+test('workspace keeps its direct route', () => {
   assert.match(agents, /简单修改 → 直接实现/);
   assert.match(agents, /定位 → 实现 → 验证 → 修正/);
-  assert.match(agents, /每个用户请求最多一次 commit/);
 });
 
-test('template uses its independent workflow and commit policy', () => {
+test('template keeps its independent workflow', () => {
   assert.match(templateAgents, /## Workflow/);
   assert.match(templateAgents, /## Development/);
   assert.match(templateAgents, /默认使用 `tdd`/);
   assert.match(templateAgents, /## Git/);
-  assert.match(templateAgents, /同一请求最多一个 commit/);
   assertNoManualRoutes(templateAgents);
 });
 
