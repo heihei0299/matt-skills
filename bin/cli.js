@@ -340,26 +340,12 @@ async function initCommand({ dest, all }) {
 async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   const onlyProgramming = !all;
   if (dryRun) {
-    const { compare } = await import('../scripts/sync-upstream.js');
+    const { compare, formatComparison } = await import('../scripts/sync-upstream.js');
     const cmp = await compare({ upstreamUrl, ref, onlyProgramming });
     if (json) {
       process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
     } else {
-      const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量上游）';
-      const lines = [];
-      lines.push(`上游 HEAD: ${cmp.head}`);
-      lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream} ${modeHint}`);
-      lines.push('');
-      const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
-      if (totalDiff === 0) lines.push('✅ 已是最新，无差异');
-      else {
-        if (cmp.result.added.length) lines.push(`新增 (${cmp.result.added.length}): ${cmp.result.added.join(', ')}`);
-        if (cmp.result.updated.length) lines.push(`更新 (${cmp.result.updated.length}): ${cmp.result.updated.join(', ')}`);
-        if (cmp.result.renamed.length) lines.push(`重命名 (${cmp.result.renamed.length}): ${cmp.result.renamed.map((r) => `${r.from}→${r.to}`).join(', ')}`);
-        if (cmp.result.removed.length) lines.push(`删除 (${cmp.result.removed.length}): ${cmp.result.removed.join(', ')}`);
-        if (cmp.result.same.length) lines.push(`一致 (${cmp.result.same.length}): ${cmp.result.same.join(', ')}`);
-      }
-      process.stdout.write(lines.join('\n') + '\n');
+      process.stdout.write(formatComparison(cmp) + '\n');
     }
     const { rm } = await import('node:fs/promises');
     await rm(cmp.dest, { recursive: true, force: true });
@@ -559,7 +545,7 @@ function parseInstallArgs(args) {
 }
 
 async function checkCommand(args) {
-  const { compare } = await import('../scripts/sync-upstream.js');
+  const { compare, formatComparison } = await import('../scripts/sync-upstream.js');
   const json = args.includes('--json');
   const onlyProgramming = !args.includes('--all');
   const upstreamIdx = args.indexOf('--upstream');
@@ -572,22 +558,7 @@ async function checkCommand(args) {
   if (json) {
     process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
   } else {
-    const lines = [];
-    lines.push(`上游 HEAD: ${cmp.head}`);
-    const modeHint = onlyProgramming ? '（默认：engineering + 独有所需）' : '（全量上游）';
-    lines.push(`本地非独有: ${cmp.counts.local}  上游: ${cmp.counts.upstream} ${modeHint}`);
-    lines.push('');
-    const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
-    if (totalDiff === 0) {
-      lines.push('✅ 已是最新，无差异');
-    } else {
-      if (cmp.result.added.length) lines.push(`新增 (${cmp.result.added.length}): ${cmp.result.added.join(', ')}`);
-      if (cmp.result.updated.length) lines.push(`更新 (${cmp.result.updated.length}): ${cmp.result.updated.join(', ')}`);
-      if (cmp.result.renamed.length) lines.push(`重命名 (${cmp.result.renamed.length}): ${cmp.result.renamed.map((r) => `${r.from}→${r.to}`).join(', ')}`);
-      if (cmp.result.removed.length) lines.push(`删除 (${cmp.result.removed.length}): ${cmp.result.removed.join(', ')}`);
-      if (cmp.result.same.length) lines.push(`一致 (${cmp.result.same.length}): ${cmp.result.same.join(', ')}`);
-    }
-    process.stdout.write(lines.join('\n') + '\n');
+    process.stdout.write(formatComparison(cmp) + '\n');
   }
   const { rm } = await import('node:fs/promises');
   await rm(cmp.dest, { recursive: true, force: true });

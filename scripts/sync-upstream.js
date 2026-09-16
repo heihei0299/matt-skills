@@ -242,7 +242,7 @@ export async function applySync({ upstreamUrl, tmpDir, ref, dryRun = false, forc
 
   return { ...cmp, dest: null, actions, head };
 }
-function formatTable(cmp) {
+export function formatComparison(cmp) {
   const { result, counts, head, onlyProgramming } = cmp;
   const lines = [];
   lines.push(`上游 HEAD: ${head}`);
@@ -307,7 +307,7 @@ Options:
     if (opts.json) {
       process.stdout.write(JSON.stringify({ head: res.head, result: res.result, actions: res.actions, dryRun: opts.dryRun, onlyProgramming }, null, 2) + '\n');
     } else {
-      process.stdout.write(formatTable(res) + '\n');
+      process.stdout.write(formatComparison(res) + '\n');
       if (res.actions.length) {
         process.stdout.write(`\n已执行 ${res.actions.length} 项:\n`);
         for (const a of res.actions) process.stdout.write(`  - ${a}\n`);
@@ -324,7 +324,7 @@ Options:
   if (opts.json) {
     process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
   } else {
-    process.stdout.write(formatTable(cmp) + '\n');
+    process.stdout.write(formatComparison(cmp) + '\n');
   }
   const hasDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length > 0;
   // 清理临时目录

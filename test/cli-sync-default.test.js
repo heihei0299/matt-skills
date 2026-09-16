@@ -7,6 +7,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
+const SYNC = fileURLToPath(new URL('../scripts/sync-upstream.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 
 function runCli(args, cwd = REPO_ROOT) {
@@ -97,6 +98,27 @@ test('sync --dry-run 有差异时 exit 1 且打印新增/更新等分类', () =>
     assert.match(stdout, /新增 \(1\):.*extra-sync-test-skill/s);
     assert.equal(status, 1, `expected exit 1 when diff exists, got ${status}`);
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT tdd-implement');
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+    fs.rmSync(upstream, { recursive: true, force: true });
+  }
+});
+
+test('sync --dry-run 与 standalone check 的核心人类输出语义一致', () => {
+  const dest = createDestWithCustomAgents('LOCAL EDIT tdd-implement');
+  const upstream = createFakeUpstream({ extraSkill: 'extra-shared-format-test' });
+  try {
+    const cli = runCli(['sync', '--dry-run', '--dest', dest, '--upstream', upstream]);
+    const standalone = spawnSync(process.execPath, [SYNC, '--check', '--upstream', upstream], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
+    assert.equal(cli.status, 1);
+    assert.equal(standalone.status, 1);
+    for (const prefix of ['上游 HEAD:', '本地非独有:', '新增 (1):']) {
+      const line = (stdout) => stdout.split('\n').find((entry) => entry.startsWith(prefix));
+      assert.equal(line(cli.stdout), line(standalone.stdout), `${prefix} output drift`);
+    }
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
     fs.rmSync(upstream, { recursive: true, force: true });
