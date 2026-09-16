@@ -4,12 +4,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Guard tests for the "three preventive measures" landed from
-// DIAGNOSIS-tdd-implement-stuck.md section 8. They protect every artifact
-// produced when turning the diagnosis into repo rules: the skill-design spec,
-// the CONTEXT.md glossary, the ADR, the AGENTS.md runtime discipline, and the
-// diagnosis report's "landed" marker. Any of them deleted or broken → red.
-
+// Guard the policy migration artifacts: deprecated compatibility docs must stay
+// non-normative while ADRs, routing, and the landed diagnosis remain intact.
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const specPath = path.join(dir, 'docs', 'agents', 'skill-design.md');
 const contextPath = path.join(dir, 'CONTEXT.md');
@@ -25,50 +21,40 @@ const agents = readFileSync(agentsPath, 'utf8');
 const runtime = readFileSync(runtimePath, 'utf8');
 const diagnosis = readFileSync(diagnosisPath, 'utf8');
 
-test('skill-design.md exists and carries all three rules', () => {
-  assert.match(spec, /Turn Continuity/i);
-  assert.match(spec, /within one turn/);
-  // Rule 1 is positive phrasing with an exit condition, not a bare prohibition
-  assert.match(spec, /exit condition/);
-  assert.match(spec, /cannot rely on the harness `\/goal`/);
-  // Rule 2: model selection
-  assert.match(spec, /flash-class models/i);
-  assert.match(spec, /stronger model/i);
-  // Rule 3: chunking with quantitative thresholds
-  assert.match(spec, /150 lines/);
-  assert.match(spec, /5 `replace`/);
+test('skill-design.md remains a deprecated compatibility pointer', () => {
+  assert.match(spec, /# Skill Design — Deprecated/);
+  assert.match(spec, /not\** a normative rule source/i);
+  assert.match(spec, /active `AGENTS\.md`/);
+  assert.match(spec, /`CONTEXT\.md`/);
+  assert.match(spec, /skill's `SKILL\.md`/);
+  assert.doesNotMatch(spec, /Turn Continuity|Chunking|Git History Preservation|BASE_HEAD/);
 });
 
-test('CONTEXT.md glossary holds the three design terms', () => {
-  assert.match(context, /\*\*Turn Continuity\*\*/);
-  assert.match(context, /回合连续性/);
-  assert.match(context, /\*\*Chunking\*\*/);
-  assert.match(context, /拆小步/);
-  assert.match(context, /\*\*Long-Horizon Skill\*\*/);
-  assert.match(context, /长程多阶段技能/);
+test('CONTEXT.md remains repository vocabulary only', () => {
+  assert.match(context, /Repository vocabulary for this project/);
+  assert.match(context, /## Repository/);
+  assert.match(context, /\*\*Workspace\*\*/);
+  assert.doesNotMatch(context, /## Skill Design|Turn Continuity|Chunking|Git History Preservation|BASE_HEAD/);
 });
 
-test('ADR 0001 records the turn-continuity decision', () => {
+test('ADR 0001 records the historical turn-continuity decision', () => {
   assert.match(adr, /Turn Continuity/);
   assert.match(adr, /`\/goal`/);
 });
 
-test('runtime-discipline.md carries the runtime discipline (rules 2 & 3)', () => {
-  assert.match(runtime, /运行纪律/);
-  assert.match(runtime, /模型选择/);
-  assert.match(runtime, /flash/);
-  assert.match(runtime, /拆小步执行/);
-  assert.match(runtime, /150 行/);
-  assert.match(runtime, /5 处/);
-  // and points at the skill-design spec
-  assert.match(runtime, /docs\/agents\/skill-design\.md/);
+test('runtime-discipline.md delegates policy to its owners', () => {
+  assert.match(runtime, /only general execution discipline/i);
+  assert.match(runtime, /active project `AGENTS\.md`/);
+  assert.match(runtime, /a skill owns only its own lifecycle/);
+  assert.match(runtime, /TDD semantics belong/);
+  assert.doesNotMatch(runtime, /BASE_HEAD|Turn Continuity|Chunking|Git History Preservation/);
 });
 
 test('AGENTS.md is the router: points at the runtime discipline entry points', () => {
   assert.match(agents, /## 路由/);
   assert.match(agents, /## CodeGraph/);
   assert.match(agents, /codegraph explore/);
-  // quantitative thresholds belong in the discipline files, not the main config
+  // Quantitative thresholds belong in the owning discipline files, not here.
   assert.doesNotMatch(agents, /150 行/);
 });
 
@@ -77,38 +63,15 @@ test('diagnosis report is marked as landed', () => {
   assert.match(diagnosis, /### 落地状态/);
 });
 
-test('skill-design.md carries Rule 4 Git History Preservation', () => {
-  assert.match(spec, /Rule 4.*Git History Preservation/);
-  assert.match(spec, /BASE_HEAD/);
-  assert.match(spec, /git merge-base --is-ancestor \$BASE_HEAD HEAD/);
-  assert.match(spec, /git reset --hard/);
-  assert.match(spec, /git checkout \./);
-  assert.match(spec, /git clean -fd/);
-  assert.match(spec, /git stash push --include-untracked/);
-  assert.match(spec, /git reflog/);
-});
-
-test('CONTEXT.md glossary holds Git History Preservation term', () => {
-  assert.match(context, /\*\*Git History Preservation\*\*/);
-  assert.match(context, /Git 历史保护/);
-  assert.match(context, /BASE_HEAD/);
-  assert.match(context, /merge-base --is-ancestor/);
-  assert.match(context, /git reset --hard/);
-});
-
-test('ADR 0003 records git-history-preservation decision', () => {
+test('ADR 0003 records the git-history-preservation decision', () => {
   const adr3 = readFileSync(path.join(dir, 'docs', 'adr', '0003-git-history-preservation.md'), 'utf8');
   assert.match(adr3, /BASE_HEAD/);
   assert.match(adr3, /merge-base --is-ancestor/);
   assert.match(adr3, /git reset --hard|reset --hard/);
 });
 
-test('runtime-discipline.md carries Git History Preservation discipline', () => {
-  assert.match(runtime, /Git 历史保护/);
-  assert.match(runtime, /BASE_HEAD/);
-  assert.match(runtime, /merge-base --is-ancestor/);
-  assert.match(runtime, /git reset --hard/);
-  assert.match(runtime, /git checkout \./);
-  assert.match(runtime, /git clean -fd/);
-  assert.match(runtime, /stash push --include-untracked/);
+test('runtime-discipline.md leaves git history policy to AGENTS.md', () => {
+  assert.match(runtime, /Git policy come from the active `AGENTS\.md`/);
+  assert.doesNotMatch(runtime, /BASE_HEAD|merge-base --is-ancestor|git reset --hard|git checkout \.|git clean -fd|stash push --include-untracked/);
 });
+
