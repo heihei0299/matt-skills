@@ -65,7 +65,7 @@ Verify 通过后读取 [review.md](references/review.md)。
 
 Review 通过后读取 [finalize.md](references/finalize.md)，只做 tracker/progress/status 收尾并记录 `issue_head`。
 
-Finalize 不新增产品 Behavior，也不修改已经 Review 的实现内容。若收尾时发现实现、文档/配置或验证遗漏，按 `finalize.md` 返回对应 Step，不得绕过 Review 直接完成。
+Finalize 不新增产品 Behavior，也不修改已经 Review 的实现内容。若收尾时发现实现、测试、文档/配置或验证遗漏，停止当前 issue，不标记 `resolved`，并按 `finalize.md` 报告遗漏请求决策；不得在 Finalize 中补改或重新进入 Red-Green、Verify 或 Review。
 
 ## 运行纪律
 

@@ -74,12 +74,16 @@ test('issue history is a bounded commit range rather than one required commit', 
   assert.doesNotMatch(finalize, /为当前 issue 创建一个独立 commit/);
 });
 
-test('Finalize changes only issue state after review and records issue_head', () => {
+test('Finalize only closes issue state and never reopens implementation', () => {
   assert.match(finalize, /不修改已经 Review 的代码、测试、交付文档或配置/);
-  assert.match(finalize, /状态同步修改了仓库内的 tracker\/progress\/status 文件[\s\S]*将这些状态修改提交/);
-  assert.match(finalize, /不得在该提交中混入产品实现或其它未 Review 的交付修改/);
+  assert.match(finalize, /不得提前标记 `resolved` 或解除 blockers/);
+  assert.match(finalize, /发现任何实现、测试、交付文档、配置或验证遗漏[\s\S]*立即停止当前 issue/);
+  assert.match(finalize, /保持未完成[\s\S]*不标记 `resolved`[\s\S]*不解除 blockers[\s\S]*不设置成功的 `issue_head`/);
+  assert.match(finalize, /不得在 Finalize 中补改[\s\S]*不得自动重新进入 Red-Green、Verify 或 Review/);
+  assert.match(finalize, /仅在未发现上述遗漏[\s\S]*才同步 `resolved` \/ blockers 状态/);
   assert.match(finalize, /设置 `issue_head = HEAD`/);
-  assert.match(finalize, /需要修改代码、测试、交付文档或配置[\s\S]*加入 `open_findings`[\s\S]*增量 Review/);
+  assert.doesNotMatch(finalize, /加入 `open_findings`|返回 Verify|增量 Review/);
+  assert.doesNotMatch(skill, /返回对应 Step/);
 });
 
 test('multi-issue orchestration advances only from a finalized issue boundary', () => {
