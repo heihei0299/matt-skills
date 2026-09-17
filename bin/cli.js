@@ -33,10 +33,12 @@ process.stdout.on('error', (err) => {
   throw err;
 });
 
+const PROJECT_SKILL_DIRS = '.agents/skills、.pi/skills、.opencode/skills、.claude/skills';
+
 const HELP_GLOBAL = `matt-skills — install and manage this skill collection
 
 Usage:
-  matt-skills init [options]                   Initialize a project: template + skills (.agents/skills)
+  matt-skills init [options]                   Initialize a project: template + skills (${PROJECT_SKILL_DIRS})
   matt-skills sync [--all|--dry-run] [--dest <path>]   Sync existing project to latest template + skills
   matt-skills list [--all] [--json]            List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
@@ -46,7 +48,7 @@ Usage:
   matt-skills --version | -v                  Show version
 `;
 
-const HELP_INIT = `matt-skills init [options] — Initialize a project: template + skills (.agents/skills)
+const HELP_INIT = `matt-skills init [options] — Initialize a project: template + skills (${PROJECT_SKILL_DIRS})
 
 Usage:
   matt-skills init [options]
@@ -70,6 +72,7 @@ Sync options:
   --dry-run       预演：只比对不写盘
   --dest <path>   Target directory (default: current directory)
   --help, -h      Show this help
+  项目 skills：${PROJECT_SKILL_DIRS}
 
 说明：默认不带 --all 增量同步默认 programming skill，并只更新 AGENTS.md 的 matt-skills 受管区块；没有受管标记的现有 AGENTS.md 原样保留。--all 时同步全部可分发 skill 并强制刷新 AGENTS.md。
 
@@ -110,7 +113,7 @@ Usage:
   matt-skills install [options]
 
 Install options:
-  --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection — 共享技能统一指向 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义
+  --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection
   --all           Install all distributable skills (default only default programming); skips skill selection
   --force         Overwrite existing skills
   --global        Install to the user's global skill directories
@@ -217,14 +220,16 @@ async function syncManagedAgents(targetFile) {
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
 
-// 统一源：共享技能全部在 .agents/skills，harness 的 .pi/skills/.opencode/skills 仅用于项目自定义
-// 为兼容历史，pi/opencode/claude 的项目安装仍解析但统一指向 .agents/skills，并给出提示
 const PROJECT_DIRS = {
   codex: '.agents/skills',
-  pi: '.agents/skills',
-  opencode: '.agents/skills',
-  claude: '.agents/skills',
+  pi: '.pi/skills',
+  opencode: '.opencode/skills',
+  claude: '.claude/skills',
 };
+
+function projectSkillTargets(target) {
+  return TOOLS.map((tool) => ({ tool, dir: path.resolve(target, PROJECT_DIRS[tool]) }));
+}
 
 const GLOBAL_DIRS = {
   codex: '.codex/skills',
@@ -275,13 +280,8 @@ async function installCommand({ dest, all, force, tools, global }) {
       process.stdout.write('未选择任何工具，未安装任何技能\n');
       return;
     }
-    // 共享技能统一源提示：pi/opencode 的项目目录已改为 .agents/skills
-    const needsHint = selectedTools.some((t) => t === 'pi' || t === 'opencode');
-    if (needsHint && !global) {
-      process.stdout.write('提示：共享技能统一在 .agents/skills，.pi/skills/.opencode/skills 仅用于项目自定义技能\n');
-    }
     targets = selectedTools.map((tool) => ({ tool, dir: toolDir(tool, global) }));
-    // 去重：多个工具可能映射到同一目录（如 pi/opencode/codex 都指向 .agents/skills），合并去重避免重复计数
+    // 去重：保留对自定义 PROJECT_DIRS 映射的兼容。
     const seen = new Map();
     for (const t of targets) {
       if (!seen.has(t.dir)) seen.set(t.dir, t);
@@ -330,15 +330,16 @@ async function initCommand({ dest, all }) {
       filter: shouldCopyTemplatePath,
     });
     const selectedSkills = await listSkillNames({ onlyProgramming });
-    const skillsDir = path.join(target, '.agents', 'skills');
-    await mkdir(skillsDir, { recursive: true });
-    for (const name of selectedSkills) {
-      const source = path.join(SKILLS_DIR, name);
-      const destination = path.join(skillsDir, name);
-      if (path.resolve(source) === path.resolve(destination)) continue;
-      await cp(source, destination, { recursive: true, force: true });
+    for (const { dir } of projectSkillTargets(target)) {
+      await mkdir(dir, { recursive: true });
+      for (const name of selectedSkills) {
+        const source = path.join(SKILLS_DIR, name);
+        const destination = path.join(dir, name);
+        if (path.resolve(source) === path.resolve(destination)) continue;
+        await cp(source, destination, { recursive: true, force: true });
+      }
     }
-    process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+    process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
   }
   // 统计（区分编程 vs 全量）
   const skillsDir = path.join(target, '.agents', 'skills');
@@ -407,7 +408,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       force: true,
       filter: shouldCopyTemplatePath,
     });
-    process.stdout.write('模板：已复制（AGENTS.md、.opencode/、.pi/）\n');
+    process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
   } else {
     process.stdout.write('同步：检测到现有项目，将增量更新\n');
     if (all) {
@@ -416,7 +417,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
         force: true,
         filter: shouldCopyTemplatePath,
       });
-      process.stdout.write('模板：已同步（AGENTS.md 整体刷新、.opencode/、.pi/）\n');
+      process.stdout.write(`模板：已同步（AGENTS.md 整体刷新、skills：${PROJECT_SKILL_DIRS}）\n`);
     } else {
       let agentsManaged = false;
       try {
@@ -425,26 +426,23 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
       await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
       if (agentsManaged) {
-        process.stdout.write('模板：已同步（AGENTS.md 受管区块已更新，项目自定义内容已保留）\n');
+        process.stdout.write(`模板：已同步（AGENTS.md 受管区块已更新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
       } else {
-        process.stdout.write('模板：已同步（AGENTS.md 未受管，已原样保留）\n');
+        process.stdout.write(`模板：已同步（AGENTS.md 未受管、skills：${PROJECT_SKILL_DIRS}，已原样保留）\n`);
       }
     }
   }
   // 技能同步：--all 仅更新同名可分发技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围为默认 programming，不删多余
   const allSkills = await listSkillNames({ onlyProgramming });
-  const skillsDir = path.join(target, '.agents', 'skills');
-  await mkdir(skillsDir, { recursive: true });
+  const skillTargets = projectSkillTargets(target);
+  const skillsDir = path.resolve(target, PROJECT_DIRS.codex);
   const preservedRepoLocal = [];
-  const preserveLocations = [
-    {
-      dir: skillsDir,
-      label: '.agents/skills',
-      isWorkspaceSource: path.resolve(skillsDir) === path.resolve(SKILLS_DIR),
-    },
-    { dir: path.join(target, '.pi', 'skills'), label: '.pi/skills', isWorkspaceSource: false },
-    { dir: path.join(target, '.opencode', 'skills'), label: '.opencode/skills', isWorkspaceSource: false },
-  ];
+  const preserveLocations = skillTargets.map(({ tool, dir }) => ({
+    dir,
+    label: PROJECT_DIRS[tool],
+    isWorkspaceSource: path.resolve(dir) === path.resolve(SKILLS_DIR),
+  }));
+  for (const { dir } of skillTargets) await mkdir(dir, { recursive: true });
   for (const name of REPO_LOCAL_SKILLS) {
     for (const location of preserveLocations) {
       if (!location.isWorkspaceSource && await pathExists(path.join(location.dir, name))) {
@@ -454,24 +452,26 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   }
   let installed = 0;
   let updated = 0;
-  for (const name of allSkills) {
-    const src = path.join(SKILLS_DIR, name);
-    const dst = path.join(skillsDir, name);
-    if (path.resolve(src) === path.resolve(dst)) {
-      updated++;
-      continue;
-    }
-    const exists = await pathExists(dst);
-    if (exists) {
-      await rm(dst, { recursive: true, force: true });
-      await cp(src, dst, { recursive: true, force: true });
-      updated++;
-    } else {
-      await cp(src, dst, { recursive: true, force: true });
-      installed++;
+  for (const { dir } of skillTargets) {
+    for (const name of allSkills) {
+      const src = path.join(SKILLS_DIR, name);
+      const dst = path.join(dir, name);
+      if (path.resolve(src) === path.resolve(dst)) {
+        if (path.resolve(dir) === skillsDir) updated++;
+        continue;
+      }
+      const exists = await pathExists(dst);
+      if (exists) {
+        await rm(dst, { recursive: true, force: true });
+        await cp(src, dst, { recursive: true, force: true });
+        if (path.resolve(dir) === skillsDir) updated++;
+      } else {
+        await cp(src, dst, { recursive: true, force: true });
+        if (path.resolve(dir) === skillsDir) installed++;
+      }
     }
   }
-  // Harness skill directories may contain project-local Skills. Preserve them because
+  // Project skill directories may contain project-local Skills. Preserve them because
   // their origin cannot be distinguished safely from a historical shared mirror.
   // 清理过时的 .pi/settings.json 指向
   try {

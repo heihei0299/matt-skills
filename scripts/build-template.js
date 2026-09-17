@@ -28,18 +28,18 @@ async function main() {
     path.join(ROOT, 'template/PROJECT.md'),
     '# Project Context\n\n<!-- 请在目标仓库中填写项目目标、范围、主要入口和关键约束。代理操作规则放在 AGENTS.md。 -->\n',
   );
-  // Harness skill dirs remain empty placeholders for project-local custom skills.
+  // Harness skill dirs are initialized as default project skill targets.
   await mkdir(path.join(ROOT, 'template/.pi/skills'), { recursive: true });
   await mkdir(path.join(ROOT, 'template/.opencode/skills'), { recursive: true });
   await writeFile(path.join(ROOT, 'template/.pi/skills/.gitkeep'), '');
   await writeFile(path.join(ROOT, 'template/.opencode/skills/.gitkeep'), '');
   await writeFile(
     path.join(ROOT, 'template/.pi/skills/README.md'),
-    '# 项目技能（pi）\n\n此目录用于存放项目自定义技能（project-local skills）。\n共享技能统一在 `.agents/skills/`。\n',
+    '# 项目技能（pi）\n\n此目录用于存放项目 skills（共享或 project-local）。\n共享技能默认在 `.pi/skills/`；同步不会删除额外的项目自定义 skills。\n',
   );
   await writeFile(
     path.join(ROOT, 'template/.opencode/skills/README.md'),
-    '# 项目技能（opencode）\n\n此目录用于存放项目自定义技能（project-local skills）。\n共享技能统一在 `.agents/skills/`。\n',
+    '# 项目技能（opencode）\n\n此目录用于存放项目 skills（共享或 project-local）。\n共享技能默认在 `.opencode/skills/`；同步不会删除额外的项目自定义 skills。\n',
   );
 
   await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.opencode/agents'));

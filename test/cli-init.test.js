@@ -24,6 +24,8 @@ const TEMPLATE_FILES = [
   '.opencode/skills/.gitkeep',
 ];
 
+const PROJECT_SKILL_DIRS = ['.agents/skills', '.pi/skills', '.opencode/skills', '.claude/skills'];
+
 function runCli(args, cwd = REPO_ROOT) {
   return spawnSync(process.execPath, [CLI, ...args], {
     cwd,
@@ -131,25 +133,20 @@ test('`init --all` copies all distributable skills', () => {
   }
 });
 
-test('`init` copies default programming skills into .agents/skills/ by default', () => {
+test('`init` copies default programming skills into all project directories', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    for (const name of ['tdd-implement', 'diagnose-fix']) {
-      assert.ok(
-        fs.existsSync(path.join(dest, '.agents', 'skills', name, 'SKILL.md')),
-        `${name} should land in .agents/skills/ (single source)`,
-      );
-    }
-    // default proprietary is part of the default programming set
-    assert.ok(fs.existsSync(path.join(dest, '.agents', 'skills', 'grill-to-spec', 'SKILL.md')), 'grill-to-spec should be installed by default');
-    assert.ok(!fs.existsSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md')), 'ci-guard should NOT be installed by default');
-    for (const harness of ['.pi/skills', '.opencode/skills']) {
-      const entries = fs.readdirSync(path.join(dest, harness));
-      assert.ok(entries.includes('.gitkeep'), `${harness} missing .gitkeep`);
-      const real = entries.filter(e => !['.gitkeep','README.md'].includes(e));
-      assert.deepEqual(real, [], `${harness} should contain no shared skills`);
+    for (const skillsDir of PROJECT_SKILL_DIRS) {
+      for (const name of ['tdd-implement', 'diagnose-fix']) {
+        assert.ok(
+          fs.existsSync(path.join(dest, skillsDir, name, 'SKILL.md')),
+          `${name} should land in ${skillsDir}`,
+        );
+      }
+      assert.ok(fs.existsSync(path.join(dest, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should be installed by default`);
+      assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'ci-guard', 'SKILL.md')), `${skillsDir}/ci-guard should NOT be installed by default`);
     }
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -235,11 +232,12 @@ test('`init` without --dest targets the current working directory (programming)'
     const { status, stdout, stderr } = runCli(['init'], cwd);
     assert.equal(status, 0, stderr);
     assert.ok(fs.existsSync(path.join(cwd, 'AGENTS.md')));
-    assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'tdd-implement', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'diagnose-fix', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'grill-to-spec', 'SKILL.md')), 'grill-to-spec should not be installed by default');
-    assert.ok(fs.existsSync(path.join(cwd, '.agents', 'skills', 'grilling', 'SKILL.md')), '独有所需 grilling should be installed by default');
-    assert.ok(fs.existsSync(path.join(cwd, '.opencode/skills/.gitkeep')));
+    for (const skillsDir of PROJECT_SKILL_DIRS) {
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'tdd-implement', 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'diagnose-fix', 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should be installed by default`);
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grilling', 'SKILL.md')), `${skillsDir}/grilling should be installed by default`);
+    }
     assert.match(stdout, new RegExp(`目标路径：${cwd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });

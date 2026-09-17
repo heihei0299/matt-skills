@@ -17,7 +17,7 @@ test('template contains no persistent shared Skill mirror', () => {
   assert.ok(readdirSync(root('.agents/skills')).length > 0);
 });
 
-test('template harness skill dirs are empty placeholders (project custom only)', () => {
+test('template harness skill dirs start as empty target placeholders', () => {
   for (const harness of ['template/.pi/skills', 'template/.opencode/skills']) {
     const entries = readdirSync(root(harness));
     assert.ok(entries.includes('.gitkeep'), `${harness} missing .gitkeep`);
