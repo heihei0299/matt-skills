@@ -42,6 +42,8 @@ test('full review consumes a committed review point', () => {
 });
 
 test('review becomes incremental after one logical full review', () => {
+  assert.match(review, /首次进入 Review 时初始化以下状态，且仅初始化一次/);
+  assert.match(review, /返回 Red-Green \/ Verify 后继续 Review 时保留现有状态，不得重新初始化/);
   assert.match(review, /full_review_done = false/);
   assert.match(review, /open_findings = \[\]/);
   assert.match(review, /last_reviewed_head = null/);

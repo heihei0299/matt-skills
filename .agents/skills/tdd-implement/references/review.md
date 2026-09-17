@@ -4,7 +4,7 @@
 
 ## 状态
 
-进入当前 issue 的 Review 时维护：
+当前 issue 首次进入 Review 时初始化以下状态，且仅初始化一次；后续因 finding 修复返回 Red-Green / Verify 后继续 Review 时保留现有状态，不得重新初始化：
 
 - `issue_base`：当前 issue 开始时的 `HEAD`；
 - `full_review_done = false`；
