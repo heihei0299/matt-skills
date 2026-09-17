@@ -1,6 +1,6 @@
 # 多 issue 编排
 
-仅在存在多个 `Type: task` issue 时生效。每个 issue 仍按 `Red-Green → Verify → Finalize` 独立完成；本文件只负责依赖顺序与状态推进。
+仅在存在多个 `Type: task` issue 时生效。每个 issue 仍按 `Red-Green → Verify → Review → Finalize` 独立完成；本文件只负责依赖顺序与 issue 边界推进。
 
 ## 1. 构建依赖图
 
@@ -17,27 +17,38 @@
 ```text
 for each layer:
   for each issue:
+    issue_base = HEAD
     Red-Green
     Verify
-    Finalize  # 包含当前 issue 独立 commit
-    更新 issue 与 progress
+    Review
+    Finalize
+    issue_head = HEAD
 ```
 
-一个 issue Finalize 完成后立即进入下一个可调度 issue。前置 issue 未完成时，其依赖项保持 `blocked`。
+`Review` 包含当前 issue committed Review Point 的形成以及完整/增量 Review；具体以 `SKILL.md` 与 `review.md` 为准。
 
-每个 issue 的 Red-Green 与 Review 编排以 `SKILL.md` 为准；验证与 Finalize 分别以 `verify.md`、`finalize.md` 为准，本文件不重复定义。
+一个 issue Finalize 完成后立即进入下一个可调度 issue。下一个 issue 以当前 `issue_head` 作为新的 `issue_base`。前置 issue 未完成时，其依赖项保持 `blocked`。
+
+验证与 Finalize 分别以 `verify.md`、`finalize.md` 为准，本文件不重复定义其内部规则。
 
 ## 3. 状态收敛
 
-每个 issue 完成后同步：
+每个 issue Finalize 后只携带后续调度所需的最小状态：
 
 - `Status`；
-- Review 状态；
-- 验证结果；
-- 已解除的 blockers；
-- 当前 issue 的独立 commit。
+- `issue_base`；
+- `review_head`；
+- `issue_head`；
+- Review 与验证结果；
+- 已解除的 blockers。
 
-当前 issue 的完整 Review 通过并完成独立 commit 后，才进入下一个 issue。当前层所有 issue 完成后进入下一层。全部层完成后，确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。
+其中：
+
+- `issue_base...review_head` 是已完成 Review 的实现范围；
+- `issue_base...issue_head` 是当前 issue 的完整提交范围；
+- `issue_head` 是下一个 issue 的 `issue_base`。
+
+当前层所有 issue 完成后进入下一层。全部层完成后，确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。
 
 ## 冲突与失败
 
@@ -50,5 +61,5 @@ for each layer:
 
 - 所有可执行 issue 均按依赖顺序完成；
 - issue、依赖状态与 progress 一致；
-- 每个完成的 issue 均有独立 commit；
+- 每个完成 issue 的 `issue_base`、`review_head` 与 `issue_head` 边界明确；
 - 不存在被误当作已完成的 blocked issue。

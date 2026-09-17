@@ -14,6 +14,12 @@ disable-model-invocation: true
 - **多 issue**：存在多个 `Type: task` 时，读取 [orchestration.md](references/orchestration.md) 后按依赖顺序逐个完成。
 - `research`、`prototype`、`grilling` 类型任务分流到对应技能。
 
+每个 issue 开始时记录 `issue_base = HEAD`。一个 issue 可以包含一个或多个 commits；不要求固定 commit 数量，也不为满足数量约束强制 amend、squash 或重写历史。
+
+生命周期：
+
+`Red-Green → Verify → Review → Finalize`
+
 ## Steps
 
 ### ① Red-Green
@@ -35,53 +41,47 @@ disable-model-invocation: true
 
 读取 [verify.md](references/verify.md)，执行当前 issue 所需的最终验证。
 
-最终验证通过且 diff 稳定后进入 Review。
-
-#### Review
-
-每个 issue 维护以下 Review 状态：
-
-- `full_review_done = false`
-- `open_findings = []`
-
-当 `full_review_done = false` 时，只调用一次完整 `code-review`。完成后立即设置 `full_review_done = true`，并将 blocking findings 写入 `open_findings`。
-
-当 `full_review_done = true` 时，完整 `code-review` 路径关闭，不得再次启动完整双轴 Review。后续仅处理 `open_findings`：
-
-1. 仅修复对应 finding，不扩大当前 issue 范围；
-2. 重新验证该修复直接影响的证据；
-3. 直接针对该 finding 与修复 diff 做增量 Review；增量 Review 不调用完整 `code-review`；
-4. 复核通过后从 `open_findings` 移除该 finding；
-5. 若修复产生新的 Behavior，返回 Red-Green 对该 Behavior 执行 TDD，再回 Verify 验证受影响范围；`full_review_done` 保持为 `true`。
-
-`full_review_done = true` 且 `open_findings` 为空时 Review 才算通过。审查维度、reviewer 数量、提示词和输出格式仍以 `code-review` 为唯一事实源。
-
 **出口：**
 
 - 当前 issue 所需最终验证通过；
-- 要求的真实运行验证完成；
+- 要求的真实运行验证完成。
+
+### ③ Review
+
+Verify 通过后读取 [review.md](references/review.md)。
+
+先将当前 issue 交付所需的代码、测试、文档和配置形成 committed Review Point，再按 `review.md` 完成一次完整 Review 与必要的增量 Review。
+
+完整 Review 的审查维度、reviewer 数量、提示词和输出格式仍以 [code-review](.agents/skills/code-review/SKILL.md) 为唯一事实源。
+
+**出口：**
+
 - `full_review_done = true`；
-- `open_findings` 为空。
+- `open_findings` 为空；
+- `review_head` 已记录；
+- 当前 issue 的实现范围已完整进入 Review 证据。
 
 ## Finalize
 
-Verify 与 Review 通过后读取 [finalize.md](references/finalize.md)，完成当前 issue 的必要同步、独立 commit 与 tracker/progress 收尾。
+Review 通过后读取 [finalize.md](references/finalize.md)，只做 tracker/progress/status 收尾并记录 `issue_head`。
 
-Finalize 不新增产品 Behavior；若发现实现或验证遗漏，回到对应 Step 完成后再收尾。
+Finalize 不新增产品 Behavior，也不修改已经 Review 的实现内容。若收尾时发现实现、文档/配置或验证遗漏，按 `finalize.md` 返回对应 Step，不得绕过 Review 直接完成。
 
 ## 运行纪律
 
 - Red-Green 必须覆盖当前 issue 的全部待实现 Behavior，不能只对第一个改动执行 TDD。
 - 一个 Behavior 完成后继续下一个 Behavior，直到 Step ① 出口满足。
 - Verify 只做当前 issue 必要的最终验证；已通过的等价验证不机械重复。
-- 每个 issue 的完整双轴 Review 只允许从 `full_review_done = false` 进入一次；之后只处理 `open_findings` 的增量 Review。
-- 每个 issue 的完整 Review 通过后创建一个独立 commit；该 commit 完成后才能进入下一个 issue。
+- 完整 Review 前必须形成 committed Review Point；不得用未提交 working tree 代替 `code-review` 所需的 committed diff。
+- 每个 issue 只有一次逻辑上的完整双轴 Review；完整 Review 之后只处理增量 Review。技术失败或中断的恢复规则以 `review.md` 为准。
+- 当前 issue Review 与 Finalize 完成后，才能进入下一个 issue；下一个 issue 以当时的 `HEAD` 作为新的 `issue_base`。
 - 当前 Step 达到出口后继续进入下一 Step；仅在需要用户决策或存在外部阻塞时暂停。
 
 ## References
 
 - TDD：[tdd](.agents/skills/tdd/SKILL.md)
 - Verify：[verify.md](references/verify.md)
+- Review：[review.md](references/review.md)
 - Finalize：[finalize.md](references/finalize.md)
-- Review：[code-review](.agents/skills/code-review/SKILL.md)
+- 完整 Review：[code-review](.agents/skills/code-review/SKILL.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)

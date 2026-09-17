@@ -8,20 +8,19 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (file) => path.join(dir, file);
 const skill = readFileSync(root('.agents/skills/tdd-implement/SKILL.md'), 'utf8');
 
-const refs = ['orchestration.md', 'verify.md', 'finalize.md'];
-const finalizeRef = 'finalize.md';
+const refs = ['orchestration.md', 'verify.md', 'review.md', 'finalize.md'];
 
 test('tdd-implement routes each stage to a focused reference', () => {
-  for (const ref of [...refs, finalizeRef]) {
+  for (const ref of refs) {
     assert.ok(existsSync(root(`.agents/skills/tdd-implement/references/${ref}`)), `${ref} must exist`);
     assert.match(skill, new RegExp(`references/${ref.replace('.', '\\.')}`));
   }
+  assert.match(skill, /### ① Red-Green/);
+  assert.match(skill, /### ② Verify/);
+  assert.match(skill, /### ③ Review/);
   assert.match(skill, /## Finalize/);
-  assert.match(skill, /references\/finalize\.md/);
-  assert.match(skill, /references\/verify\.md/);
   assert.doesNotMatch(skill, /references\/(contract|red-green|stages)\.md/);
 });
-
 
 test('obsolete stage references are no longer distributed', () => {
   for (const ref of ['contract.md', 'red-green.md', 'stages.md']) {
