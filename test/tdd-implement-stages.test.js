@@ -54,6 +54,16 @@ test('review becomes incremental after one logical full review', () => {
   assert.match(review, /设置 `review_head = last_reviewed_head`/);
 });
 
+test('incremental review is capped at two logical rounds', () => {
+  assert.match(review, /incremental_review_rounds = 0/);
+  assert.match(review, /每个 issue 最多执行 2 个逻辑增量 Review 轮次/);
+  assert.match(review, /正常形成增量 Review 结论的轮次才计数/);
+  assert.match(review, /技术失败不消耗轮次/);
+  assert.match(review, /设置 `incremental_review_rounds \+= 1`/);
+  assert.match(review, /`incremental_review_rounds >= 2`[\s\S]*不得再次启动增量 Review/);
+  assert.match(review, /`incremental_review_rounds = 2` 且 `open_findings` 仍非空[\s\S]*不进入 Finalize/);
+});
+
 test('issue history is a bounded commit range rather than one required commit', () => {
   assert.match(skill, /一个 issue 可以包含一个或多个 commits/);
   assert.match(skill, /不要求固定 commit 数量/);
