@@ -150,14 +150,19 @@ test('init --all preserves existing repo-local skill sentinels', () => {
 });
 
 test('install --all never distributes repo-local skills to project or global targets', async (t) => {
-  const projectTools = ['codex', 'pi', 'opencode', 'claude'];
-  for (const tool of projectTools) {
+  const projectDirs = {
+    codex: '.agents/skills',
+    pi: '.pi/skills',
+    opencode: '.opencode/skills',
+    claude: '.claude/skills',
+  };
+  for (const [tool, rel] of Object.entries(projectDirs)) {
     await t.test(`project ${tool}`, () => {
       const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-project-'));
       try {
         const result = runCli(['install', '--tools', tool, '--all'], cwd);
         assert.equal(result.status, 0, result.stderr);
-        assert.deepEqual(listDirectories(path.join(cwd, '.agents/skills')), distributableNames);
+        assert.deepEqual(listDirectories(path.join(cwd, rel)), distributableNames);
       } finally {
         fs.rmSync(cwd, { recursive: true, force: true });
       }
@@ -184,13 +189,16 @@ test('install --all never distributes repo-local skills to project or global tar
 });
 
 test('sync default and --all do not add repo-local skills', () => {
+  const projectDirs = ['.agents/skills', '.pi/skills', '.opencode/skills', '.claude/skills'];
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-boundary-'));
     try {
       const result = runCli([...args, '--dest', dest]);
       assert.equal(result.status, 0, result.stderr);
-      assert.equal(fs.existsSync(path.join(dest, '.agents/skills/ci-guard')), false);
-      assert.equal(fs.existsSync(path.join(dest, '.agents/skills/commit-check')), false);
+      for (const rel of projectDirs) {
+        assert.equal(fs.existsSync(path.join(dest, rel, 'ci-guard')), false);
+        assert.equal(fs.existsSync(path.join(dest, rel, 'commit-check')), false);
+      }
     } finally {
       fs.rmSync(dest, { recursive: true, force: true });
     }
@@ -198,22 +206,27 @@ test('sync default and --all do not add repo-local skills', () => {
 });
 
 test('sync updates shared skills from the canonical source', () => {
+  const projectDirs = ['.agents/skills', '.pi/skills', '.opencode/skills', '.claude/skills'];
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-update-'));
-    const sharedSkill = path.join(dest, '.agents/skills/tdd-implement/SKILL.md');
-    const projectLocalSkill = path.join(dest, '.pi/skills/tdd-implement/SKILL.md');
+    const projectLocalSkill = path.join(dest, '.pi/skills/project-local-skill/SKILL.md');
     try {
-      fs.mkdirSync(path.dirname(sharedSkill), { recursive: true });
-      fs.writeFileSync(sharedSkill, 'STALE SHARED COPY');
+      for (const rel of projectDirs) {
+        const sharedSkill = path.join(dest, rel, 'tdd-implement/SKILL.md');
+        fs.mkdirSync(path.dirname(sharedSkill), { recursive: true });
+        fs.writeFileSync(sharedSkill, 'STALE SHARED COPY');
+      }
       fs.mkdirSync(path.dirname(projectLocalSkill), { recursive: true });
       fs.writeFileSync(projectLocalSkill, 'PROJECT-LOCAL COPY');
 
       const result = runCli([...args, '--dest', dest]);
       assert.equal(result.status, 0, result.stderr);
-      assert.equal(
-        fs.readFileSync(sharedSkill, 'utf8'),
-        fs.readFileSync(path.join(ROOT, '.agents/skills/tdd-implement/SKILL.md'), 'utf8'),
-      );
+      for (const rel of projectDirs) {
+        assert.equal(
+          fs.readFileSync(path.join(dest, rel, 'tdd-implement/SKILL.md'), 'utf8'),
+          fs.readFileSync(path.join(ROOT, '.agents/skills/tdd-implement/SKILL.md'), 'utf8'),
+        );
+      }
       assert.equal(fs.readFileSync(projectLocalSkill, 'utf8'), 'PROJECT-LOCAL COPY');
     } finally {
       fs.rmSync(dest, { recursive: true, force: true });
@@ -230,12 +243,13 @@ test('sync preserves repo-local and project-local skills', () => {
         ['.agents/skills', 'commit-check'],
         ['.pi/skills', 'commit-check'],
         ['.opencode/skills', 'ci-guard'],
+        ['.claude/skills', 'claude-project-local-skill'],
       ]) {
         const dir = path.join(dest, harness, name);
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, 'SKILL.md'), `USER CUSTOM ${name}`);
       }
-      const sharedMirror = path.join(dest, '.pi/skills/tdd');
+      const sharedMirror = path.join(dest, '.pi/skills/project-local-skill');
       fs.mkdirSync(sharedMirror, { recursive: true });
       fs.writeFileSync(path.join(sharedMirror, 'SKILL.md'), 'LEGACY SHARED MIRROR');
 
@@ -248,6 +262,7 @@ test('sync preserves repo-local and project-local skills', () => {
         ['.agents/skills', 'commit-check'],
         ['.pi/skills', 'commit-check'],
         ['.opencode/skills', 'ci-guard'],
+        ['.claude/skills', 'claude-project-local-skill'],
       ]) {
         assert.equal(
           fs.readFileSync(path.join(dest, harness, name, 'SKILL.md'), 'utf8'),

@@ -54,7 +54,7 @@ test('package exposes and publishes the Codex smoke entrypoint', () => {
 
 test('README defines the Codex CLI support boundary and smoke command', () => {
   assert.match(README, /^## Codex CLI 支持$/m);
-  assert.match(README, /\.agents\/skills\/.*唯一共享源/);
+  assert.match(README, /Codex 的项目级 skills 位于 `\.agents\/skills\/`；全局 skills/);
   assert.match(README, /npm run codex:smoke/);
   assert.match(README, /CODEX_E2E=1 npm run codex:smoke/);
   assert.match(README, /Codex Cloud/);
