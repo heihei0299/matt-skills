@@ -252,12 +252,26 @@ test('sync preserves repo-local and project-local skills', () => {
       const sharedMirror = path.join(dest, '.pi/skills/project-local-skill');
       fs.mkdirSync(sharedMirror, { recursive: true });
       fs.writeFileSync(path.join(sharedMirror, 'SKILL.md'), 'LEGACY SHARED MIRROR');
+      const exactLegacyMirror = path.join(dest, '.pi/skills/tdd-implement');
+      fs.cpSync(path.join(ROOT, '.agents/skills/tdd-implement'), exactLegacyMirror, { recursive: true });
+      const modifiedLegacyMirror = path.join(dest, '.opencode/skills/diagnose-fix');
+      fs.cpSync(path.join(ROOT, '.agents/skills/diagnose-fix'), modifiedLegacyMirror, { recursive: true });
+      fs.appendFileSync(path.join(modifiedLegacyMirror, 'SKILL.md'), '\nLOCAL MODIFICATION');
 
       const result = runCli([...args, '--dest', dest]);
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /不再分发|已保留/);
       assert.equal(fs.existsSync(sharedMirror), true);
       assert.equal(fs.readFileSync(path.join(sharedMirror, 'SKILL.md'), 'utf8'), 'LEGACY SHARED MIRROR');
+      assert.equal(fs.existsSync(exactLegacyMirror), false, 'exact legacy shared mirror should be cleaned');
+      assert.equal(fs.existsSync(modifiedLegacyMirror), true, 'modified legacy copy should be preserved');
+      for (const [harness, name] of [
+        ['.agents/skills', 'commit-check'],
+        ['.pi/skills', 'commit-check'],
+        ['.opencode/skills', 'ci-guard'],
+      ]) {
+        assert.match(result.stdout, new RegExp(`${harness.replace('/', '\\/')}\\/${name}`));
+      }
       for (const [harness, name] of [
         ['.agents/skills', 'commit-check'],
         ['.pi/skills', 'commit-check'],

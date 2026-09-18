@@ -236,6 +236,37 @@ function projectSkillTargets(target) {
   return [...targets.values()];
 }
 
+const LEGACY_PROJECT_SKILL_DIRS = ['.pi/skills', '.opencode/skills', '.claude/skills'];
+
+async function sameTree(left, right) {
+  let leftInfo;
+  let rightInfo;
+  try {
+    [leftInfo, rightInfo] = await Promise.all([stat(left), stat(right)]);
+  } catch {
+    return false;
+  }
+  if (leftInfo.isDirectory() !== rightInfo.isDirectory()) return false;
+  if (leftInfo.isDirectory()) {
+    const [leftEntries, rightEntries] = await Promise.all([
+      readdir(left, { withFileTypes: true }),
+      readdir(right, { withFileTypes: true }),
+    ]);
+    if (leftEntries.length !== rightEntries.length) return false;
+    const rightNames = new Set(rightEntries.map((entry) => entry.name));
+    for (const entry of leftEntries) {
+      if (!rightNames.has(entry.name) || !await sameTree(path.join(left, entry.name), path.join(right, entry.name))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (leftInfo.isFile() && rightInfo.isFile()) {
+    return (await readFile(left)).equals(await readFile(right));
+  }
+  return false;
+}
+
 const GLOBAL_DIRS = {
   codex: '.codex/skills',
   pi: '.pi/agent/skills',
@@ -441,12 +472,20 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   const allSkills = await listSkillNames({ onlyProgramming });
   const skillTargets = projectSkillTargets(target);
   const skillsDir = path.resolve(target, PROJECT_DIRS.codex);
-  const preservedRepoLocal = [];
-  const preserveLocations = skillTargets.map(({ tool, dir }) => ({
-    dir,
-    label: PROJECT_DIRS[tool],
-    isWorkspaceSource: path.resolve(dir) === path.resolve(SKILLS_DIR),
+  const legacyLocations = LEGACY_PROJECT_SKILL_DIRS.map((relative) => ({
+    dir: path.resolve(target, relative),
+    label: relative,
+    isWorkspaceSource: false,
   }));
+  const preservedRepoLocal = [];
+  const preserveLocations = [
+    ...skillTargets.map(({ tool, dir }) => ({
+      dir,
+      label: PROJECT_DIRS[tool],
+      isWorkspaceSource: path.resolve(dir) === path.resolve(SKILLS_DIR),
+    })),
+    ...legacyLocations,
+  ];
   for (const { dir } of skillTargets) await mkdir(dir, { recursive: true });
   for (const name of REPO_LOCAL_SKILLS) {
     for (const location of preserveLocations) {
@@ -476,8 +515,28 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       }
     }
   }
-  // Project skill directories may contain project-local Skills. Preserve them because
-  // their origin cannot be distinguished safely from a historical shared mirror.
+  const distributableSkillNames = await listSkillNames({ onlyProgramming: false });
+  const cleanedLegacy = [];
+  for (const location of legacyLocations) {
+    let entries;
+    try {
+      entries = await readdir(location.dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name === '.git' || entry.name.endsWith('.bak')) continue;
+      if (!distributableSkillNames.includes(entry.name)) continue;
+      const src = path.join(SKILLS_DIR, entry.name);
+      const dst = path.join(location.dir, entry.name);
+      if (await sameTree(src, dst)) {
+        await rm(dst, { recursive: true, force: true });
+        cleanedLegacy.push(`${location.label}/${entry.name}`);
+      }
+    }
+  }
+  // Legacy harness dirs may contain project-local Skills. Only exact canonical
+  // trees are removed; modified or unknown trees remain untouched.
   // 清理过时的 .pi/settings.json 指向
   try {
     const piSettings = path.join(target, '.pi/settings.json');
@@ -489,6 +548,9 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       }
     }
   } catch {}
+  if (cleanedLegacy.length) {
+    process.stdout.write(`迁移清理：${cleanedLegacy.join(', ')} 旧共享副本已移除\n`);
+  }
   if (preservedRepoLocal.length) {
     process.stdout.write(`迁移提示：${preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
   }
