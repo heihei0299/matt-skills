@@ -2,8 +2,6 @@
 
 面向项目仓库的 Agent skills 与配置模板。模板包含项目 skeleton、`AGENTS.md`、项目上下文占位文件，以及 pi / opencode 所需的项目配置；共享 Skills 由 CLI 从 Workspace 的 canonical source 直接组装到目标项目。
 
-当前发布版本：`v3.0.13`。
-
 ## 环境要求
 
 - Node.js `>=18`。
@@ -109,7 +107,7 @@ npx @heihei0299/matt-skills sync --all             # 同步全部可分发范围
 
 ## 发布
 
-最近发布：`v3.0.13`。推送 `v*` 标签会触发 GitHub Actions：全量测试、模板检查和 npm 发布。
+版本由推送的 `v*` 标签决定；GitHub Actions 会在发布时从 tag 设置 npm 包版本，并执行全量测试与模板检查。
 
 ```sh
 npm test

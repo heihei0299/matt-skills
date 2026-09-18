@@ -234,6 +234,59 @@ test('sync updates shared skills from the canonical source', () => {
   }
 });
 
+test('sync legacy cleanup does not follow symlinks or discard permission-only changes', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-symlink-'));
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-outside-'));
+  const sourceRoot = path.join(ROOT, '.agents/skills');
+  try {
+    const legacyRoot = path.join(dest, '.claude/skills');
+    const outsideRoot = path.join(outside, 'skills');
+    fs.mkdirSync(outsideRoot, { recursive: true });
+    fs.cpSync(path.join(sourceRoot, 'tdd-implement'), path.join(outsideRoot, 'tdd-implement'), { recursive: true });
+    fs.mkdirSync(path.dirname(legacyRoot), { recursive: true });
+    fs.symlinkSync(outsideRoot, legacyRoot, 'dir');
+
+    const childMirror = path.join(dest, '.pi/skills/diagnose-fix');
+    fs.cpSync(path.join(sourceRoot, 'diagnose-fix'), childMirror, { recursive: true });
+    const outsideFile = path.join(outside, 'diagnose-fix-SKILL.md');
+    fs.copyFileSync(path.join(sourceRoot, 'diagnose-fix/SKILL.md'), outsideFile);
+    fs.rmSync(path.join(childMirror, 'SKILL.md'));
+    fs.symlinkSync(outsideFile, path.join(childMirror, 'SKILL.md'));
+
+    const permissionMirror = path.join(dest, '.opencode/skills/show-me');
+    fs.cpSync(path.join(sourceRoot, 'show-me'), permissionMirror, { recursive: true });
+    fs.chmodSync(path.join(permissionMirror, 'SKILL.md'), 0o600);
+
+    const result = runCli(['sync', '--all', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.lstatSync(legacyRoot).isSymbolicLink(), true);
+    assert.equal(fs.existsSync(path.join(outsideRoot, 'tdd-implement/SKILL.md')), true);
+    assert.equal(fs.lstatSync(path.join(childMirror, 'SKILL.md')).isSymbolicLink(), true);
+    assert.equal(fs.existsSync(outsideFile), true);
+    assert.equal(fs.existsSync(permissionMirror), true);
+    assert.equal(fs.statSync(path.join(permissionMirror, 'SKILL.md')).mode & 0o777, 0o600);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('sync cleanup errors do not fail after canonical files are written', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-error-'));
+  const unreadable = path.join(dest, '.pi/skills/tdd-implement/SKILL.md');
+  try {
+    fs.cpSync(path.join(ROOT, '.agents/skills/tdd-implement'), path.dirname(unreadable), { recursive: true });
+    fs.chmodSync(unreadable, 0);
+    const result = runCli(['sync', '--all', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.existsSync(path.join(dest, '.agents/skills/tdd-implement/SKILL.md')), true);
+    assert.equal(fs.existsSync(path.dirname(unreadable)), true);
+  } finally {
+    try { fs.chmodSync(unreadable, 0o644); } catch {}
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
 test('sync preserves repo-local and project-local skills', () => {
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-preserve-'));

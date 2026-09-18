@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, writeFile, cp, stat, rm, mkdir } from 'node:fs/promises';
+import { readdir, readFile, writeFile, cp, stat, lstat, rm, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -238,33 +238,38 @@ function projectSkillTargets(target) {
 
 const LEGACY_PROJECT_SKILL_DIRS = ['.pi/skills', '.opencode/skills', '.claude/skills'];
 
+function sameMetadata(left, right) {
+  return (left.mode & 0o7777) === (right.mode & 0o7777)
+    && left.uid === right.uid
+    && left.gid === right.gid;
+}
+
 async function sameTree(left, right) {
-  let leftInfo;
-  let rightInfo;
   try {
-    [leftInfo, rightInfo] = await Promise.all([stat(left), stat(right)]);
+    const [leftInfo, rightInfo] = await Promise.all([lstat(left), lstat(right)]);
+    if (leftInfo.isSymbolicLink() || rightInfo.isSymbolicLink()) return false;
+    if (leftInfo.isDirectory() !== rightInfo.isDirectory()) return false;
+    if (leftInfo.isDirectory()) {
+      const [leftEntries, rightEntries] = await Promise.all([
+        readdir(left, { withFileTypes: true }),
+        readdir(right, { withFileTypes: true }),
+      ]);
+      if (!sameMetadata(leftInfo, rightInfo) || leftEntries.length !== rightEntries.length) return false;
+      const rightNames = new Set(rightEntries.map((entry) => entry.name));
+      for (const entry of leftEntries) {
+        if (!rightNames.has(entry.name) || !await sameTree(path.join(left, entry.name), path.join(right, entry.name))) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (leftInfo.isFile() && rightInfo.isFile()) {
+      return (await readFile(left)).equals(await readFile(right)) && sameMetadata(leftInfo, rightInfo);
+    }
+    return false;
   } catch {
     return false;
   }
-  if (leftInfo.isDirectory() !== rightInfo.isDirectory()) return false;
-  if (leftInfo.isDirectory()) {
-    const [leftEntries, rightEntries] = await Promise.all([
-      readdir(left, { withFileTypes: true }),
-      readdir(right, { withFileTypes: true }),
-    ]);
-    if (leftEntries.length !== rightEntries.length) return false;
-    const rightNames = new Set(rightEntries.map((entry) => entry.name));
-    for (const entry of leftEntries) {
-      if (!rightNames.has(entry.name) || !await sameTree(path.join(left, entry.name), path.join(right, entry.name))) {
-        return false;
-      }
-    }
-    return true;
-  }
-  if (leftInfo.isFile() && rightInfo.isFile()) {
-    return (await readFile(left)).equals(await readFile(right));
-  }
-  return false;
 }
 
 const GLOBAL_DIRS = {
@@ -520,6 +525,8 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   for (const location of legacyLocations) {
     let entries;
     try {
+      const locationInfo = await lstat(location.dir);
+      if (!locationInfo.isDirectory() || locationInfo.isSymbolicLink()) continue;
       entries = await readdir(location.dir, { withFileTypes: true });
     } catch {
       continue;
@@ -529,10 +536,12 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       if (!distributableSkillNames.includes(entry.name)) continue;
       const src = path.join(SKILLS_DIR, entry.name);
       const dst = path.join(location.dir, entry.name);
-      if (await sameTree(src, dst)) {
-        await rm(dst, { recursive: true, force: true });
-        cleanedLegacy.push(`${location.label}/${entry.name}`);
-      }
+      try {
+        if (await sameTree(src, dst)) {
+          await rm(dst, { recursive: true, force: true });
+          cleanedLegacy.push(`${location.label}/${entry.name}`);
+        }
+      } catch {}
     }
   }
   // Legacy harness dirs may contain project-local Skills. Only exact canonical
