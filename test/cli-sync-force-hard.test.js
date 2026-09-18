@@ -110,7 +110,7 @@ test('sync 默认同步共享目录并保留自定义与 repo-local skills', () 
   }
 });
 
-test('sync 默认只刷新 managed block 并保留标记外的项目规则', () => {
+test('sync 默认保留旧 AGENTS.md 的 managed 内容，--all 才刷新完整文件', () => {
   const current = [
     '# AGENTS.md',
     '',
@@ -128,17 +128,8 @@ test('sync 默认只刷新 managed block 并保留标记外的项目规则', () 
   try {
     const { stdout } = runCli(['sync', '--dest', dest]);
     const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
-    const template = fs.readFileSync(path.join(REPO_ROOT, 'template/AGENTS.md'), 'utf8');
-    const start = template.indexOf('<!-- matt-skills:managed:start -->');
-    const endMarker = '<!-- matt-skills:managed:end -->';
-    const end = template.indexOf(endMarker) + endMarker.length;
-    const managed = template.slice(start, end);
-
-    assert.ok(after.includes(managed), '应刷新为当前模板的 managed block');
-    assert.match(after, /project-prefix-rule/);
-    assert.match(after, /## Project Local Rules[\s\S]*keep-this-rule/);
-    assert.doesNotMatch(after, /OLD MANAGED CONTENT/);
-    assert.match(stdout, /AGENTS\.md 受管区块已更新/);
+    assert.equal(after, current);
+    assert.match(stdout, /AGENTS\.md 未受管、skills：\.agents\/skills，已原样保留/);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }

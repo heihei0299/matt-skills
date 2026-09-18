@@ -45,13 +45,12 @@ test('template/AGENTS.md uses the independent template source', () => {
   );
 });
 
-test('template/AGENTS.md exposes exactly one managed block', () => {
+test('template/AGENTS.md contains only the distributed workflow', () => {
   const agents = readFileSync(root('template/AGENTS.md'), 'utf8');
-  assert.equal((agents.match(/<!-- matt-skills:managed:start -->/g) ?? []).length, 1);
-  assert.equal((agents.match(/<!-- matt-skills:managed:end -->/g) ?? []).length, 1);
-  assert.ok(
-    agents.indexOf('<!-- matt-skills:managed:start -->') < agents.indexOf('<!-- matt-skills:managed:end -->'),
-  );
+  assert.doesNotMatch(agents, /matt-skills:managed/);
+  assert.match(agents, /^# AGENTS\.md\n\n## Workflow/m);
+  assert.match(agents, /\* 其他 → `ask-matt`/);
+  assert.match(agents, /## Validation & Review/);
 });
 
 

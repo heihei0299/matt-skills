@@ -156,6 +156,6 @@ test('sync --help 与 HELP 包含 --all/--dry-run 说明（--force 已移除，-
   const { stdout: syncHelp } = runCli(['sync', '--help']);
   assert.match(syncHelp, /--dry-run/, 'sync --help should mention --dry-run');
   assert.match(syncHelp, /--all.*仅更新同名/, 'sync help should explain --all as same-name upsert');
-  assert.match(syncHelp, /AGENTS\.md.*受管区块/, 'sync help should explain managed AGENTS updates');
+  assert.match(syncHelp, /保留现有 AGENTS\.md/, 'sync help should explain default AGENTS preservation');
   assert.doesNotMatch(syncHelp, /--force/, 'sync help should not mention --force');
 });

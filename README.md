@@ -64,7 +64,7 @@ npx @heihei0299/matt-skills sync --all       # 同步全部可分发 skills
 npx @heihei0299/matt-skills sync --dry-run --json
 ```
 
-`init` 默认保护已有 `AGENTS.md`；需要刷新完整模板时使用 `init --all`。默认 `sync` 只刷新 `AGENTS.md` 的 `matt-skills:managed` 受管区块并保留标记外的项目规则；旧的无标记 `AGENTS.md` 原样保留，`sync --all` 才整体刷新。`sync` 不删除目标项目的额外文件或自定义 skills。
+`init` 默认保护已有 `AGENTS.md`；需要刷新完整模板时使用 `init --all`。默认 `sync` 保留已有 `AGENTS.md` 和项目规则，`sync --all` 才将其整体刷新为当前分发模板。`sync` 不删除目标项目的额外文件或自定义 skills。
 
 默认 programming 范围中的 4 个独有 skills 是 `tdd-implement`、`diagnose-fix`、`grill-to-spec`、`show-me`。
 

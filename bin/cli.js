@@ -74,7 +74,7 @@ Sync options:
   --help, -h      Show this help
   项目 skills：${PROJECT_SKILL_DIRS}
 
-说明：默认不带 --all 增量同步默认 programming skill，并只更新 AGENTS.md 的 matt-skills 受管区块；没有受管标记的现有 AGENTS.md 原样保留。--all 时同步全部可分发 skill 并强制刷新 AGENTS.md。
+说明：默认不带 --all 增量同步默认 programming skill，并保留现有 AGENTS.md；--all 时同步全部可分发 skill 并强制刷新 AGENTS.md。
 
 提示：matt-skills --help 查看全量
 `;

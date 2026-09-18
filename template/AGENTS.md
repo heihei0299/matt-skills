@@ -1,6 +1,5 @@
 # AGENTS.md
 
-<!-- matt-skills:managed:start -->
 ## Workflow
 
 按任务选择最匹配的 skill / 工具：
@@ -76,4 +75,3 @@ codegraph node "<符号>"
 ## Completion
 
 完成时说明改动或审查结论、已执行验证、未执行验证及原因、剩余风险；如有 commit，报告 commit hash。
-<!-- matt-skills:managed:end -->
