@@ -276,6 +276,7 @@ test('sync cleanup errors do not fail after canonical files are written', () => 
   const unreadable = path.join(dest, '.pi/skills/tdd-implement/SKILL.md');
   try {
     fs.cpSync(path.join(ROOT, '.agents/skills/tdd-implement'), path.dirname(unreadable), { recursive: true });
+    if (process.getuid?.() === 0) return; // root bypasses file modes; the unreadable case is untestable
     fs.chmodSync(unreadable, 0);
     const result = runCli(['sync', '--all', '--dest', dest]);
     assert.equal(result.status, 0, result.stderr);
@@ -311,6 +312,8 @@ test('sync preserves repo-local and project-local skills', () => {
       const modifiedLegacyMirror = path.join(dest, '.opencode/skills/diagnose-fix');
       fs.cpSync(path.join(ROOT, '.agents/skills/diagnose-fix'), modifiedLegacyMirror, { recursive: true });
       fs.appendFileSync(path.join(modifiedLegacyMirror, 'SKILL.md'), '\nLOCAL MODIFICATION');
+      const nonDefaultLegacyMirror = path.join(dest, '.pi/skills/implement-review-loop');
+      fs.cpSync(path.join(ROOT, '.agents/skills/implement-review-loop'), nonDefaultLegacyMirror, { recursive: true });
 
       const result = runCli([...args, '--dest', dest]);
       assert.equal(result.status, 0, result.stderr);
@@ -319,6 +322,11 @@ test('sync preserves repo-local and project-local skills', () => {
       assert.equal(fs.readFileSync(path.join(sharedMirror, 'SKILL.md'), 'utf8'), 'LEGACY SHARED MIRROR');
       assert.equal(fs.existsSync(exactLegacyMirror), false, 'exact legacy shared mirror should be cleaned');
       assert.equal(fs.existsSync(modifiedLegacyMirror), true, 'modified legacy copy should be preserved');
+      if (args.length === 2) {
+        assert.equal(fs.existsSync(nonDefaultLegacyMirror), false, 'non-default exact mirror should be cleaned under --all');
+      } else {
+        assert.equal(fs.existsSync(nonDefaultLegacyMirror), true, 'non-default mirror should be preserved when not installed in this sync');
+      }
       for (const [harness, name] of [
         ['.agents/skills', 'commit-check'],
         ['.pi/skills', 'commit-check'],

@@ -535,21 +535,20 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       }
     }
   }
-  const distributableSkillNames = await listSkillNames({ onlyProgramming: false });
   const cleanedLegacy = [];
   for (const location of legacyLocations) {
     let entries;
     try {
       if (!await isSafeRealPath(location.dir)) continue;
       const locationInfo = await lstat(location.dir);
-      if (!locationInfo.isDirectory() || locationInfo.isSymbolicLink()) continue;
+      if (!locationInfo.isDirectory()) continue;
       entries = await readdir(location.dir, { withFileTypes: true });
     } catch {
       continue;
     }
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name === '.git' || entry.name.endsWith('.bak')) continue;
-      if (!distributableSkillNames.includes(entry.name)) continue;
+      if (!allSkills.includes(entry.name)) continue;
       const src = path.join(SKILLS_DIR, entry.name);
       const dst = path.join(location.dir, entry.name);
       try {
@@ -561,7 +560,8 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
     }
   }
   // Legacy harness dirs may contain project-local Skills. Only exact canonical
-  // trees are removed; modified or unknown trees remain untouched.
+  // trees of skills installed in this sync are removed; modified, unknown or
+  // not-installed trees remain untouched.
   // 清理过时的 .pi/settings.json 指向
   try {
     const piSettings = path.join(target, '.pi/settings.json');
