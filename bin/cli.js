@@ -238,6 +238,21 @@ function projectSkillTargets(target) {
 
 const LEGACY_PROJECT_SKILL_DIRS = ['.pi/skills', '.opencode/skills', '.claude/skills'];
 
+async function isSafeRealPath(targetPath) {
+  const absolute = path.resolve(targetPath);
+  const root = path.parse(absolute).root;
+  let current = root;
+  for (const segment of path.relative(root, absolute).split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
+    try {
+      if ((await lstat(current)).isSymbolicLink()) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
 function sameMetadata(left, right) {
   return (left.mode & 0o7777) === (right.mode & 0o7777)
     && left.uid === right.uid
@@ -525,6 +540,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
   for (const location of legacyLocations) {
     let entries;
     try {
+      if (!await isSafeRealPath(location.dir)) continue;
       const locationInfo = await lstat(location.dir);
       if (!locationInfo.isDirectory() || locationInfo.isSymbolicLink()) continue;
       entries = await readdir(location.dir, { withFileTypes: true });
