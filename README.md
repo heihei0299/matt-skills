@@ -2,6 +2,14 @@
 
 面向项目仓库的 Agent skills 与配置模板。模板包含项目 skeleton、`AGENTS.md`、项目上下文占位文件，以及 pi / opencode 所需的项目配置；共享 Skills 由 CLI 从 Workspace 的 canonical source 直接组装到目标项目。
 
+当前发布版本：`v3.0.12`。
+
+## 环境要求
+
+- Node.js `>=18`。
+- npm（随 Node.js 提供，用于安装和运行 CLI；也可通过 `npx` 直接调用）。
+- Git（`sync`、`check` 和发布流程需要）。
+
 ## 模板内容
 
 ```text
@@ -15,6 +23,7 @@ template/
 共享 Skills 不作为 Template Snapshot 的持久化副本；`init`、普通 `sync` 和项目级 `install` 都从 Workspace 的 canonical source 分发到唯一的 `.agents/skills/`。`.pi/skills/`、`.opencode/skills/` 和 `.claude/skills/` 仅用于项目自定义 skills。
 
 - `PROJECT.md` 描述项目是什么；操作规则放在 `AGENTS.md`。
+- 分发的 `AGENTS.md` 提供通用工作流；项目专用规则、命令、测试方式和完成标准由目标项目更具体的 `AGENTS.md` 补充。
 - `.opencode/CONTEXT.md` / `.pi/CONTEXT.md` 保存领域术语与边界。
 - `.agents/skills/` 承载共享 skills；同步只处理可分发 skill 名称，不删除额外的项目自定义 skills。
 - `ci-guard`、`commit-check` 是本仓库维护用的 repo-local skills，不会分发到目标项目。
@@ -100,7 +109,7 @@ npx @heihei0299/matt-skills sync --all             # 同步全部可分发范围
 
 ## 发布
 
-推送 `v*` 标签会触发 GitHub Actions：全量测试、模板检查和 npm 发布。
+最近发布：`v3.0.12`。推送 `v*` 标签会触发 GitHub Actions：全量测试、模板检查和 npm 发布。
 
 ```sh
 npm test
