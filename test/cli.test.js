@@ -275,9 +275,9 @@ test('`install --tools codex` without --all prints a no-skill message and exits 
 
 const PROJECT_MAPPING = {
   codex: '.agents/skills',
-  pi: '.pi/skills',
-  opencode: '.opencode/skills',
-  claude: '.claude/skills',
+  pi: '.agents/skills',
+  opencode: '.agents/skills',
+  claude: '.agents/skills',
 };
 
 const GLOBAL_MAPPING = {
@@ -335,12 +335,12 @@ test('global install maps each tool under $HOME', async (t) => {
   }
 });
 
-test('`install --tools claude,codex --all` installs into both default project directories', () => {
+test('`install --tools claude,codex --all` deduplicates the shared project directory', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-cwd-'));
   try {
     const { status, stdout, stderr } = runCli(['install', '--tools', 'claude,codex', '--all'], cwd);
     assert.equal(status, 0, stderr);
-    for (const rel of ['.agents/skills', '.claude/skills']) {
+    for (const rel of ['.agents/skills']) {
       const target = path.join(cwd, rel);
       const installed = fs
         .readdirSync(target, { withFileTypes: true })

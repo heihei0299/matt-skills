@@ -24,7 +24,8 @@ const TEMPLATE_FILES = [
   '.opencode/skills/.gitkeep',
 ];
 
-const PROJECT_SKILL_DIRS = ['.agents/skills', '.pi/skills', '.opencode/skills', '.claude/skills'];
+const PROJECT_SKILL_DIRS = ['.agents/skills'];
+const HARNESS_SKILL_DIRS = ['.pi/skills', '.opencode/skills', '.claude/skills'];
 
 function runCli(args, cwd = REPO_ROOT) {
   return spawnSync(process.execPath, [CLI, ...args], {
@@ -133,7 +134,7 @@ test('`init --all` copies all distributable skills', () => {
   }
 });
 
-test('`init` copies default programming skills into all project directories', () => {
+test('`init` copies shared skills only into .agents/skills', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
@@ -147,6 +148,13 @@ test('`init` copies default programming skills into all project directories', ()
       }
       assert.ok(fs.existsSync(path.join(dest, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should be installed by default`);
       assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'ci-guard', 'SKILL.md')), `${skillsDir}/ci-guard should NOT be installed by default`);
+    }
+    const sharedSkills = fs.readdirSync(path.join(dest, '.agents/skills'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+    for (const skillsDir of HARNESS_SKILL_DIRS) {
+      const duplicates = sharedSkills.filter((name) => fs.existsSync(path.join(dest, skillsDir, name, 'SKILL.md')));
+      assert.deepEqual(duplicates, [], `shared skills should not be duplicated into ${skillsDir}`);
     }
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -237,6 +245,9 @@ test('`init` without --dest targets the current working directory (programming)'
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'diagnose-fix', 'SKILL.md')));
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should be installed by default`);
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grilling', 'SKILL.md')), `${skillsDir}/grilling should be installed by default`);
+    }
+    for (const skillsDir of HARNESS_SKILL_DIRS) {
+      assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'tdd-implement', 'SKILL.md')));
     }
     assert.match(stdout, new RegExp(`目标路径：${cwd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } finally {

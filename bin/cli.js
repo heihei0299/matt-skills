@@ -33,7 +33,7 @@ process.stdout.on('error', (err) => {
   throw err;
 });
 
-const PROJECT_SKILL_DIRS = '.agents/skills、.pi/skills、.opencode/skills、.claude/skills';
+const PROJECT_SKILL_DIRS = '.agents/skills';
 
 const HELP_GLOBAL = `matt-skills — install and manage this skill collection
 
@@ -222,13 +222,18 @@ const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
 
 const PROJECT_DIRS = {
   codex: '.agents/skills',
-  pi: '.pi/skills',
-  opencode: '.opencode/skills',
-  claude: '.claude/skills',
+  pi: '.agents/skills',
+  opencode: '.agents/skills',
+  claude: '.agents/skills',
 };
 
 function projectSkillTargets(target) {
-  return TOOLS.map((tool) => ({ tool, dir: path.resolve(target, PROJECT_DIRS[tool]) }));
+  const targets = new Map();
+  for (const tool of TOOLS) {
+    const dir = path.resolve(target, PROJECT_DIRS[tool]);
+    if (!targets.has(dir)) targets.set(dir, { tool, dir });
+  }
+  return [...targets.values()];
 }
 
 const GLOBAL_DIRS = {

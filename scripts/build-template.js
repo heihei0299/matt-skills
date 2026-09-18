@@ -35,11 +35,11 @@ async function main() {
   await writeFile(path.join(ROOT, 'template/.opencode/skills/.gitkeep'), '');
   await writeFile(
     path.join(ROOT, 'template/.pi/skills/README.md'),
-    '# 项目技能（pi）\n\n此目录用于存放项目 skills（共享或 project-local）。\n共享技能默认在 `.pi/skills/`；同步不会删除额外的项目自定义 skills。\n',
+    '# 项目技能（pi）\n\n此目录仅用于存放 pi 的项目自定义 skills。共享技能统一分发到 `.agents/skills/`；同步不会删除额外的项目自定义 skills。\n',
   );
   await writeFile(
     path.join(ROOT, 'template/.opencode/skills/README.md'),
-    '# 项目技能（opencode）\n\n此目录用于存放项目 skills（共享或 project-local）。\n共享技能默认在 `.opencode/skills/`；同步不会删除额外的项目自定义 skills。\n',
+    '# 项目技能（opencode）\n\n此目录仅用于存放 opencode 的项目自定义 skills。共享技能统一分发到 `.agents/skills/`；同步不会删除额外的项目自定义 skills。\n',
   );
 
   await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.opencode/agents'));

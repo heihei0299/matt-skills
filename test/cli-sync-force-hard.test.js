@@ -81,14 +81,14 @@ test('sync 默认保留没有 managed marker 的现有 AGENTS.md', () => {
     const { stdout } = runCli(['sync', '--dest', dest]);
     const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
     assert.equal(after, custom, '未受管的 AGENTS.md 应原样保留');
-    assert.match(stdout, /AGENTS\.md 未受管、skills：\.agents\/skills、\.pi\/skills、\.opencode\/skills、\.claude\/skills，已原样保留/);
+    assert.match(stdout, /AGENTS\.md 未受管、skills：\.agents\/skills，已原样保留/);
     assert.ok(!fs.existsSync(path.join(dest, 'AGENTS.md.bak')));
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
 });
 
-test('sync 默认同步四个项目目录并保留自定义与 repo-local skills', () => {
+test('sync 默认同步共享目录并保留自定义与 repo-local skills', () => {
   const dest = createDestWithCustomAgents('LOCAL EDIT without sentinel');
   const skillDirs = ['.agents/skills', '.pi/skills', '.opencode/skills', '.claude/skills'];
   try {
@@ -100,11 +100,11 @@ test('sync 默认同步四个项目目录并保留自定义与 repo-local skills
 
     const { status, stdout, stderr } = runCli(['sync', '--dest', dest]);
     assert.equal(status, 0, stderr);
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills', 'tdd-implement', 'SKILL.md')), '.agents/skills should receive shared skills');
     for (const rel of skillDirs) {
-      assert.ok(fs.existsSync(path.join(dest, rel, 'tdd-implement', 'SKILL.md')), `${rel} should receive shared skills`);
       assert.equal(fs.readFileSync(path.join(dest, rel, 'ci-guard', 'SKILL.md'), 'utf8'), `KEEP ${rel}`);
     }
-    assert.match(stdout, /\.claude\/skills\/ci-guard/);
+    assert.match(stdout, /\.agents\/skills\/ci-guard/);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }

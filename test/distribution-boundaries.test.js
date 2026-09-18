@@ -152,9 +152,9 @@ test('init --all preserves existing repo-local skill sentinels', () => {
 test('install --all never distributes repo-local skills to project or global targets', async (t) => {
   const projectDirs = {
     codex: '.agents/skills',
-    pi: '.pi/skills',
-    opencode: '.opencode/skills',
-    claude: '.claude/skills',
+    pi: '.agents/skills',
+    opencode: '.agents/skills',
+    claude: '.agents/skills',
   };
   for (const [tool, rel] of Object.entries(projectDirs)) {
     await t.test(`project ${tool}`, () => {
@@ -189,7 +189,7 @@ test('install --all never distributes repo-local skills to project or global tar
 });
 
 test('sync default and --all do not add repo-local skills', () => {
-  const projectDirs = ['.agents/skills', '.pi/skills', '.opencode/skills', '.claude/skills'];
+  const projectDirs = ['.agents/skills'];
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-boundary-'));
     try {
@@ -206,7 +206,7 @@ test('sync default and --all do not add repo-local skills', () => {
 });
 
 test('sync updates shared skills from the canonical source', () => {
-  const projectDirs = ['.agents/skills', '.pi/skills', '.opencode/skills', '.claude/skills'];
+  const projectDirs = ['.agents/skills'];
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-update-'));
     const projectLocalSkill = path.join(dest, '.pi/skills/project-local-skill/SKILL.md');
