@@ -1,0 +1,579 @@
+# 当前架构 P2 修复计划
+
+## 一、目标
+
+本轮只处理两个已确认的局部维护风险：
+
+```text
+P2-01  sync-upstream 在本地配置校验完成前执行 git clone
+P2-02  upstream comparison 文本格式存在两套实现
+```
+
+完成后目标：
+
+```text
+P0 = 0
+P1 = 0
+P2 = 0
+
+T01 = DONE
+T02 = DEFERRED
+T03 = DEFERRED
+```
+
+明确不进行 CLI 大拆分或 Harness source 迁移。
+
+---
+
+# Ticket 1 — Upstream Preflight Validation
+
+## 1. 问题
+
+当前 `scripts/sync-upstream.js` 的 `compare()` 顺序大致为：
+
+```text
+loadProprietary
+loadEngineering
+      ↓
+fetchUpstream
+      ↓
+collect upstream/local
+      ↓
+loadRequired
+```
+
+因此如果：
+
+```text
+config/required.json
+```
+
+缺失或损坏，会出现：
+
+```text
+git clone
+   ↓
+产生临时目录
+   ↓
+读取 required 配置
+   ↓
+异常退出
+```
+
+这违反了：
+
+> 先验证本地前置条件，再执行外部副作用。
+
+---
+
+## 2. 修复目标
+
+调整为：
+
+```text
+loadProprietary
+loadEngineering
+loadRequired
+      ↓
+全部本地前置条件通过
+      ↓
+fetchUpstream
+      ↓
+collect / compare
+```
+
+即：
+
+```js
+export async function compare(...) {
+  const proprietary = await loadProprietary();
+  const engineering = await loadEngineering();
+  const required = await loadRequired();
+
+  const fetched = await fetchUpstream(...);
+
+  ...
+}
+```
+
+---
+
+## 3. 修改范围
+
+允许修改：
+
+```text
+scripts/sync-upstream.js
+test/sync-config-loading.test.js
+```
+
+原则上不要修改：
+
+```text
+bin/cli.js
+bin/skill-config.js
+bin/skill-selection.js
+bin/skill-boundaries.js
+template/
+```
+
+---
+
+## 4. 测试要求
+
+新增一个直接 contract：
+
+### Case
+
+```text
+required.json 缺失
++
+提供一个会留下明显痕迹的 upstream/tmp 路径
+```
+
+验证：
+
+```text
+配置错误发生在 fetch/clone 之前
+```
+
+最简单的测试方式是给：
+
+```text
+--tmp <known-path>
+```
+
+运行后断言：
+
+```text
+exit != 0
+stderr contains config error
+tmp path 不存在
+```
+
+这样测试的是：
+
+```text
+preflight before side effect
+```
+
+而不是内部函数调用顺序。
+
+---
+
+## 5. 验收
+
+```text
+[ ] engineering 在 clone 前加载
+[ ] required 在 clone 前加载
+[ ] proprietary classification 在 clone 前完成
+[ ] 配置错误不会产生 upstream 临时目录
+[ ] 正常 comparison 行为不变
+[ ] 没有新增 preflight/service 抽象层
+```
+
+---
+
+# Ticket 2 — Upstream Comparison Formatter Single Source
+
+## 1. 问题
+
+当前同一个 comparison result 被两个地方分别格式化。
+
+### `scripts/sync-upstream.js`
+
+存在类似：
+
+```js
+formatTable(cmp)
+```
+
+### `bin/cli.js`
+
+`sync --dry-run` 又自行拼装：
+
+```text
+上游 HEAD
+本地 / 上游数量
+added
+updated
+renamed
+removed
+same
+```
+
+已经出现轻微文案漂移：
+
+```text
+CLI
+（默认：engineering + 独有所需）
+
+sync-upstream
+（默认，engineering + 独有所需）
+```
+
+这属于新的 Change Amplification：
+
+```text
+修改 comparison 输出
+      ↓
+cli.js
++
+sync-upstream.js
+```
+
+---
+
+## 2. 修复目标
+
+只保留一份：
+
+```text
+comparison result
+      ↓
+formatter
+      ↓
+text
+```
+
+推荐最小方案：
+
+直接从：
+
+```text
+scripts/sync-upstream.js
+```
+
+export：
+
+```js
+export function formatComparison(cmp) {
+  ...
+}
+```
+
+不要专门为了一个 formatter 新建：
+
+```text
+FormatterService
+Presenter
+OutputManager
+```
+
+如果后续 formatter 继续增长，再考虑单独文件。
+
+当前优先最小 diff。
+
+---
+
+## 3. 推荐结构
+
+```text
+scripts/sync-upstream.js
+├── compare()
+├── applySync()
+└── formatComparison()
+          ▲
+          │
+      bin/cli.js
+```
+
+CLI：
+
+```js
+const {
+  compare,
+  formatComparison,
+} = await import('../scripts/sync-upstream.js');
+```
+
+然后：
+
+```js
+const cmp = await compare(...);
+
+process.stdout.write(
+  formatComparison(cmp) + '\n'
+);
+```
+
+---
+
+## 4. 注意 JSON 输出
+
+不要让 formatter 影响：
+
+```text
+--json
+```
+
+仍保持：
+
+```text
+cmp
+ ↓
+JSON.stringify(...)
+```
+
+共享 formatter 只负责 human-readable text。
+
+---
+
+## 5. Exit Code
+
+不要把：
+
+```text
+是否存在 diff
+```
+
+塞进 formatter。
+
+继续保持：
+
+```text
+formatter = pure presentation
+
+caller = 决定 exitCode
+```
+
+即：
+
+```js
+const totalDiff =
+  cmp.result.added.length +
+  cmp.result.updated.length +
+  cmp.result.removed.length +
+  cmp.result.renamed.length;
+
+if (totalDiff > 0) {
+  process.exitCode = 1;
+}
+```
+
+避免 formatter 开始承担业务逻辑。
+
+---
+
+## 6. 测试要求
+
+不需要测试具体实现。
+
+增加或调整 contract，验证：
+
+```text
+matt-skills sync --dry-run
+```
+
+和：
+
+```text
+node scripts/sync-upstream.js --check
+```
+
+在相同 fake upstream 下的核心 human-readable 输出语义一致。
+
+不用要求整个 stdout 逐字完全一致。
+
+重点断言：
+
+```text
+上游 HEAD
+mode hint
+新增
+更新
+删除
+重命名
+一致
+```
+
+中实际出现的相关部分。
+
+不要做大段 snapshot test。
+
+---
+
+## 7. 验收
+
+```text
+[ ] comparison human formatter 只有一个实现
+[ ] CLI 不再自行拼 added/updated/removed/renamed/same
+[ ] CLI 与 script 文本语义一致
+[ ] JSON contract 不变
+[ ] exit-code 逻辑仍由 caller 控制
+[ ] formatter 是纯函数
+[ ] 没有新增输出框架
+```
+
+---
+
+# 执行顺序
+
+建议：
+
+```text
+Ticket 1
+Preflight Validation
+        ↓
+增量 Review
+        ↓
+Ticket 2
+Formatter Single Source
+        ↓
+增量 Review
+        ↓
+结项
+```
+
+不要两个问题混在一个大改动里。
+
+---
+
+# 提交建议
+
+## Commit 1
+
+```text
+refactor(sync): validate config before upstream fetch
+```
+
+只包含：
+
+```text
+scripts/sync-upstream.js
+test/sync-config-loading.test.js
+```
+
+---
+
+## Commit 2
+
+```text
+refactor(sync): share upstream comparison formatter
+```
+
+只包含：
+
+```text
+scripts/sync-upstream.js
+bin/cli.js
+直接相关测试
+```
+
+---
+
+# 验证策略
+
+每张 Ticket 只跑直接测试。
+
+Ticket 1 优先：
+
+```bash
+node --test \
+  test/sync-config-loading.test.js \
+  test/sync-required.test.js \
+  test/sync-upstream-boundaries.test.js
+```
+
+Ticket 2 优先运行：
+
+```bash
+node --test \
+  test/cli-sync-default.test.js \
+  test/cli-sync-apply-safe.test.js \
+  test/sync-required.test.js \
+  test/sync-upstream-boundaries.test.js
+```
+
+如果已有专门 `sync --dry-run` contract，则加入对应文件。
+
+不要在每个小步骤后运行全量测试。
+
+---
+
+# 增量 Review 原则
+
+## Ticket 1 Review
+
+只检查：
+
+```text
+配置是否全部在 fetch 前验证
+异常是否还会产生 tmp clone
+正常 comparison 是否保持
+```
+
+## Ticket 2 Review
+
+只检查：
+
+```text
+formatter 是否真正单一
+CLI 是否删除重复文本拼装
+JSON / exit-code 是否没有被 formatter 接管
+```
+
+不要重新审计：
+
+```text
+Skill Selection
+Template mirror
+T01
+T02
+T03
+```
+
+---
+
+# 范围限制
+
+本轮禁止：
+
+```text
+拆 commands/
+移动 cli.js
+修改 Harness source
+创建 shared/agents/
+重写 sync-upstream 架构
+创建 output/service 层
+修改 Skill 内容
+```
+
+如果实施过程中发现必须做这些事情，应停止当前 Ticket，而不是继续扩大范围。
+
+---
+
+# 最终验收
+
+完成后应达到：
+
+```text
+Config
+  ↓
+preflight validation
+  ↓
+external side effect
+
+compare result
+  ↓
+single formatter
+  ↓
+CLI / standalone script
+```
+
+最终维护状态：
+
+```text
+P0 = 0
+P1 = 0
+P2 = 0
+
+T01 = DONE
+T02 = DEFERRED
+T03 = DEFERRED
+
+当前架构整改：结项
+主动架构重构：停止
+```
+
+核心目标不是增加更多层，而是把当前仅剩的两个局部重复/顺序问题清掉。
