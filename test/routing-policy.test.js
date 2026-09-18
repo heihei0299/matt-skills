@@ -62,7 +62,7 @@ test('workspace and template expose their intended routing branches', () => {
   assert.match(templateAgents, /代码审查 → `code-review`/);
   assert.match(templateAgents, /设计质询 → `grilling`/);
   assert.match(templateAgents, /领域建模 → `domain-modeling`/);
-  assert.match(templateAgents, /无法归类 → `ask-matt`/);
+  assert.match(templateAgents, /其他 → `ask-matt`/);
   assertNoManualRoutes(templateAgents);
 
   assert.match(agents, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
