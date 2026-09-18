@@ -535,6 +535,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
       }
     }
   }
+  const distributableSkillNames = (await listSkillNames({ onlyProgramming: false })).filter((name) => !REPO_LOCAL_SKILLS.has(name));
   const cleanedLegacy = [];
   for (const location of legacyLocations) {
     let entries;
@@ -548,7 +549,7 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
     }
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name === '.git' || entry.name.endsWith('.bak')) continue;
-      if (!allSkills.includes(entry.name)) continue;
+      if (!distributableSkillNames.includes(entry.name)) continue;
       const src = path.join(SKILLS_DIR, entry.name);
       const dst = path.join(location.dir, entry.name);
       try {
@@ -560,8 +561,8 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
     }
   }
   // Legacy harness dirs may contain project-local Skills. Only exact canonical
-  // trees of skills installed in this sync are removed; modified, unknown or
-  // not-installed trees remain untouched.
+  // trees of clearly distributable skills are removed; repo-local, modified or
+  // unknown trees remain untouched.
   // 清理过时的 .pi/settings.json 指向
   try {
     const piSettings = path.join(target, '.pi/settings.json');
