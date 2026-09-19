@@ -33,7 +33,7 @@ test('references own their focused parts of the issue contract', () => {
 });
 
 test('full review consumes a committed review point', () => {
-  assert.match(skill, /完整 Review 前必须形成 committed Review Point/);
+  assert.match(skill, /完整 Review 前只形成 1 个 committed Review Point/);
   assert.match(review, /代码、测试、文档和配置均已完成/);
   assert.match(review, /唯一的 Review Point commit/);
   assert.match(review, /不得按 Behavior、阶段或验证动作拆分 commit/);
