@@ -49,8 +49,11 @@ test('template/AGENTS.md contains only the distributed workflow', () => {
   const agents = readFileSync(root('template/AGENTS.md'), 'utf8');
   assert.match(agents, /^<!-- matt-skills:managed:start -->\n# AGENTS\.md\n\n## Workflow/m);
   assert.match(agents, /<!-- matt-skills:managed:end -->\n$/);
-  assert.match(agents, /\* 其他 → `ask-matt`/);
-  assert.match(agents, /## Validation & Review/);
+  assert.match(agents, /\* 代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
+  assert.match(agents, /## Validation/);
+  assert.match(agents, /## Security/);
+  assert.match(agents, /## Completion/);
+  assert.doesNotMatch(agents, /## Validation & Review|其他 → `ask-matt`/);
 });
 
 
@@ -88,10 +91,8 @@ test('template/.pi/docs/agents mirrors the root docs/agents (path-mapped)', () =
   }
 });
 
-test('template provides a project context placeholder referenced by AGENTS.md', () => {
-  const agents = readFileSync(root('template/AGENTS.md'), 'utf8');
+test('template provides a project context placeholder', () => {
   const project = readFileSync(root('template/PROJECT.md'), 'utf8');
-  assert.match(agents, /PROJECT\.md/);
   assert.match(project, /项目目标、范围、主要入口和关键约束/);
 });
 

@@ -36,9 +36,10 @@ test('workspace keeps its direct route', () => {
 
 test('template keeps its independent workflow', () => {
   assert.match(templateAgents, /## Workflow/);
-  assert.match(templateAgents, /## Development/);
-  assert.match(templateAgents, /默认使用 `tdd`/);
+  assert.match(templateAgents, /## Validation/);
+  assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
   assert.match(templateAgents, /## Git/);
+  assert.match(templateAgents, /## Security/);
   assertNoManualRoutes(templateAgents);
 });
 
@@ -56,13 +57,11 @@ test('workspace and template expose their intended routing branches', () => {
   assertNoManualRoutes(agents);
 
   assert.match(templateAgents, /## Workflow/);
-  assert.match(templateAgents, /理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
-  assert.match(templateAgents, /多来源调研 \/ 方案比较 \/ 技术选型 → `research`/);
-  assert.match(templateAgents, /原型 \/ PoC → `prototype`/);
-  assert.match(templateAgents, /代码审查 → `code-review`/);
-  assert.match(templateAgents, /设计质询 → `grilling`/);
-  assert.match(templateAgents, /领域建模 → `domain-modeling`/);
-  assert.match(templateAgents, /其他 → `ask-matt`/);
+  assert.match(templateAgents, /代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
+  assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
+  assert.match(templateAgents, /多来源调研 \/ 方案比较 \/ 技术选型 \/ 最佳实践 \/ 外部实现 → `research`/);
+  assert.match(templateAgents, /未命中 skill 时直接执行/);
+  assert.doesNotMatch(templateAgents, /prototype|code-review|grilling|domain-modeling|ask-matt/);
   assertNoManualRoutes(templateAgents);
 
   assert.match(agents, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
