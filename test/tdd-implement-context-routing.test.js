@@ -17,8 +17,12 @@ test('tdd-implement routes each stage to a focused reference', () => {
   }
   assert.match(skill, /### ① Red-Green/);
   assert.match(skill, /### ② Verify/);
-  assert.match(skill, /### ③ Review/);
-  assert.match(skill, /## Finalize/);
+  assert.match(skill, /### ③ Record Evidence/);
+  assert.match(skill, /## Batch lifecycle/);
+  assert.match(skill, /### Batch Review/);
+  assert.match(skill, /### Finding Fix/);
+  assert.match(skill, /### Finalize/);
+  assert.match(skill, /### State Sync/);
   assert.doesNotMatch(skill, /references\/(contract|red-green|stages)\.md/);
 });
 
