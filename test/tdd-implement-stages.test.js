@@ -35,6 +35,8 @@ test('references own their focused parts of the issue contract', () => {
 test('full review consumes a committed review point', () => {
   assert.match(skill, /完整 Review 前必须形成 committed Review Point/);
   assert.match(review, /代码、测试、文档和配置均已完成/);
+  assert.match(review, /唯一的 Review Point commit/);
+  assert.match(review, /不得按 Behavior、阶段或验证动作拆分 commit/);
   assert.match(review, /不存在属于当前 issue 交付内容的未提交修改/);
   assert.match(review, /fixed point：`issue_base`/);
   assert.match(review, /diff：`issue_base\.\.\.HEAD`/);
@@ -56,42 +58,44 @@ test('review becomes incremental after one logical full review', () => {
   assert.match(review, /设置 `review_head = last_reviewed_head`/);
 });
 
-test('incremental review is capped at two logical rounds', () => {
+test('incremental review is capped at one logical round and one fix commit', () => {
   assert.match(review, /incremental_review_rounds = 0/);
-  assert.match(review, /每个 issue 最多执行 2 个逻辑增量 Review 轮次/);
-  assert.match(review, /正常形成增量 Review 结论的轮次才计数/);
+  assert.match(review, /每个 issue 最多执行 1 个逻辑增量 Review 轮次/);
+  assert.match(review, /一次性修复当前全部 open findings/);
+  assert.match(review, /最多 1 个 finding-fix commit/);
+  assert.match(review, /不得按 finding 拆分 commit/);
   assert.match(review, /技术失败不消耗轮次/);
   assert.match(review, /设置 `incremental_review_rounds \+= 1`/);
-  assert.match(review, /`incremental_review_rounds >= 2`[\s\S]*不得再次启动增量 Review/);
-  assert.match(review, /`incremental_review_rounds = 2` 且 `open_findings` 仍非空[\s\S]*不进入 Finalize/);
+  assert.match(review, /`incremental_review_rounds >= 1`[\s\S]*不得再次启动增量 Review/);
+  assert.match(review, /正常完成但仍有 open findings[\s\S]*停止当前 issue[\s\S]*不进入 Finalize/);
+  assert.match(review, /`incremental_review_rounds <= 1`/);
 });
 
-test('issue history is a bounded commit range rather than one required commit', () => {
-  assert.match(skill, /一个 issue 可以包含一个或多个 commits/);
-  assert.match(skill, /不要求固定 commit 数量/);
-  assert.match(orchestration, /`issue_base\.\.\.review_head` 是已完成 Review 的实现范围/);
-  assert.match(orchestration, /`issue_base\.\.\.issue_head` 是当前 issue 的完整提交范围/);
-  assert.match(orchestration, /`issue_head` 是下一个 issue 的 `issue_base`/);
-  assert.doesNotMatch(skill, /完整 Review 通过后创建一个独立 commit/);
-  assert.doesNotMatch(finalize, /为当前 issue 创建一个独立 commit/);
+test('each issue uses one review point commit and at most one finding-fix commit', () => {
+  assert.match(skill, /Red-Green \/ Verify 期间不因 Behavior、阶段切换或验证动作创建 commit/);
+  assert.match(review, /唯一的 Review Point commit/);
+  assert.match(review, /最多 1 个 finding-fix commit/);
+  assert.match(review, /最多包含 2 个由本技能产生的 issue commits/);
+  assert.doesNotMatch(skill, /一个 issue 可以包含一个或多个 commits/);
 });
 
-test('Finalize only closes issue state and never reopens implementation', () => {
-  assert.match(finalize, /不修改已经 Review 的代码、测试、交付文档或配置/);
-  assert.match(finalize, /不得提前标记 `resolved` 或解除 blockers/);
+test('Finalize closes issue state without a per-issue commit', () => {
+  assert.match(finalize, /不为单个 issue 创建收尾 commit/);
+  assert.match(finalize, /仓库内 tracker\/progress\/status 只记录为批次待同步状态/);
+  assert.match(finalize, /Finalize 不创建 commit/);
+  assert.match(finalize, /设置 `issue_head = review_head`/);
+  assert.match(finalize, /最多创建 1 个 batch state-sync commit/);
+  assert.match(finalize, /不属于任何单个 issue 的 `issue_base\.\.\.issue_head` 范围/);
   assert.match(finalize, /发现任何实现、测试、交付文档、配置或验证遗漏[\s\S]*立即停止当前 issue/);
-  assert.match(finalize, /保持未完成[\s\S]*不标记 `resolved`[\s\S]*不解除 blockers[\s\S]*不设置成功的 `issue_head`/);
-  assert.match(finalize, /不得在 Finalize 中补改[\s\S]*不得自动重新进入 Red-Green、Verify 或 Review/);
-  assert.match(finalize, /仅在未发现上述遗漏[\s\S]*才同步 `resolved` \/ blockers 状态/);
-  assert.match(finalize, /设置 `issue_head = HEAD`/);
   assert.doesNotMatch(finalize, /加入 `open_findings`|返回 Verify|增量 Review/);
-  assert.doesNotMatch(skill, /返回对应 Step/);
 });
 
-test('multi-issue orchestration advances only from a finalized issue boundary', () => {
-  assert.match(orchestration, /issue_base = HEAD[\s\S]*Red-Green[\s\S]*Verify[\s\S]*Review[\s\S]*Finalize[\s\S]*issue_head = HEAD/);
+test('multi-issue orchestration advances without per-issue status commits', () => {
+  assert.match(orchestration, /issue_base = HEAD[\s\S]*Red-Green[\s\S]*Verify[\s\S]*Review[\s\S]*Finalize[\s\S]*issue_head = review_head/);
+  assert.match(orchestration, /`issue_head = review_head`/);
   assert.match(orchestration, /下一个 issue 以当前 `issue_head` 作为新的 `issue_base`/);
-  assert.match(orchestration, /一个 issue Finalize 完成后立即进入下一个可调度 issue/);
+  assert.match(orchestration, /最多创建 1 个 batch state-sync commit/);
+  assert.match(orchestration, /每个 issue 最多包含 2 个由本技能产生的实现\/Review commits/);
 });
 
 test('tdd-implement avoids obsolete references and commit-check coupling', () => {

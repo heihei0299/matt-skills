@@ -22,12 +22,12 @@ for each layer:
     Verify
     Review
     Finalize
-    issue_head = HEAD
+    issue_head = review_head
 ```
 
 `Review` 包含当前 issue committed Review Point 的形成以及完整/增量 Review；具体以 `SKILL.md` 与 `review.md` 为准。
 
-一个 issue Finalize 完成后立即进入下一个可调度 issue。下一个 issue 以当前 `issue_head` 作为新的 `issue_base`。前置 issue 未完成时，其依赖项保持 `blocked`。
+一个 issue Finalize 完成后立即进入下一个可调度 issue。Finalize 不为单个 issue 创建 commit，因此 `issue_head = review_head`；下一个 issue 以当前 `issue_head` 作为新的 `issue_base`。前置 issue 未完成时，其依赖项保持 `blocked`。
 
 验证与 Finalize 分别以 `verify.md`、`finalize.md` 为准，本文件不重复定义其内部规则。
 
@@ -45,10 +45,10 @@ for each layer:
 其中：
 
 - `issue_base...review_head` 是已完成 Review 的实现范围；
-- `issue_base...issue_head` 是当前 issue 的完整提交范围；
+- `issue_head = review_head`，因此 `issue_base...issue_head` 只包含当前 issue 的 Review Point commit，以及可选的唯一 finding-fix commit；
 - `issue_head` 是下一个 issue 的 `issue_base`。
 
-当前层所有 issue 完成后进入下一层。全部层完成后，确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。
+当前层所有 issue 完成后进入下一层。全部层完成后，如仓库内 tracker/progress/status 存在待同步状态，统一写入并最多创建 1 个 batch state-sync commit；该 commit 不属于任何单个 issue 的提交范围。随后确认 issue 与 progress 状态一致即可结束；不额外扩大验证范围，也不再次执行完整 Review。
 
 ## 冲突与失败
 
@@ -61,5 +61,6 @@ for each layer:
 
 - 所有可执行 issue 均按依赖顺序完成；
 - issue、依赖状态与 progress 一致；
-- 每个完成 issue 的 `issue_base`、`review_head` 与 `issue_head` 边界明确；
+- 每个完成 issue 的 `issue_base`、`review_head` 与 `issue_head` 边界明确，且每个 issue 最多包含 2 个由本技能产生的实现/Review commits；
+- 仓库内状态同步如有需要，只形成最多 1 个批次 state-sync commit；
 - 不存在被误当作已完成的 blocked issue。

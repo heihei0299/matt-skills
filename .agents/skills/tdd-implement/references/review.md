@@ -19,10 +19,10 @@
 
 1. 确认当前 issue 交付所需的代码、测试、文档和配置均已完成；
 2. 若最后的文档/配置修改影响已验证证据，重新验证受影响范围；
-3. 将当前 issue 已完成并验证的交付修改提交到当前 branch；
+3. 将当前 issue 已完成并验证的交付修改合并形成当前 issue 唯一的 Review Point commit；不得按 Behavior、阶段或验证动作拆分 commit；
 4. 确认不存在属于当前 issue 交付内容的未提交修改。
 
-一个 issue 可以在这里已有一个或多个 commits。Commit 是 Review artifact，不代表 issue 已完成。
+完整 Review 前每个 issue 只形成 1 个 Review Point commit。Commit 是交付 artifact，不是流程日志。
 
 完整 Review 使用：
 
@@ -51,32 +51,32 @@
 
 ## 3. 增量 Review
 
-存在 `open_findings` 时，只处理已有 finding，不扩大当前 issue 范围。可将由同一改动共同解决的相关 findings 一起处理，不要求“一 finding 一 commit”。
+存在 `open_findings` 时，只处理已有 finding，不扩大当前 issue 范围。一次性处理当前全部 open findings，不按 finding 拆分 commit。
 
-每个 issue 最多执行 2 个逻辑增量 Review 轮次。只有正常形成增量 Review 结论的轮次才计数；工具错误、stream interruption、sub-agent failure 或其它未形成完整结论的技术失败不消耗轮次，只重试当前逻辑轮次。
+每个 issue 最多执行 1 个逻辑增量 Review 轮次。只有正常形成增量 Review 结论的轮次才计数；工具错误、stream interruption、sub-agent failure 或其它未形成完整结论的技术失败不消耗轮次，只重试当前逻辑轮次。
 
-每轮修复前，若 `incremental_review_rounds >= 2` 且 `open_findings` 仍非空，则停止当前 issue：不得再次启动增量 Review，不设置 `review_head`，不得进入 Finalize，并报告剩余 findings 请求决策。
+若 `incremental_review_rounds >= 1` 且 `open_findings` 仍非空，则停止当前 issue：不得再次启动增量 Review，不设置 `review_head`，不得进入 Finalize，并报告剩余 findings 请求决策。
 
-每轮修复：
+唯一一轮 finding 修复：
 
-1. 修复选定的 open findings；
+1. 一次性修复当前全部 open findings；
 2. 若修复产生新的 Behavior，返回 Red-Green 对该 Behavior 执行 TDD；否则直接进入受影响证据的重新验证；
-3. 重新验证修复直接影响的证据；
-4. 将本轮修复提交到当前 issue 的 commit range，并确认不存在属于本轮修复的未提交修改；
-5. 只针对 `last_reviewed_head...HEAD` 与本轮目标 findings 做增量 Review；增量 Review 不调用完整 `code-review`。
+3. 重新验证全部修复直接影响的证据；
+4. 将本轮全部修复合并形成最多 1 个 finding-fix commit，并确认不存在属于本轮修复的未提交修改；不得按 finding 拆分 commit；
+5. 只针对 `last_reviewed_head...HEAD` 与现有 findings 做增量 Review；增量 Review 不调用完整 `code-review`。
 
 若增量 Review 正常形成结论，先设置 `incremental_review_rounds += 1`。
 
 增量 Review 通过时：
 
-- 仅关闭本轮已由证据确认解决的 findings；
+- 仅关闭已由证据确认解决的 findings；
 - 设置 `last_reviewed_head = HEAD`。
 
-增量 Review 正常完成但未通过时：
+增量 Review 正常完成但仍有 open findings 时：
 
 - 保留未关闭 findings；
 - 不推进 `last_reviewed_head`；
-- 若尚未达到 2 轮上限，下一轮继续从上一次成功的 `last_reviewed_head` 审查累计的未 Review 修复。
+- 停止当前 issue，不设置 `review_head`，不进入 Finalize，并报告剩余 findings 请求决策。
 
 增量 Review 发生技术失败时：
 
@@ -87,13 +87,12 @@
 
 当 `open_findings` 为空时，设置 `review_head = last_reviewed_head`，Review 通过。
 
-当 `incremental_review_rounds = 2` 且 `open_findings` 仍非空时，Review 不通过：保持 issue 未完成，不设置 `review_head`，不进入 Finalize，并报告剩余 findings 请求决策。
-
 ## 出口
 
 - `full_review_done = true`；
 - `open_findings` 为空；
 - `review_head` 非空；
-- `incremental_review_rounds <= 2`；
-- `issue_base...review_head` 是已经完成 Review 的当前 issue 实现范围；
+- `incremental_review_rounds <= 1`；
+- `review_head` 指向 Review Point commit，或唯一的 finding-fix commit；
+- `issue_base...review_head` 是已经完成 Review 的当前 issue 实现范围，最多包含 2 个由本技能产生的 issue commits；
 - 不存在属于该实现范围的未提交交付修改。
