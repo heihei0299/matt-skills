@@ -35,7 +35,6 @@ test('CLI help uses distribution semantics instead of stale skill counts', () =>
 test('init summary excludes preserved repo-local directories from installed count', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-stats-'));
   try {
-    fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL AGENTS');
     for (const name of repoLocal) {
       const dir = path.join(dest, '.agents/skills', name);
       fs.mkdirSync(dir, { recursive: true });

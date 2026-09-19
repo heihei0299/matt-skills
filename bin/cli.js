@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, writeFile, cp, stat, lstat, rm, mkdir } from 'node:fs/promises';
+import { readdir, readFile, writeFile, cp, stat, lstat, rm, mkdir, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,7 +39,7 @@ const HELP_GLOBAL = `matt-skills — install and manage this skill collection
 
 Usage:
   matt-skills init [options]                   Initialize a project: template + skills (${PROJECT_SKILL_DIRS})
-  matt-skills sync [--all|--dry-run] [--dest <path>]   Sync existing project to latest template + skills
+  matt-skills sync [--all|--dry-run|--refresh-agents] [--dest <path>]   Sync existing project to latest template + skills
   matt-skills list [--all] [--json]            List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
   matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
@@ -57,7 +57,7 @@ Init options:
   --dest <path>   Target directory (default: current directory)
   --all           Include all distributable skills; default only default programming skills
   --help, -h      Show this help
-提示：已有 AGENTS.md 时普通 init 跳过；显式 init --all 刷新模板并覆盖全量可分发 skills。
+提示：已有 AGENTS.md 时 init 始终跳过；需要更新已有项目请使用 sync。
 
 提示：matt-skills --help 查看全量
 `;
@@ -65,16 +65,19 @@ Init options:
 const HELP_SYNC = `matt-skills sync — Sync existing project to latest template + skills
 
 Usage:
-  matt-skills sync [--all|--dry-run] [--dest <path>]
+  matt-skills sync [--all|--dry-run|--refresh-agents] [--dest <path>]
 
 Sync options:
-  --all           仅更新同名技能内容（存在则覆盖，不存在则新增）并更新 AGENTS.md
-  --dry-run       预演：只比对不写盘
-  --dest <path>   Target directory (default: current directory)
-  --help, -h      Show this help
+  --all              同步全部可分发技能；不改变 AGENTS.md 刷新策略
+  --refresh-agents   显式刷新 AGENTS.md；无受管区块时先备份为 AGENTS.md.bak
+  --dry-run          预演目标项目变化，只比对不写盘
+  --json             仅与 --dry-run 一起使用，输出机器可读结果
+  --dest <path>      Target directory (default: current directory)
+  --help, -h         Show this help
   项目 skills：${PROJECT_SKILL_DIRS}
 
-说明：默认不带 --all 增量同步默认 programming skill，并保留现有 AGENTS.md；--all 时同步全部可分发 skill 并强制刷新 AGENTS.md。
+说明：默认同步默认编程 skill 并保留现有 AGENTS.md；--all 只扩大技能范围。
+      --refresh-agents 与 --all、--dry-run 可组合；上游检查请使用 check。
 
 提示：matt-skills --help 查看全量
 `;
@@ -125,6 +128,8 @@ Install options:
 `;
 
 const HELP = HELP_GLOBAL;
+
+const DRY_RUN_PATHS = ['AGENTS.md', 'AGENTS.md.bak', '.opencode', '.pi', '.agents/skills', '.claude/skills'];
 
 function parseFrontmatter(text) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -377,7 +382,7 @@ async function initCommand({ dest, all }) {
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
   const onlyProgramming = !all;
-  if (await pathExists(marker) && !all) {
+  if (await pathExists(marker)) {
     process.stdout.write('模板已存在（AGENTS.md），跳过\n');
   } else {
     await cp(TEMPLATE_DIR, target, {
@@ -422,73 +427,124 @@ async function initCommand({ dest, all }) {
   }
   process.stdout.write(`目标路径：${target}\n`);
 }
-async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
+async function copyDryRunInputs(target, stage) {
+  for (const relative of DRY_RUN_PATHS) {
+    const source = path.join(target, relative);
+    if (!await pathExists(source)) continue;
+    const destination = path.join(stage, relative);
+    await mkdir(path.dirname(destination), { recursive: true });
+    await cp(source, destination, { recursive: true, force: true });
+  }
+}
+
+async function compareDryRunTrees(target, stage) {
+  const result = { added: [], updated: [], removed: [] };
+  for (const relative of DRY_RUN_PATHS) {
+    const before = path.join(target, relative);
+    const after = path.join(stage, relative);
+    const beforeExists = await pathExists(before);
+    const afterExists = await pathExists(after);
+    if (!beforeExists && afterExists) result.added.push(relative);
+    else if (beforeExists && !afterExists) result.removed.push(relative);
+    else if (beforeExists && afterExists && !await sameTree(before, after)) result.updated.push(relative);
+  }
+  return result;
+}
+
+function formatTargetComparison({ target, result, onlyProgramming, refreshAgents }) {
+  const lines = [
+    `目标: ${target}`,
+    `范围: ${onlyProgramming ? '默认编程' : '全部可分发'}${refreshAgents ? '；刷新 AGENTS.md' : ''}`,
+    '',
+  ];
+  const totalDiff = result.added.length + result.updated.length + result.removed.length;
+  if (totalDiff === 0) {
+    lines.push('✅ 无需更新');
+    return lines.join('\n');
+  }
+  if (result.added.length) lines.push(`新增 (${result.added.length}): ${result.added.join(', ')}`);
+  if (result.updated.length) lines.push(`更新 (${result.updated.length}): ${result.updated.join(', ')}`);
+  if (result.removed.length) lines.push(`删除 (${result.removed.length}): ${result.removed.join(', ')}`);
+  return lines.join('\n');
+}
+
+async function refreshAgentsFile(targetFile) {
+  const templateFile = path.join(TEMPLATE_DIR, 'AGENTS.md');
+  const current = await readFile(targetFile, 'utf8');
+  const template = await readFile(templateFile, 'utf8');
+  const merged = mergeManagedAgents(current, template);
+  if (merged !== null) {
+    if (merged !== current) await writeFile(targetFile, merged);
+    return 'managed';
+  }
+  await cp(targetFile, `${targetFile}.bak`, { force: true });
+  await cp(templateFile, targetFile, { force: true });
+  return 'full';
+}
+
+async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = false }) {
   const onlyProgramming = !all;
+  const output = (text) => {
+    if (!quiet) process.stdout.write(text);
+  };
+  if (!dryRun && json) throw new Error('--json 仅支持 sync --dry-run');
   if (dryRun) {
-    const { compare, formatComparison } = await import('../scripts/sync-upstream.js');
-    const cmp = await compare({ upstreamUrl, ref, onlyProgramming });
-    if (json) {
-      process.stdout.write(JSON.stringify({ head: cmp.head, counts: cmp.counts, result: cmp.result, onlyProgramming }, null, 2) + '\n');
-    } else {
-      process.stdout.write(formatComparison(cmp) + '\n');
+    const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
+    const stage = await mkdtemp(path.join(os.tmpdir(), 'matt-skills-sync-dry-run-'));
+    try {
+      await copyDryRunInputs(target, stage);
+      await syncCommand({ dest: stage, all, dryRun: false, json: false, refreshAgents, quiet: true });
+      const result = await compareDryRunTrees(target, stage);
+      const payload = { target, result, onlyProgramming, refreshAgents };
+      if (json) output(`${JSON.stringify(payload, null, 2)}\n`);
+      else output(`${formatTargetComparison(payload)}\n`);
+      const totalDiff = result.added.length + result.updated.length + result.removed.length;
+      if (totalDiff > 0) process.exitCode = 1;
+    } finally {
+      await rm(stage, { recursive: true, force: true });
     }
-    const { rm } = await import('node:fs/promises');
-    await rm(cmp.dest, { recursive: true, force: true });
-    const totalDiff = cmp.result.added.length + cmp.result.updated.length + cmp.result.removed.length + cmp.result.renamed.length;
-    if (totalDiff > 0) process.exitCode = 1;
     return;
   }
 
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
-  // 模板同步：默认模式下过滤 skills，仅同步默认子集
   async function copyTemplateFiltered() {
-    if (!onlyProgramming) {
-      await cp(TEMPLATE_DIR, target, {
-        recursive: true,
-        force: true,
-        filter: shouldCopyTemplatePath,
-      });
-      return;
-    }
-    // Skeleton only; shared Skills are copied from the canonical source below.
-    await cp(path.join(TEMPLATE_DIR, 'AGENTS.md'), path.join(target, 'AGENTS.md'), { force: true });
-    await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
-    await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
-  }
-  if (!(await pathExists(marker))) {
-    process.stdout.write('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
-    if (onlyProgramming) await copyTemplateFiltered();
-    else await cp(TEMPLATE_DIR, target, {
+    await cp(TEMPLATE_DIR, target, {
       recursive: true,
       force: true,
       filter: shouldCopyTemplatePath,
     });
-    process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
+  }
+  if (!(await pathExists(marker))) {
+    output('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
+    await copyTemplateFiltered();
+    output(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
   } else {
-    process.stdout.write('同步：检测到现有项目，将增量更新\n');
-    if (all) {
-      await cp(TEMPLATE_DIR, target, {
-        recursive: true,
-        force: true,
-        filter: shouldCopyTemplatePath,
-      });
-      process.stdout.write(`模板：已同步（AGENTS.md 整体刷新、skills：${PROJECT_SKILL_DIRS}）\n`);
+    output('同步：检测到现有项目，将增量更新\n');
+    let agentsManaged = false;
+    let agentsRefreshed = false;
+    let agentsRefreshMode = null;
+    if (refreshAgents) {
+      agentsRefreshMode = await refreshAgentsFile(marker);
+      agentsRefreshed = true;
     } else {
-      let agentsManaged = false;
       try {
         agentsManaged = await syncManagedAgents(marker);
       } catch {}
-      await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
-      await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
-      if (agentsManaged) {
-        process.stdout.write(`模板：已同步（AGENTS.md 受管区块已更新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
-      } else {
-        process.stdout.write(`模板：已同步（AGENTS.md 未受管、skills：${PROJECT_SKILL_DIRS}，已原样保留）\n`);
-      }
+    }
+    await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
+    await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
+    if (agentsRefreshed && agentsRefreshMode === 'managed') {
+      output(`模板：已同步（AGENTS.md 受管区块已刷新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
+    } else if (agentsRefreshed) {
+      output(`模板：已同步（AGENTS.md 已刷新，旧文件备份为 AGENTS.md.bak、skills：${PROJECT_SKILL_DIRS}）\n`);
+    } else if (agentsManaged) {
+      output(`模板：已同步（AGENTS.md 受管区块已更新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
+    } else {
+      output(`模板：已同步（AGENTS.md 未受管、skills：${PROJECT_SKILL_DIRS}，已原样保留）\n`);
     }
   }
-  // 技能同步：--all 仅更新同名可分发技能内容，存在则覆盖，不存在则新增，并更新 AGENTS.md（由上一步已处理）；默认范围为默认 programming，不删多余
+  // --all 只扩大技能范围；同名覆盖、不存在新增，不删除目标中的额外技能。
   const allSkills = await listSkillNames({ onlyProgramming });
   const skillTargets = projectSkillTargets(target);
   const skillsDir = path.resolve(target, PROJECT_DIRS.codex);
@@ -569,20 +625,19 @@ async function syncCommand({ dest, all, dryRun, json, upstreamUrl, ref }) {
     if (await pathExists(piSettings)) {
       const txt = await readFile(piSettings, 'utf8');
       if (txt.includes('.opencode/skills') || txt.includes('../.opencode')) {
-        const { writeFile } = await import('node:fs/promises');
         await writeFile(piSettings, '{}\n');
       }
     }
   } catch {}
   if (cleanedLegacy.length) {
-    process.stdout.write(`迁移清理：${cleanedLegacy.join(', ')} 旧共享副本已移除\n`);
+    output(`迁移清理：${cleanedLegacy.join(', ')} 旧共享副本已移除\n`);
   }
   if (preservedRepoLocal.length) {
-    process.stdout.write(`迁移提示：${preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
+    output(`迁移提示：${preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
   }
   const modeLabel = onlyProgramming ? '默认编程' : '全部可分发';
-  process.stdout.write(`技能：新增 ${installed}、更新 ${updated}（${modeLabel} ${allSkills.length}）\n`);
-  process.stdout.write(`目标路径：${target}\n`);
+  output(`技能：新增 ${installed}、更新 ${updated}（${modeLabel} ${allSkills.length}）\n`);
+  output(`目标路径：${target}\n`);
 }
 
 function parseInitArgs(args) {
@@ -607,8 +662,7 @@ function parseSyncArgs(args) {
   let all = false;
   let dryRun = false;
   let json = false;
-  let upstreamUrl;
-  let ref;
+  let refreshAgents = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--dest') {
@@ -618,20 +672,13 @@ function parseSyncArgs(args) {
     else if (arg === '--all') all = true;
     else if (arg === '--dry-run') dryRun = true;
     else if (arg === '--json') json = true;
-    else if (arg === '--upstream') {
-      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--upstream' requires a value`);
-      upstreamUrl = args[++i];
-    } else if (arg.startsWith('--upstream=')) upstreamUrl = arg.slice('--upstream='.length);
-    else if (arg === '--ref') {
-      if (i + 1 >= args.length || args[i + 1].startsWith('-')) throw new Error(`unknown option '--ref' requires a value`);
-      ref = args[++i];
-    } else if (arg.startsWith('--ref=')) ref = arg.slice('--ref='.length);
+    else if (arg === '--refresh-agents') refreshAgents = true;
     else if (arg === '--help' || arg === '-h') {} // handled at main
     else if (arg === '--apply') {} // deprecated alias, same as default safe incremental
     else if (arg.startsWith('-')) throw new Error(`unknown option '${arg}' for command 'sync'`);
     else throw new Error(`unknown argument '${arg}' for command 'sync'`);
   }
-  return { dest, all, dryRun, json, upstreamUrl, ref };
+  return { dest, all, dryRun, json, refreshAgents };
 }
 
 function parseInstallArgs(args) {
@@ -721,15 +768,15 @@ async function main() {
   if (!knownCommands.has(command)) {
     process.stderr.write(`error: unknown command '${command}'\n`);
     process.stderr.write(`Run 'matt-skills --help' for usage.\n`);
-    process.exitCode = 1;
+    process.exitCode = 2;
     return;
   }
   if (command === 'list') {
     // list strict: only --all/--json/--help allowed, rest handled via parse but we keep simple
     for (const a of rest) {
       if (a === '--all' || a === '--json' || a === '--help' || a === '-h') continue;
-      if (a.startsWith('-')) { process.stderr.write(`error: unknown option '${a}' for command 'list'\n`); process.stderr.write(`Run 'matt-skills list --help' for usage.\n`); process.exitCode = 1; return; }
-      process.stderr.write(`error: unknown argument '${a}' for command 'list'\n`); process.stderr.write(`Run 'matt-skills list --help' for usage.\n`); process.exitCode = 1; return;
+      if (a.startsWith('-')) { process.stderr.write(`error: unknown option '${a}' for command 'list'\n`); process.stderr.write(`Run 'matt-skills list --help' for usage.\n`); process.exitCode = 2; return; }
+      process.stderr.write(`error: unknown argument '${a}' for command 'list'\n`); process.stderr.write(`Run 'matt-skills list --help' for usage.\n`); process.exitCode = 2; return;
     }
     const onlyProgramming = !rest.includes('--all');
     const skills = await listSkills({ onlyProgramming });
@@ -759,21 +806,30 @@ async function main() {
     for (let i = 0; i < rest.length; i++) {
       const a = rest[i];
       if (a === '--all' || a === '--json' || a === '--help' || a === '-h') continue;
-      if (a === '--upstream' || a === '--ref') { i++; continue; }
+      if (a === '--upstream' || a === '--ref') {
+        if (i + 1 >= rest.length || rest[i + 1].startsWith('-')) {
+          process.stderr.write(`error: option '${a}' for command 'check' requires a value\n`);
+          process.stderr.write(`Run 'matt-skills check --help' for usage.\n`);
+          process.exitCode = 2;
+          return;
+        }
+        i++;
+        continue;
+      }
       if (a.startsWith('--upstream=') || a.startsWith('--ref=')) continue;
-      if (a.startsWith('-')) { process.stderr.write(`error: unknown option '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 1; return; }
-      process.stderr.write(`error: unknown argument '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 1; return;
+      if (a.startsWith('-')) { process.stderr.write(`error: unknown option '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 2; return; }
+      process.stderr.write(`error: unknown argument '${a}' for command 'check'\n`); process.stderr.write(`Run 'matt-skills check --help' for usage.\n`); process.exitCode = 2; return;
     }
     await checkCommand(rest);
     return;
   }
   if (command === 'update') {
     process.stderr.write('update 已合并到 sync（默认即增量同步）\n');
-    process.exitCode = 1;
+    process.exitCode = 2;
     return;
   }
 }
 main().catch((error) => {
   process.stderr.write(`error: ${error.message}\n`);
-  process.exitCode = 1;
+  process.exitCode = 2;
 });

@@ -40,19 +40,19 @@ test('matt-skills init -h only contains Init options', () => {
   assert.doesNotMatch(s2, /Init options/);
 });
 
-test('unknown command/option strict fails with stderr and exit 1', () => {
+test('unknown command/option strict fails with stderr and exit 2', () => {
   const r1 = runCli(['--unknown']);
-  assert.equal(r1.status, 1);
+  assert.equal(r1.status, 2);
   assert.match(r1.stderr, /error: unknown command/);
   const r2 = runCli(['sync', '--bogus']);
-  assert.equal(r2.status, 1);
+  assert.equal(r2.status, 2);
   assert.match(r2.stderr, /error: unknown option/);
   assert.match(r2.stderr, /--bogus/);
 });
 
-test('matt-skills sync --dest missing value exits 1', () => {
+test('matt-skills sync --dest missing value exits 2', () => {
   const r = runCli(['sync', '--dest']);
-  assert.equal(r.status, 1);
+  assert.equal(r.status, 2);
   assert.match(r.stderr, /unknown option.*--dest.*requires a value|error/);
 });
 
@@ -61,10 +61,14 @@ test('matt-skills sync --all 更新同名且 --force 已移除', () => {
   assert.match(h, /--all/);
   assert.doesNotMatch(h, /--force/);
   assert.match(h, /--dry-run/);
+  assert.match(h, /--refresh-agents/);
   const r = runCli(['sync', '--force']);
-  assert.equal(r.status, 1);
+  assert.equal(r.status, 2);
   assert.match(r.stderr, /unknown option '--force'/);
   const r2 = runCli(['sync', '--all', '--force']);
-  assert.equal(r2.status, 1);
+  assert.equal(r2.status, 2);
   assert.match(r2.stderr, /unknown option '--force'/);
+  const upstream = runCli(['sync', '--dry-run', '--upstream', 'unused']);
+  assert.equal(upstream.status, 2);
+  assert.match(upstream.stderr, /unknown option '--upstream'/);
 });

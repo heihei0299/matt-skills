@@ -62,7 +62,7 @@ npx @heihei0299/matt-skills sync --all       # 同步全部可分发 skills
 npx @heihei0299/matt-skills sync --dry-run --json
 ```
 
-`init` 默认保护已有 `AGENTS.md`；需要刷新完整模板时使用 `init --all`。默认 `sync` 保留已有 `AGENTS.md` 和项目规则，`sync --all` 才将其整体刷新为当前分发模板。`sync` 不删除目标项目的额外文件或自定义 skills。
+`init` 对已有 `AGENTS.md` 始终跳过；已有项目使用 `sync`。默认 `sync` 保留已有 `AGENTS.md` 和项目规则，`--all` 只扩大技能范围。需要显式刷新 `AGENTS.md` 时使用 `sync --refresh-agents`；无受管区块时会先备份为 `AGENTS.md.bak`。`sync` 不删除目标项目的额外文件或自定义 skills。
 
 默认 programming 范围中的 4 个独有 skills 是 `tdd-implement`、`diagnose-fix`、`grill-to-spec`、`show-me`。
 
@@ -72,17 +72,19 @@ npx @heihei0299/matt-skills sync --dry-run --json
 npx @heihei0299/matt-skills list [--all] [--json]
 npx @heihei0299/matt-skills install [--all] [--tools <list>] [--global] [--dest <dir>]
 npx @heihei0299/matt-skills init [--all] [--dest <dir>]
-npx @heihei0299/matt-skills sync [--all] [--dry-run] [--json] [--dest <dir>]
+npx @heihei0299/matt-skills sync [--all] [--dry-run] [--refresh-agents] [--dest <dir>]
 npx @heihei0299/matt-skills check [--all] [--json] [--upstream <url>] [--ref <ref>]
 ```
 
 常用选项：
 
-- `--all`：包含全部可分发 skills，默认范围只包含 programming skills。
+- `--all`：包含全部可分发 skills，默认范围只包含 programming skills；不会隐式刷新 `AGENTS.md`。
+- `--refresh-agents`：显式刷新目标 `AGENTS.md`；与 `--all`、`--dry-run` 可组合。
 - `--dest <dir>`：指定目标目录。
 - `--tools <list>`：选择 `codex`、`pi`、`opencode` 或 `claude`；项目级 skills 统一写入 `.agents/skills/`，全局安装仍使用各工具目录。
 - `--global`：写入用户级 skills 目录。
-- `--dry-run`：只检查差异，不写入；`--json` 输出机器可读结果。
+- `--dry-run`：预演目标项目差异，不写入；`sync --dry-run --json` 输出机器可读结果。
+- `check --json`：输出上游比较的机器可读结果。普通 `sync --json` 不支持。
 
 ## Codex CLI 支持
 
@@ -100,9 +102,11 @@ CODEX_E2E=1 npm run codex:smoke
 非独有 skills 来自 [mattpocock/skills](https://github.com/mattpocock/skills)。
 
 ```sh
-npx @heihei0299/matt-skills sync --dry-run --json  # 检查上游差异
-npx @heihei0299/matt-skills sync                   # 同步默认范围
-npx @heihei0299/matt-skills sync --all             # 同步全部可分发范围
+npx @heihei0299/matt-skills check --json              # 检查上游差异
+npx @heihei0299/matt-skills sync --dry-run --json     # 预演目标项目变化
+npx @heihei0299/matt-skills sync                      # 同步默认范围
+npx @heihei0299/matt-skills sync --all                # 同步全部可分发范围
+npx @heihei0299/matt-skills sync --refresh-agents     # 同步并刷新 AGENTS.md
 ```
 
 ## 发布

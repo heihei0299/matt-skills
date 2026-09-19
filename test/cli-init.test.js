@@ -161,7 +161,7 @@ test('`init` copies shared skills only into .agents/skills', () => {
   }
 });
 
-test('`init --all` refreshes an existing target', () => {
+test('`init --all` 对已有目标也跳过，刷新交给 sync', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const first = runCli(['init', '--all', '--dest', dest]);
@@ -171,11 +171,8 @@ test('`init --all` refreshes an existing target', () => {
     fs.writeFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'STALE SKILL');
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /模板：已复制/);
-    assert.equal(
-      fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'),
-      fs.readFileSync(path.join(REPO_ROOT, 'template', 'AGENTS.md'), 'utf8'),
-    );
+    assert.match(stdout, /模板已存在（AGENTS\.md），跳过/);
+    assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'STALE AGENTS');
     assert.equal(
       fs.readFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'utf8'),
       'STALE SKILL',
@@ -213,7 +210,7 @@ test('`init --force` is rejected (no hard overwrite)', () => {
     assert.equal(first.status, 0, first.stderr);
     fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL EDIT');
     const { status, stderr } = runCli(['init', '--dest', dest, '--force']);
-    assert.equal(status, 1);
+    assert.equal(status, 2);
     assert.match(stderr, /unknown option '--force'/);
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT');
   } finally {
@@ -227,7 +224,7 @@ test('`init --force --all` is rejected', () => {
     const first = runCli(['init', '--dest', dest]);
     assert.equal(first.status, 0, first.stderr);
     const { status, stderr } = runCli(['init', '--all', '--dest', dest, '--force']);
-    assert.equal(status, 1);
+    assert.equal(status, 2);
     assert.match(stderr, /unknown option '--force'/);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });

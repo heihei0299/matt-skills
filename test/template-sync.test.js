@@ -47,8 +47,8 @@ test('template/AGENTS.md uses the independent template source', () => {
 
 test('template/AGENTS.md contains only the distributed workflow', () => {
   const agents = readFileSync(root('template/AGENTS.md'), 'utf8');
-  assert.doesNotMatch(agents, /matt-skills:managed/);
-  assert.match(agents, /^# AGENTS\.md\n\n## Workflow/m);
+  assert.match(agents, /^<!-- matt-skills:managed:start -->\n# AGENTS\.md\n\n## Workflow/m);
+  assert.match(agents, /<!-- matt-skills:managed:end -->\n$/);
   assert.match(agents, /\* 其他 → `ask-matt`/);
   assert.match(agents, /## Validation & Review/);
 });

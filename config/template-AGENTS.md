@@ -1,3 +1,4 @@
+<!-- matt-skills:managed:start -->
 # AGENTS.md
 
 ## Workflow
@@ -75,3 +76,4 @@ codegraph node "<符号>"
 ## Completion
 
 完成时说明改动或审查结论、已执行验证、未执行验证及原因、剩余风险；如有 commit，报告 commit hash。
+<!-- matt-skills:managed:end -->
