@@ -26,10 +26,6 @@ for each dependency layer:
     Finalize
 ```
 
-- `Red-Green` 与 `Verify` 是当前 issue 的 correctness gate；
-- `Record` 在 delivery commit 后设置 `issue_head`，然后进入 Finalize；
-- `Finalize` 只收敛状态、解除已满足 blockers。
-
 当前 issue Finalize 完成后，依赖它的 issue 才可进入可执行状态。下一个 issue 以当前 `issue_head` 作为新的 `issue_base`。
 
 ## 3. Batch State Sync
@@ -42,7 +38,6 @@ for each dependency layer:
 
 ## 冲突与失败
 
-- `Blocked by` 无法解析、依赖缺失或存在环：停止受影响调度并报告；
 - issue 执行失败：保持未完成，按失败所在 Step 处理；其依赖项继续保持 `blocked`；
 - 多个 issue 修改同一位置且无法安全串行归属：暂停相关 issue，请求用户决定；
 - 外部权限、工具或环境阻塞：记录实际状态，不把失败静默当作完成；

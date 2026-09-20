@@ -10,13 +10,6 @@ const skill = read('.agents/skills/tdd-implement/SKILL.md');
 const orchestration = read('.agents/skills/tdd-implement/references/orchestration.md');
 const finalize = read('.agents/skills/tdd-implement/references/finalize.md');
 
-test('tdd-implement has no automatic review stage', () => {
-  assert.match(skill, /`Red-Green → Verify → Record → Finalize`/);
-  assert.doesNotMatch(skill, /Batch Review → Finding Fix/);
-  assert.match(skill, /`code-review` 是独立能力，不属于 `tdd-implement` 的自动生命周期/);
-  assert.match(skill, /`tdd-implement` 不自动调用 `code-review`/);
-});
-
 test('Record forms one delivery commit and evidence ledger', () => {
   assert.match(skill, /当前 issue 唯一的 delivery commit/);
   assert.match(skill, /设置 `issue_head = HEAD`/);

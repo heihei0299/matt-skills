@@ -15,7 +15,7 @@ test('issue execution has no review or reviewer dispatch', () => {
   assert.notEqual(issueLoop, '');
   assert.match(issueLoop, /Red-Green[\s\S]*Verify[\s\S]*Record[\s\S]*Finalize/);
   assert.doesNotMatch(issueLoop, /Review|code-review|Finding Fix/);
-  assert.match(skill, /`tdd-implement` 不自动调用 `code-review`/);
+  assert.match(skill, /`code-review` 是独立能力，不属于 `tdd-implement` 的自动生命周期；需要 Review 时由用户显式调用/);
 });
 
 test('verified issue writes minimal evidence and then resolves', () => {

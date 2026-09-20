@@ -8,8 +8,6 @@ disable-model-invocation: true
 
 完成已确认的 spec/task。TDD 的红绿语义、测试质量、seam 和 mock 规则以 [tdd](.agents/skills/tdd/SKILL.md) 为唯一事实源；本技能负责 issue 级实现、验证、证据记录与收尾编排。
 
-> Ticket defines WHAT. TDD determines HOW to prove it. Repository determines HOW to implement it.
-
 ## Issue context scope
 
 Implementation context is current-issue scoped.
@@ -101,15 +99,6 @@ Rulings:
 
 ## 运行纪律
 
-- Red-Green 必须覆盖当前 issue 的全部待实现 Behavior；Red-Green / Verify 不按 Behavior、阶段或验证动作拆 commit。
-- Verify 通过后形成当前 issue 唯一 delivery commit，再记录 evidence；Finalize 不创建实现 commit。
-- `tdd-implement` 不自动调用 `code-review`，不执行 per-issue Review、batch Review 或 Incremental Review。
 - 已有充分或等价证据时不重复搜索、读取或验证；后续 issue 优先消费 ledger 与 git history。
 - 只有外部阻塞、需要用户决策、destructive / irreversible 操作、安全敏感行为或 ticket/spec 已无法可靠解释时才暂停。
 - 当前 Step 达到出口后立即进入下一 Step；发现失败时保留实际状态，不把失败静默当作完成。
-
-## References
-
-- TDD：[tdd](.agents/skills/tdd/SKILL.md)
-- Finalize：[finalize.md](references/finalize.md)
-- 多 issue 编排：[orchestration.md](references/orchestration.md)
