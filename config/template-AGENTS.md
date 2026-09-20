@@ -10,6 +10,9 @@
 以当前代码、配置、测试和版本化文档为事实来源；更具体的项目指令优先。
 代码理解优先使用 `codegraph explore`；已锁定符号时使用 `codegraph node`。
 只获取完成任务所需的最小上下文；信息充分后停止探索。CodeGraph 不足时降级到 `rg` 和必要文件读取。
+## Progressive discovery
+发现按当前 issue/spec 逐步展开：先读取当前 issue/spec，定位相关 symbol/path，读取最小实现面；只有具体未决问题需要时才扩展。
+默认不自动读取 README.md、package.json、全部测试、架构文档或邻近模块。README、package/config、tests、docs 只在当前问题直接需要时读取，例如命令/包行为、公开契约、依赖版本、仓库执行规则或行为覆盖；合法的直接依赖仍可读取。
 实现时复用现有抽象、接口和依赖方向，不创建平行实现或无关扩展。
 ## Validation
 验证应足以证明修改正确且未破坏直接受影响行为。

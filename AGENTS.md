@@ -18,6 +18,10 @@
 - `README.md`（若存在）：用户视角的使用与开发说明
 - `CONTEXT.md`（若存在）：领域术语与边界
 
+## Progressive discovery
+发现按当前 issue/spec 逐步展开：先读取当前 issue/spec，定位相关 symbol/path，读取最小实现面；只有具体未决问题需要时才扩展。
+默认不自动读取 README.md、package.json、全部测试、架构文档或邻近模块。README、package/config、tests、docs 只在当前问题直接需要时读取，例如命令/包行为、公开契约、依赖版本、仓库执行规则或行为覆盖；合法的直接依赖仍可读取。
+
 ## CodeGraph
 仓库内代码理解首先使用：
 ```bash

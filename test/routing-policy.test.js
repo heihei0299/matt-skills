@@ -43,6 +43,20 @@ test('template keeps its independent workflow', () => {
   assertNoManualRoutes(templateAgents);
 });
 
+test('progressive discovery demand-loads repository context', () => {
+  for (const content of [agents, templateAgents]) {
+    assert.match(content, /## Progressive discovery/);
+    assert.match(content, /current issue\/spec|当前 issue\/spec/i);
+    assert.match(content, /README\.md/);
+    assert.match(content, /package\.json/);
+    assert.match(content, /all tests|全部测试/i);
+    assert.match(content, /architecture docs|架构文档/i);
+    assert.match(content, /only when.*directly needed|只在.*直接需要/i);
+    assert.match(content, /unresolved question|未决问题/i);
+    assert.match(content, /direct dependencies|直接依赖/i);
+  }
+});
+
 test('workspace and template expose their intended routing branches', () => {
   assert.match(agents, /## 路由/);
   assert.match(agents, /理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
