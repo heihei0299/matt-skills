@@ -50,7 +50,7 @@ test('template/AGENTS.md contains only the distributed workflow', () => {
   assert.match(agents, /^## Workflow\n/);
   assert.doesNotMatch(agents, /matt-skills:managed|^# AGENTS\.md$/m);
   assert.doesNotMatch(agents, /\n\n/);
-  assert.match(agents, /\* 代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
+  assert.match(agents, /\* 需要新增证据的代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
   assert.match(agents, /## Validation/);
   assert.match(agents, /## Security/);
   assert.match(agents, /## Completion/);

@@ -52,7 +52,7 @@ test('runtime-discipline.md delegates policy to its owners', () => {
 
 test('AGENTS.md is the router: points at the runtime discipline entry points', () => {
   assert.match(agents, /## 路由/);
-  assert.match(agents, /## CodeGraph/);
+  assert.match(agents, /## Context \/ CodeGraph/);
   assert.match(agents, /codegraph explore/);
   // Quantitative thresholds belong in the owning discipline files, not here.
   assert.doesNotMatch(agents, /150 行/);
