@@ -16,6 +16,9 @@
 ## Evidence reuse
 当前上下文已有足够可靠证据时，不为确认同一事实重复搜索或读取。仅在证据不完整、与另一来源冲突、相关文件可能已过时、缺少所需精确来源位置/内容，或验证要求新观测时补充证据。
 证据优先顺序：当前精确源码/结果 → 当前 issue evidence → codegraph result → 已完成 issue 的 ledger/git history → 定向读取/搜索 → 广泛探索。摘要不替代编辑或证明所需的精确源码；必要时仍读取，且后续 issue 可复用 ledger/git history。
+## Codegraph query discipline
+具体实现问题的 codegraph 查询必须对应当前未决问题，优先询问 symbol、behavior、call-chain 或 state owner；查询结果足够后只读取回答问题所需的文件/范围，不默认用广泛 grep/find/read 重复相同发现。
+Read/grep 仍可用于精确源码、codegraph 未提供的范围、生成/动态路径或确认具体怀疑的引用；架构范围的探索仅在用户要求架构分析时展开。
 实现时复用现有抽象、接口和依赖方向，不创建平行实现或无关扩展。
 ## Validation
 验证应足以证明修改正确且未破坏直接受影响行为。

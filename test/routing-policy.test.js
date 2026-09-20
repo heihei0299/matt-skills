@@ -71,6 +71,19 @@ test('evidence reuse preserves exact-source and freshness exceptions', () => {
   }
 });
 
+test('codegraph exploration stays question-scoped and supplemental reads stay narrow', () => {
+  for (const content of [agents, templateAgents]) {
+    assert.match(content, /## Codegraph query discipline/);
+    assert.match(content, /current.*question|当前.*问题/i);
+    assert.match(content, /symbol.*behavior.*call.?chain|symbol.*行为.*调用链/i);
+    assert.match(content, /only.*files?\/ranges?|只.*文件.*范围/i);
+    assert.match(content, /broad.*grep.*default|广泛.*grep|不默认.*grep/i);
+    assert.match(content, /exact.*source|精确.*源码/i);
+    assert.match(content, /generated.*dynamic|生成.*动态/i);
+    assert.match(content, /architecture.?wide|架构.*范围/i);
+  }
+});
+
 test('workspace and template expose their intended routing branches', () => {
   assert.match(agents, /## 路由/);
   assert.match(agents, /理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
