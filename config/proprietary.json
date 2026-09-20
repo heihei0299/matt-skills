@@ -13,11 +13,11 @@
     "diagnose-fix",
     "grill-to-spec",
     "scaffold-functional-test",
-    "show-me"
+    "show-me",
+    "commit-check"
   ],
   "repoLocal": [
-    "ci-guard",
-    "commit-check"
+    "ci-guard"
   ],
   "default": [
     "tdd-implement",

@@ -88,7 +88,7 @@ test('sync --refresh-agents 无受管区块时备份并整体刷新 AGENTS.md', 
   }
 });
 
-test('sync --refresh-agents 对无 managed template 的现有 AGENTS.md 备份并整体刷新', () => {
+test('sync --refresh-agents 刷新中央 managed block 并保留项目内容', () => {
   const current = [
     '# Project AGENTS',
     'project-prefix-rule',
@@ -98,15 +98,20 @@ test('sync --refresh-agents 对无 managed template 的现有 AGENTS.md 备份�
     'project-suffix-rule',
   ].join('\n') + '\n';
   const dest = createDestWithCustomAgents(current);
+  fs.writeFileSync(path.join(dest, 'PROJECT.md'), 'LOCAL PROJECT FACTS');
+  fs.writeFileSync(path.join(dest, 'CONTEXT.md'), 'LOCAL DOMAIN GLOSSARY');
   try {
     const { status, stdout } = runCli(['sync', '--refresh-agents', '--dest', dest]);
     assert.equal(status, 0);
-    assert.match(stdout, /AGENTS\.md 已刷新/);
-    assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md.bak'), 'utf8'), current);
-    assert.equal(
-      fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'),
-      fs.readFileSync(path.join(REPO_ROOT, 'template/AGENTS.md'), 'utf8'),
-    );
+    assert.match(stdout, /AGENTS\.md 受管区块已刷新/);
+    assert.ok(!fs.existsSync(path.join(dest, 'AGENTS.md.bak')));
+    const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
+    assert.match(after, /project-prefix-rule/);
+    assert.match(after, /project-suffix-rule/);
+    assert.match(after, /需求对齐 → Spec →（用户确认后）Tickets → `tdd` → `code-review` → 验收/);
+    assert.doesNotMatch(after, /OLD MANAGED CONTENT/);
+    assert.equal(fs.readFileSync(path.join(dest, 'PROJECT.md'), 'utf8'), 'LOCAL PROJECT FACTS');
+    assert.equal(fs.readFileSync(path.join(dest, 'CONTEXT.md'), 'utf8'), 'LOCAL DOMAIN GLOSSARY');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
@@ -148,7 +153,7 @@ test('sync 默认同步共享目录并保留自定义与 repo-local skills', () 
   }
 });
 
-test('sync 默认保留无法与 markerless template 合并的现有 AGENTS.md', () => {
+test('sync 默认刷新中央 managed block 并保留项目本地内容', () => {
   const current = [
     '# AGENTS.md',
     '',
@@ -163,11 +168,19 @@ test('sync 默认保留无法与 markerless template 合并的现有 AGENTS.md',
     '',
   ].join('\n');
   const dest = createDestWithCustomAgents(current);
+  fs.writeFileSync(path.join(dest, 'PROJECT.md'), 'LOCAL PROJECT FACTS');
+  fs.writeFileSync(path.join(dest, 'CONTEXT.md'), 'LOCAL DOMAIN GLOSSARY');
   try {
     const { stdout } = runCli(['sync', '--dest', dest]);
     const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
-    assert.equal(after, current);
-    assert.match(stdout, /AGENTS\.md 未受管、skills：\.agents\/skills，已原样保留/);
+    assert.match(after, /project-prefix-rule/);
+    assert.match(after, /keep-this-rule/);
+    assert.match(after, /需求对齐 → Spec →（用户确认后）Tickets → `tdd` → `code-review` → 验收/);
+    assert.doesNotMatch(after, /OLD MANAGED CONTENT/);
+    assert.match(stdout, /AGENTS\.md 受管区块已更新/);
+    assert.ok(!fs.existsSync(path.join(dest, 'AGENTS.md.bak')));
+    assert.equal(fs.readFileSync(path.join(dest, 'PROJECT.md'), 'utf8'), 'LOCAL PROJECT FACTS');
+    assert.equal(fs.readFileSync(path.join(dest, 'CONTEXT.md'), 'utf8'), 'LOCAL DOMAIN GLOSSARY');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }

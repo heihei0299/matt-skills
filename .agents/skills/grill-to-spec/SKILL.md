@@ -32,11 +32,12 @@ disable-model-invocation: true
 
 将已确认的决策清单和 seam 分析交给 `to-spec`；此处只综合、写入和发布，不重新采访或再次确认 seam。
 
-- 按 ADR → spec → issue 的顺序执行；issue 发布成功后设置 `ready-for-agent`；格式细则只读取 [`references/rules.md`](references/rules.md)。
+- 按 ADR → spec → issue 的顺序执行：先将已接受的 Spec 版本化写入目标仓库 `docs/specs/<slug>.md`，再发布 issue/ticket；不创建空的 `docs/specs` 目录。
+- 每个 issue/ticket 必须引用 `docs/specs/<slug>.md`；issue 发布成功后设置 `ready-for-agent`；格式细则只读取 [`references/rules.md`](references/rules.md)。
 - 相同 feature 复用已有产物，设计变化按 tracker 的更新语义保留历史；
 - 任一步失败都保留已成功写入的内容，记录状态和失败点，重跑时从第一个未完成出口继续；不回滚、不重复发布。
 
-出口：ADR/spec/issue 已写入或发布，只报告路径或标识、状态和未纳入范围，不复制正文。
+出口：ADR 与版本化 Spec 已写入，引用该 Spec 的 issue/ticket 已发布；只报告路径或标识、状态和未纳入范围，不复制正文。
 
 ## 回合连续性
 

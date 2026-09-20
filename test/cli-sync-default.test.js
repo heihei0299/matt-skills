@@ -111,3 +111,27 @@ test('sync --help 说明范围、刷新和 JSON 规则', () => {
   assert.doesNotMatch(stdout, /--force/);
   assert.doesNotMatch(stdout, /--upstream/);
 });
+
+
+test('sync initialization preserves existing project docs and creates only missing placeholders', () => {
+  const dest = createTarget();
+  try {
+    fs.writeFileSync(path.join(dest, 'PROJECT.md'), 'LOCAL PROJECT FACTS');
+    fs.writeFileSync(path.join(dest, 'CONTEXT.md'), 'LOCAL DOMAIN GLOSSARY');
+
+    const first = runCli(['sync', '--dest', dest]);
+    assert.equal(first.status, 0, first.stderr);
+    assert.equal(fs.readFileSync(path.join(dest, 'PROJECT.md'), 'utf8'), 'LOCAL PROJECT FACTS');
+    assert.equal(fs.readFileSync(path.join(dest, 'CONTEXT.md'), 'utf8'), 'LOCAL DOMAIN GLOSSARY');
+    assert.equal(fs.existsSync(path.join(dest, 'AGENTS.md')), true);
+
+    fs.rmSync(path.join(dest, 'AGENTS.md'));
+    fs.rmSync(path.join(dest, 'CONTEXT.md'));
+    const second = runCli(['sync', '--dest', dest]);
+    assert.equal(second.status, 0, second.stderr);
+    assert.equal(fs.readFileSync(path.join(dest, 'PROJECT.md'), 'utf8'), 'LOCAL PROJECT FACTS');
+    assert.match(fs.readFileSync(path.join(dest, 'CONTEXT.md'), 'utf8'), /Project Context/);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});

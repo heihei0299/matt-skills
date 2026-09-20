@@ -9,75 +9,48 @@ const read = (file) => readFileSync(path.join(dir, file), 'utf8');
 
 const agents = read('AGENTS.md');
 const templateAgents = read('template/AGENTS.md');
+const project = read('PROJECT.md');
+const grillToSpec = read('.agents/skills/grill-to-spec/SKILL.md');
 
-const manualSkills = [
-  'commit-check',
-  'to-spec',
-  'to-tickets',
-  'triage',
-  'teach',
-  'handoff',
-  'wayfinder',
-  'grill-to-spec',
-];
-
-function assertNoManualRoutes(content) {
-  for (const skill of manualSkills) {
-    assert.doesNotMatch(content, new RegExp('`' + skill + '`'));
-  }
-  assert.doesNotMatch(content, /`implement`/);
-  assert.doesNotMatch(content, /显式触发|可选（需 `--all`）/);
-}
-
-test('workspace keeps its direct route', () => {
-  assert.match(agents, /简单修改 → 直接实现/);
-  assert.match(agents, /定位 → 实现 → 验证 → 修正/);
+test('workspace keeps its personal development route', () => {
+  assert.match(agents, /需求对齐 \/ 模糊设计 → `grill-to-spec`/);
+  assert.match(agents, /行为变更 → `tdd`/);
+  assert.match(agents, /Review → `code-review`/);
+  assert.match(agents, /提交前检查 → 显式 `commit-check`/);
 });
 
-test('template keeps its independent workflow', () => {
-  assert.match(templateAgents, /## Workflow/);
-  assert.match(templateAgents, /## Validation/);
-  assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
-  assert.match(templateAgents, /## Git/);
-  assert.match(templateAgents, /## Security/);
-  assertNoManualRoutes(templateAgents);
+test('template keeps a short entry with a centrally managed route block', () => {
+  assert.match(templateAgents, /^# Agent Entry/m);
+  assert.match(templateAgents, /matt-skills:managed:start/);
+  assert.match(templateAgents, /需求对齐 → Spec → 版本化到 `docs\/specs\/<slug>\.md` →（用户确认后）Tickets → `tdd` → `code-review` → 验收/);
+  assert.match(templateAgents, /`commit-check` 仅在用户明确要求 commit 时使用/);
+  assert.match(templateAgents, /matt-skills:managed:end/);
+  assert.doesNotMatch(templateAgents, /## Context \/ CodeGraph|## Validation|## Security|## Git/);
+  assert.doesNotMatch(templateAgents, /`implement`/);
 });
 
-test('context guidance is compact and evidence-first', () => {
-  for (const content of [agents, templateAgents]) {
-    assert.match(content, /## Context \/ CodeGraph/);
-    assert.doesNotMatch(content, /## Progressive discovery|## Evidence reuse|## Codegraph query discipline/);
-    assert.match(content, /有 issue\/spec 时先读当前 issue；否则从用户问题和最相关 symbol\/path 开始。/);
-    assert.match(content, /只按当前未决问题逐步扩展上下文；README\/package\/tests\/docs 按需读取。/);
-    assert.match(content, /当前上下文已有充分且未过时的证据时，不做等价重复读取。/);
-    assert.match(content, /当当前上下文不足、需要新增代码理解证据时，优先使用 `codegraph explore`；结果充分后不再 broad grep\/read。/);
-    assert.doesNotMatch(content, /仓库内代码理解首先使用/);
-  }
-});
-
-test('workspace and template expose their intended routing branches', () => {
-  assert.match(agents, /## 路由/);
-  assert.match(agents, /需要新增代码理解证据的理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
-  assert.doesNotMatch(agents, /^\* 理解 \/ 定位 \/ 调用链 → `codegraph explore`$/m);
-  assert.match(agents, /外部调研 \/ 方案比较 → `research`/);
-  assert.match(agents, /原型 \/ PoC → `prototype`/);
-  assert.match(agents, /简单修改 → 直接实现/);
-  assert.match(agents, /TDD \/ 集成测试 → `tdd`/);
-  assert.match(agents, /代码审查 → `code-review`/);
-  assert.match(agents, /设计质询 → `grilling`/);
-  assert.match(agents, /领域建模 → `domain-modeling`/);
-  assert.match(agents, /无法归类 → `ask-matt`/);
-  assertNoManualRoutes(agents);
-
-  assert.match(templateAgents, /## Workflow/);
-  assert.match(templateAgents, /需要新增证据的代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
-  assert.doesNotMatch(templateAgents, /^\* 代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`$/m);
-  assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
-  assert.match(templateAgents, /多来源调研 \/ 方案比较 \/ 技术选型 \/ 最佳实践 \/ 外部实现 → `research`/);
+test('template route preserves explicit ticket confirmation and local project context', () => {
+  assert.match(templateAgents, /to-tickets/);
+  assert.match(templateAgents, /用户确认/);
+  assert.match(templateAgents, /PROJECT\.md/);
+  assert.match(templateAgents, /CONTEXT\.md/);
   assert.match(templateAgents, /未命中 skill 时直接执行/);
-  assert.doesNotMatch(templateAgents, /prototype|code-review|grilling|domain-modeling|ask-matt/);
-  assertNoManualRoutes(templateAgents);
+});
 
-  assert.match(agents, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
-  assert.doesNotMatch(templateAgents, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);
+
+test('accepted Specs are versioned before tracker publication', () => {
+  for (const content of [agents, project, templateAgents, grillToSpec]) {
+    assert.match(content, /docs\/specs\/<slug>\.md/);
+  }
+  assert.match(agents, /发布.*ticket|ticket.*引用/);
+  assert.match(templateAgents, /发布.*ticket|ticket.*引用/);
+  assert.match(grillToSpec, /先.*docs\/specs\/<slug>\.md.*再.*(?:issue|ticket)/s);
+  assert.match(grillToSpec, /(?:issue|ticket).*引用.*docs\/specs\/<slug>\.md/s);
+});
+
+test('direct to-spec route persists the accepted Spec without changing upstream semantics', () => {
+  assert.match(agents, /已有共识 → `to-spec`.*docs\/specs\/<slug>\.md/s);
+  assert.match(templateAgents, /已有共识 → `to-spec`.*docs\/specs\/<slug>\.md/s);
+  assert.match(project, /上游 `to-spec` 原义保持不变/);
+  assert.match(grillToSpec, /不创建空的 `docs\/specs` 目录/);
 });

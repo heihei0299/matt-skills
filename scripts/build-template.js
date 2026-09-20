@@ -28,6 +28,10 @@ async function main() {
     path.join(ROOT, 'template/PROJECT.md'),
     '# Project Context\n\n<!-- 请在目标仓库中填写项目目标、范围、主要入口和关键约束。代理操作规则放在 AGENTS.md。 -->\n',
   );
+  await writeFile(
+    path.join(ROOT, 'template/CONTEXT.md'),
+    '# Project Context\n\n<!-- 请在目标仓库根目录维护项目领域术语；matt-skills sync 不覆盖本文件。 -->\n',
+  );
   // Harness skill dirs are initialized as default project skill targets.
   await mkdir(path.join(ROOT, 'template/.pi/skills'), { recursive: true });
   await mkdir(path.join(ROOT, 'template/.opencode/skills'), { recursive: true });
@@ -57,8 +61,9 @@ async function main() {
   await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
   const templateAgents = await readFile(path.join(ROOT, 'config/template-AGENTS.md'), 'utf8');
   await writeFile(path.join(ROOT, 'template/AGENTS.md'), templateAgents);
-  await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
-  await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));
+  const contextPointer = '# Project Context\n\n请读取项目根目录的 `CONTEXT.md`。此适配文件不包含 matt-skills 的 glossary。\n';
+  await writeFile(path.join(ROOT, 'template/.opencode/CONTEXT.md'), contextPointer);
+  await writeFile(path.join(ROOT, 'template/.pi/CONTEXT.md'), contextPointer);
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.opencode/docs/agents'));
   await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.pi/docs/agents'));
   console.log('template built: skeleton');

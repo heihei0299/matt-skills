@@ -13,6 +13,7 @@ const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 const TEMPLATE_FILES = [
   'AGENTS.md',
   'PROJECT.md',
+  'CONTEXT.md',
   '.agents/skills/tdd-implement/SKILL.md',
   '.agents/skills/diagnose-fix/SKILL.md',
   '.agents/skills/grilling/SKILL.md',
@@ -156,6 +157,20 @@ test('`init` copies shared skills only into .agents/skills', () => {
       const duplicates = sharedSkills.filter((name) => fs.existsSync(path.join(dest, skillsDir, name, 'SKILL.md')));
       assert.deepEqual(duplicates, [], `shared skills should not be duplicated into ${skillsDir}`);
     }
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('init creates local project documents instead of the central glossary', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-context-'));
+  try {
+    const { status, stderr } = runCli(['init', '--dest', dest]);
+    assert.equal(status, 0, stderr);
+    const context = fs.readFileSync(path.join(dest, 'CONTEXT.md'), 'utf8');
+    assert.match(context, /目标仓库根目录|项目根目录/);
+    assert.doesNotMatch(context, /Template Repository|Upstream Repository|Template Snapshot/);
+    assert.match(fs.readFileSync(path.join(dest, '.opencode', 'CONTEXT.md'), 'utf8'), /根.*CONTEXT\.md|root.*CONTEXT\.md/i);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }

@@ -30,8 +30,9 @@ const EXPECTED = {
     'grill-to-spec',
     'scaffold-functional-test',
     'show-me',
+    'commit-check',
   ],
-  repoLocal: ['ci-guard', 'commit-check'],
+  repoLocal: ['ci-guard'],
   default: ['tdd-implement', 'diagnose-fix', 'grill-to-spec', 'show-me'],
 };
 
@@ -53,7 +54,8 @@ test('proprietary classification sets are disjoint and complete', () => {
 test('classification helpers fail closed for unknown names and reject repo-local names', () => {
   assert.equal(PROPRIETARY_SKILLS.has('ci-guard'), true);
   assert.equal(DISTRIBUTABLE_PROPRIETARY_SKILLS.has('show-me'), true);
-  assert.equal(REPO_LOCAL_SKILLS.has('commit-check'), true);
+  assert.equal(REPO_LOCAL_SKILLS.has('ci-guard'), true);
+  assert.equal(DISTRIBUTABLE_PROPRIETARY_SKILLS.has('commit-check'), true);
   assert.equal(DEFAULT_PROPRIETARY_SKILLS.has('commit-check'), false);
   assert.equal(isDistributableSkill('ci-guard', PROPRIETARY_SKILLS), false);
   assert.equal(isDistributableSkill('upstream-example', new Set(['upstream-example'])), true);

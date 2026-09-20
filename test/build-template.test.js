@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -18,7 +18,6 @@ function createBuilderFixture() {
   cpSync(path.join(REPO_ROOT, '.opencode/commands'), path.join(root, '.opencode/commands'), { recursive: true });
   cpSync(path.join(REPO_ROOT, '.pi/prompts'), path.join(root, '.pi/prompts'), { recursive: true });
   cpSync(path.join(REPO_ROOT, 'config/template-AGENTS.md'), path.join(root, 'config/template-AGENTS.md'));
-  cpSync(path.join(REPO_ROOT, 'CONTEXT.md'), path.join(root, 'CONTEXT.md'));
   cpSync(path.join(REPO_ROOT, 'docs/agents'), path.join(root, 'docs/agents'), { recursive: true });
   cpSync(path.join(REPO_ROOT, 'package.json'), path.join(root, 'package.json'));
   return root;
@@ -50,6 +49,16 @@ test('build-template creates the skeleton without a shared Skill source or mirro
     assert.equal(existsSync(path.join(root, 'template', '.agents')), false);
     assert.equal(existsSync(path.join(root, 'template', '.agents', 'skills')), false);
     assert.equal(existsSync(path.join(root, 'template', 'AGENTS.md')), true);
+    assert.equal(existsSync(path.join(root, 'template', 'PROJECT.md')), true);
+    assert.equal(existsSync(path.join(root, 'template', 'CONTEXT.md')), true);
+    assert.match(
+      readFileSync(path.join(root, 'template', '.opencode', 'CONTEXT.md'), 'utf8'),
+      /项目根.*CONTEXT\.md|root.*CONTEXT\.md/i,
+    );
+    assert.doesNotMatch(
+      readFileSync(path.join(root, 'template', '.opencode', 'CONTEXT.md'), 'utf8'),
+      /Template Repository|Template Snapshot|Upstream Repository/,
+    );
     assert.equal(existsSync(path.join(root, 'template', '.opencode', 'agents', 'issue-audit.md')), true);
     assert.equal(existsSync(path.join(root, 'template', '.pi', 'agents', 'issue-audit.md')), true);
     assert.equal(existsSync(path.join(root, 'template', '.pi', 'prompts', 'issue-audit.md')), true);

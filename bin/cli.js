@@ -129,7 +129,7 @@ Install options:
 
 const HELP = HELP_GLOBAL;
 
-const DRY_RUN_PATHS = ['AGENTS.md', 'AGENTS.md.bak', '.opencode', '.pi', '.agents/skills', '.claude/skills'];
+const DRY_RUN_PATHS = ['AGENTS.md', 'AGENTS.md.bak', 'PROJECT.md', 'CONTEXT.md', '.opencode', '.pi', '.agents/skills', '.claude/skills'];
 
 function parseFrontmatter(text) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -193,6 +193,20 @@ function shouldCopyTemplatePath(src) {
   const relative = path.relative(TEMPLATE_DIR, src);
   const parts = relative.split(path.sep);
   return !(parts[0] === '.agents' && parts[1] === 'skills');
+}
+
+const TARGET_OWNED_TEMPLATE_FILES = new Set(['PROJECT.md', 'CONTEXT.md']);
+
+async function copyTemplate(target) {
+  await cp(TEMPLATE_DIR, target, {
+    recursive: true,
+    force: true,
+    filter: async (src) => {
+      if (!shouldCopyTemplatePath(src)) return false;
+      const relative = path.relative(TEMPLATE_DIR, src);
+      return !TARGET_OWNED_TEMPLATE_FILES.has(relative) || !await pathExists(path.join(target, relative));
+    },
+  });
 }
 
 const AGENTS_MANAGED_START = '<!-- matt-skills:managed:start -->';
@@ -385,11 +399,7 @@ async function initCommand({ dest, all }) {
   if (await pathExists(marker)) {
     process.stdout.write('模板已存在（AGENTS.md），跳过\n');
   } else {
-    await cp(TEMPLATE_DIR, target, {
-      recursive: true,
-      force: true,
-      filter: shouldCopyTemplatePath,
-    });
+    await copyTemplate(target);
     const selectedSkills = await listSkillNames({ onlyProgramming });
     for (const { dir } of projectSkillTargets(target)) {
       await mkdir(dir, { recursive: true });
@@ -508,16 +518,9 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
 
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
-  async function copyTemplateFiltered() {
-    await cp(TEMPLATE_DIR, target, {
-      recursive: true,
-      force: true,
-      filter: shouldCopyTemplatePath,
-    });
-  }
   if (!(await pathExists(marker))) {
     output('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
-    await copyTemplateFiltered();
+    await copyTemplate(target);
     output(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
   } else {
     output('同步：检测到现有项目，将增量更新\n');

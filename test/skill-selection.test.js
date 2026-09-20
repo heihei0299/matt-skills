@@ -30,7 +30,7 @@ test('repo-local names stay excluded from default selection even when requested'
       engineering: ['ci-guard'],
       required: ['commit-check'],
     })],
-    ['tdd-implement'],
+    ['commit-check', 'tdd-implement'],
   );
 });
 
@@ -42,7 +42,7 @@ test('all selection includes available distributable skills and excludes repo-lo
       engineering: [],
       required: [],
     })],
-    ['tdd-implement', 'zeta'],
+    ['commit-check', 'tdd-implement', 'zeta'],
   );
 });
 

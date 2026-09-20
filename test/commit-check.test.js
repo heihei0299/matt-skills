@@ -11,92 +11,83 @@ const read = (file) => readFileSync(root(file), 'utf8');
 const skill = read('.agents/skills/commit-check/SKILL.md');
 const scan = read('.agents/skills/commit-check/scripts/scan-sensitive.sh');
 
-test('commit-check is an explicit staged commit gate', () => {
-  for (const content of [skill]) {
-    assert.match(content, /name: commit-check/);
-    assert.match(content, /^disable-model-invocation:\s*true$/m);
-    assert.match(content, /staged commit gate/);
-    assert.match(content, /用户显式调用 `\/commit-check`/);
-    assert.match(content, /不负责 staging/);
-    assert.match(content, /不执行 `git commit`/);
-    assert.doesNotMatch(content, /Use whenever the user is about to commit/);
-  }
+for (const section of [
+  'Task basis',
+  'Candidate commits',
+  'Excluded changes',
+  'Validation evidence',
+  'Review evidence',
+  'Sensitive-data scan',
+  'Warnings',
+  'Blockers',
+]) {
+  test(`commit-check fixes the ${section} output section`, () => {
+    assert.match(skill, new RegExp(`^${section}$`, 'm'));
+  });
+}
+
+test('commit-check is an explicit working-tree checker', () => {
+  assert.match(skill, /name: commit-check/);
+  assert.match(skill, /^disable-model-invocation:\s*true$/m);
+  assert.match(skill, /用户显式调用 `\/commit-check`/);
+  assert.match(skill, /不 stage、不 commit/);
+  assert.match(skill, /不运行 tests\/build\/typecheck/);
+  assert.match(skill, /不做 code review/);
+  assert.match(skill, /Result: ready to stage \| blocked/);
 });
 
-test('commit-check defines exactly three core gates', () => {
-  assert.match(skill, /### ① Staged scope/);
-  assert.match(skill, /### ② Sensitive scan/);
-  assert.match(skill, /### ③ Commit message/);
+test('candidate scope uses task basis and all working-tree change classes', () => {
+  assert.match(skill, /Ticket/);
+  assert.match(skill, /Spec/);
+  assert.match(skill, /明确的用户请求/);
+  assert.match(skill, /git status --short/);
   assert.match(skill, /git diff --cached/);
-  assert.match(skill, /scripts\/scan-sensitive\.sh --staged-only/);
+  assert.match(skill, /git diff --name-status/);
+  assert.match(skill, /git ls-files --others --exclude-standard/);
+  assert.match(skill, /task-owned candidates/);
+  assert.match(skill, /excluded changes/);
+  assert.match(skill, /staging plan/);
+});
+
+test('commit-check validates evidence instead of executing it', () => {
+  assert.match(skill, /Validation evidence/);
+  assert.match(skill, /Review evidence/);
+  assert.match(skill, /diff.*变化.*失效|变化后.*失效/s);
+  assert.match(skill, /受保护分支/);
+  assert.match(skill, /验收/);
   assert.match(skill, /<type>\(<scope>\): <subject>/);
-  assert.doesNotMatch(skill, /文档一致性 → 保持目录卫生/);
-  assert.doesNotMatch(skill, /提交后工作区应为干净/);
-  assert.doesNotMatch(skill, /阶段⑦/);
+  assert.match(skill, /不主动重跑/);
 });
 
-test('core gates preserve staging and commit boundaries', () => {
-  assert.match(skill, /调用方负责 `git add`/);
-  assert.match(skill, /不自动 stage、unstage 或清理文件/);
-  assert.match(skill, /工作区可以保留其它未暂存修改/);
-  assert.match(skill, /通过后报告 `ready to commit`/);
-  assert.match(skill, /不自动修复、不自动 stage、不自动 commit/);
-});
-
-test('sensitive scan keeps structured failures and keyword warnings', () => {
-  assert.match(skill, /结构化 secret assignment 和 private key block.*fail/s);
-  assert.match(skill, /普通 .*关键词.*warning/s);
-  assert.match(scan, /git diff --cached --unified=0 --no-color/);
-  assert.match(scan, /--staged-only/);
-  assert.match(scan, /Possible structured secret found in ADDED staged content/);
-  assert.match(scan, /Sensitive keyword found in ADDED staged content/);
+test('sensitive scanner accepts candidate paths and keeps secrets out of output', () => {
+  assert.match(skill, /scan-sensitive\.sh --files-from=-/);
+  assert.match(skill, /`\.env` 或 `\.env\.\*`.*blocker/s);
+  assert.match(skill, /高置信.*secret.*token.*private-key.*blocker/s);
+  assert.match(skill, /false positive.*ready to stage/s);
+  assert.match(scan, /--files-from=-/);
+  assert.match(scan, /Possible structured secret found/);
+  assert.match(scan, /Sensitive keyword found/);
+  assert.doesNotMatch(scan, /git diff --cached/);
   assert.doesNotMatch(scan, /git diff -U0/);
 });
 
-test('commit message gate is lightweight and result-oriented', () => {
-  assert.match(skill, /feat.*fix.*docs.*chore.*refactor.*test/s);
-  assert.match(skill, /subject 描述变更结果/);
-  assert.match(skill, /body 可选/);
-  assert.match(skill, /一个 commit 只表达一个逻辑变更/);
-  assert.doesNotMatch(skill, /完整测试报告模板/);
+test('proposed commit messages are a mandatory gate', () => {
+  assert.match(skill, /\^\(feat\|fix\|docs\|chore\|refactor\|test\)/);
+  assert.match(skill, /scope.*可省略/s);
+  assert.match(skill, /不符合.*blocker/s);
+  assert.doesNotMatch(skill, /建议 commit message/);
+  assert.doesNotMatch(skill, /message 不合规.*warning/);
 });
 
-test('matt-skills adapter is conditional on relevant staged paths', () => {
-  for (const pathPattern of [
-    'README.md',
-    'AGENTS.md',
-    'CONTEXT.md',
-    'docs/agents/',
-    'template/',
-    '.agents/skills/',
-    'config/',
-    'scripts/build-template.js',
-    '.opencode/commands/',
-    '.pi/prompts/',
-  ]) {
-    assert.match(skill, new RegExp(pathPattern.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')));
-  }
-  assert.match(skill, /相关模板\/契约测试/);
-  assert.match(skill, /只检查本次 staged 路径相关的内容/);
-  assert.match(skill, /test\/template-sync\.test\.js/);
-});
-
-test('Git history is a pointer, not a duplicated destructive-command policy', () => {
-  assert.match(skill, /Git History Preservation/);
-  assert.match(skill, /BASE_HEAD/);
-  assert.match(skill, /git merge-base --is-ancestor/);
-  assert.doesNotMatch(skill, /git reset --hard/);
-  assert.doesNotMatch(skill, /git checkout \\./);
-  assert.doesNotMatch(skill, /git clean -fd/);
-});
-
-test('commit-check stays independent from implementation and review execution', () => {
-  assert.match(skill, /不成为任何实现流程的自动子步骤/);
+test('commit-check has no matt-skills-specific path adapter or workflow execution', () => {
+  assert.doesNotMatch(skill, /matt-skills 路径适配/);
+  assert.doesNotMatch(skill, /template-sync/);
   assert.doesNotMatch(skill, /调用.*tdd-implement/);
   assert.doesNotMatch(skill, /code-review/);
+  assert.doesNotMatch(skill, /ready to commit/);
 });
 
-test('commit-check remains workspace-only', () => {
+test('commit-check remains a local source skill', () => {
   assert.equal(existsSync(root('template/.agents/skills/commit-check')), false);
   assert.equal(existsSync(root('template/.opencode/commands/commit-check.md')), false);
   assert.equal(existsSync(root('.agents/skills/commit-check/SKILL.md')), true);

@@ -1,53 +1,26 @@
+# Personal agent policy
+
+本仓库服务所有者本人的代理开发工作流；完整定位、主链和文档职责见 `PROJECT.md`。
+
+## 读取顺序
+
+1. `PROJECT.md`：确认目标、范围和主链。
+2. `CONTEXT.md`：使用稳定词汇和边界。
+3. 相关 ADR、Spec、Tracker ticket，再读直接相关 Skill。
+4. `README.md` 只在需要了解模板、CLI 或部署时读取。
+
 ## 路由
-命中即执行，并简短声明使用的 skill / 工具。
-* 需要新增代码理解证据的理解 / 定位 / 调用链 → `codegraph explore`
-* 外部调研 / 方案比较 → `research`
-* 原型 / PoC → `prototype`
-* 简单修改 → 直接实现
-* TDD / 集成测试 → `tdd`
-* bug / 异常 / 性能 → `diagnose-fix`
-* 代码审查 → `code-review`
-* 设计质询 → `grilling`
-* 领域建模 → `domain-modeling`
-* 无法归类 → `ask-matt`
-\仅当关键歧义会改变结果时询问用户。
 
-## Context / CodeGraph
-开始任务前按需读取 `PROJECT.md`、`README.md`、`CONTEXT.md`；以当前代码、配置、测试和版本化文档为事实来源。
-- 有 issue/spec 时先读当前 issue；否则从用户问题和最相关 symbol/path 开始。
-- 只按当前未决问题逐步扩展上下文；README/package/tests/docs 按需读取。
-- 当前上下文已有充分且未过时的证据时，不做等价重复读取。
-- 当当前上下文不足、需要新增代码理解证据时，优先使用 `codegraph explore`；结果充分后不再 broad grep/read。
+- 需求对齐 / 模糊设计 → `grill-to-spec`；已有共识 → `to-spec`。无论入口、是否立即生成 ticket，已接受的 Spec 都必须版本化到目标仓库 `docs/specs/<slug>.md`；之后才能发布 ticket。
+- Spec 已落盘后，用户确认的 executable tickets → `to-tickets`；tracker/ticket 必须引用该版本化 Spec。
+- 行为变更 → `tdd`；简单、机械或非行为修改 → 直接最小修改。
+- Review → `code-review`；验收回到 Spec 与 tickets。
+- 提交前检查 → 显式 `commit-check`，只输出 `ready to stage` 或阻塞项。
+- 需要跨 session 继续 → `handoff`；需要代码证据 → `codegraph explore`；外部综合调研 → `research`。
 
-需要新增代码理解证据时运行：
-```bash
-codegraph explore "<问题>"
-```
-无 `.codegraph/` 时先运行 `codegraph init`。
-`research` 只用于仓库外信息。
-## 执行
-默认闭环：
-```text
-定位 → 实现 → 验证 → 修正
-```
-* 以仓库当前代码、类型、配置、测试和版本化文档为事实来源。
-* 优先复用现有抽象、接口和依赖方向。
-* 不创建平行实现，不扩大任务范围。
-* 简单任务直接执行；复杂任务需要时形成最小可执行计划。
-* 仅在需要用户判断或授权时中断闭环。
-## 验证
-服从全局授权规则。
-* 默认只验证本次修改及直接受影响路径；优先相关单测、单文件测试、模块测试和原复现路径。
-* 修复什么就测试什么；根据反馈继续修正，不重复等价检查。
-* 不因每个小步骤自动扩大测试范围。
-* 仅当修改跨模块、触及公共接口/核心基础设施、局部验证不足以证明正确、进入发布/合并最终验收，或用户明确要求时，才考虑更大范围验证。
-## Review
-* 默认只 review 本轮 diff、修改文件及直接受影响调用链。
-* 修复后只复验新增修改和此前未通过项，不重复审查无关代码。
-* 仅在影响面明显扩大、局部 review 无法建立信心、进入发布/合并最终验收，或用户明确要求时扩大 review 范围。
-## Harness
-同类问题反复出现时，优先将约束落实到测试、lint、类型、工具或代码结构，而不是继续扩充本文件。
-## Git
-* 提交前检查 diff。
-* 只 stage 本次任务文件。
-* 不使用 `git add .` / `git add -A`。
+## 不可绕过
+
+- 未完成需求对齐和用户确认，不把工作变成 executable tickets。
+- 上游 Skills 原义不变；wrapper 只做组合和路由。
+- 行为变更不跳过 TDD；`commit-check` 不 stage、commit 或重跑验证。
+- 不读取或提交未经授权的 secrets；不覆盖、回滚或混入无关改动。

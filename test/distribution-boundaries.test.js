@@ -65,7 +65,7 @@ test('list --all exposes all distributable skills and no repo-local skills', () 
   assert.equal(json.status, 0, json.stderr);
   assert.deepEqual(namesFromJson(json.stdout), distributableNames);
   assert.equal(json.stdout.includes('ci-guard'), false);
-  assert.equal(json.stdout.includes('commit-check'), false);
+  assert.equal(json.stdout.includes('commit-check'), true);
 });
 
 test('list uses canonical Skill directory names when frontmatter differs', () => {
@@ -101,7 +101,7 @@ test('install --all --dest copies only distributable skills', () => {
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(listDirectories(dest), distributableNames);
     assert.equal(fs.existsSync(path.join(dest, 'ci-guard')), false);
-    assert.equal(fs.existsSync(path.join(dest, 'commit-check')), false);
+    assert.equal(fs.existsSync(path.join(dest, 'commit-check')), true);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
@@ -119,7 +119,7 @@ test('init default and --all distribute only the appropriate skill sets', () => 
     assert.equal(allResult.status, 0, allResult.stderr);
     assert.deepEqual(listDirectories(path.join(allDest, '.agents/skills')), distributableNames);
     assert.equal(fs.existsSync(path.join(allDest, '.agents/skills/ci-guard')), false);
-    assert.equal(fs.existsSync(path.join(allDest, '.agents/skills/commit-check')), false);
+    assert.equal(fs.existsSync(path.join(allDest, '.agents/skills/commit-check')), true);
   } finally {
     fs.rmSync(defaultDest, { recursive: true, force: true });
     fs.rmSync(allDest, { recursive: true, force: true });
@@ -197,7 +197,7 @@ test('sync default and --all do not add repo-local skills', () => {
       assert.equal(result.status, 0, result.stderr);
       for (const rel of projectDirs) {
         assert.equal(fs.existsSync(path.join(dest, rel, 'ci-guard')), false);
-        assert.equal(fs.existsSync(path.join(dest, rel, 'commit-check')), false);
+        assert.equal(fs.existsSync(path.join(dest, rel, 'commit-check')), args.includes('--all'));
       }
     } finally {
       fs.rmSync(dest, { recursive: true, force: true });
@@ -289,14 +289,32 @@ test('sync cleanup errors do not fail after canonical files are written', () => 
   }
 });
 
+test('sync preserves target-owned PROJECT.md and CONTEXT.md', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-docs-'));
+  try {
+    const init = runCli(['init', '--dest', dest]);
+    assert.equal(init.status, 0, init.stderr);
+    fs.writeFileSync(path.join(dest, 'PROJECT.md'), 'LOCAL PROJECT FACTS');
+    fs.writeFileSync(path.join(dest, 'CONTEXT.md'), 'LOCAL DOMAIN GLOSSARY');
+
+    const result = runCli(['sync', '--all', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.readFileSync(path.join(dest, 'PROJECT.md'), 'utf8'), 'LOCAL PROJECT FACTS');
+    assert.equal(fs.readFileSync(path.join(dest, 'CONTEXT.md'), 'utf8'), 'LOCAL DOMAIN GLOSSARY');
+    assert.doesNotMatch(fs.readFileSync(path.join(dest, '.opencode', 'CONTEXT.md'), 'utf8'), /Template Repository|Upstream Repository/);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
 test('sync preserves repo-local and project-local skills', () => {
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-preserve-'));
     try {
       fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL AGENTS');
       for (const [harness, name] of [
-        ['.agents/skills', 'commit-check'],
-        ['.pi/skills', 'commit-check'],
+        ['.agents/skills', 'ci-guard'],
+        ['.pi/skills', 'ci-guard'],
         ['.opencode/skills', 'ci-guard'],
         ['.claude/skills', 'claude-project-local-skill'],
       ]) {
@@ -312,10 +330,10 @@ test('sync preserves repo-local and project-local skills', () => {
       const modifiedLegacyMirror = path.join(dest, '.opencode/skills/diagnose-fix');
       fs.cpSync(path.join(ROOT, '.agents/skills/diagnose-fix'), modifiedLegacyMirror, { recursive: true });
       fs.appendFileSync(path.join(modifiedLegacyMirror, 'SKILL.md'), '\nLOCAL MODIFICATION');
-      const nonDefaultLegacyMirror = path.join(dest, '.pi/skills/implement-review-loop');
-      fs.cpSync(path.join(ROOT, '.agents/skills/implement-review-loop'), nonDefaultLegacyMirror, { recursive: true });
-      const exactRepoLocalMirror = path.join(dest, '.claude/skills/commit-check');
-      fs.cpSync(path.join(ROOT, '.agents/skills/commit-check'), exactRepoLocalMirror, { recursive: true });
+      const nonDefaultLegacyMirror = path.join(dest, '.pi/skills/scaffold-functional-test');
+      fs.cpSync(path.join(ROOT, '.agents/skills/scaffold-functional-test'), nonDefaultLegacyMirror, { recursive: true });
+      const exactRepoLocalMirror = path.join(dest, '.claude/skills/ci-guard');
+      fs.cpSync(path.join(ROOT, '.agents/skills/ci-guard'), exactRepoLocalMirror, { recursive: true });
 
       const result = runCli([...args, '--dest', dest]);
       assert.equal(result.status, 0, result.stderr);
@@ -327,15 +345,15 @@ test('sync preserves repo-local and project-local skills', () => {
       assert.equal(fs.existsSync(nonDefaultLegacyMirror), false, 'non-default exact mirror should be cleaned in every sync mode');
       assert.equal(fs.existsSync(exactRepoLocalMirror), true, 'exact repo-local mirror should be preserved');
       for (const [harness, name] of [
-        ['.agents/skills', 'commit-check'],
-        ['.pi/skills', 'commit-check'],
+        ['.agents/skills', 'ci-guard'],
+        ['.pi/skills', 'ci-guard'],
         ['.opencode/skills', 'ci-guard'],
       ]) {
         assert.match(result.stdout, new RegExp(`${harness.replace('/', '\\/')}\\/${name}`));
       }
       for (const [harness, name] of [
-        ['.agents/skills', 'commit-check'],
-        ['.pi/skills', 'commit-check'],
+        ['.agents/skills', 'ci-guard'],
+        ['.pi/skills', 'ci-guard'],
         ['.opencode/skills', 'ci-guard'],
         ['.claude/skills', 'claude-project-local-skill'],
       ]) {

@@ -1,30 +1,13 @@
-## Workflow
-按任务选择最匹配的 skill / 工具：
-* 需要新增证据的代码理解 / 定位 / 调用链 / 依赖关系 / 数据流 → `codegraph explore`
-* 行为修改 / 功能实现 / bug 修复 / 逻辑调整 → `tdd`
-* 多来源调研 / 方案比较 / 技术选型 / 最佳实践 / 外部实现 → `research`
-`research` 仅用于多来源综合；单一资料、官方文档和实时事实直接查询。
-未命中 skill 时直接执行。明确不改变行为的文案、注释、格式和机械修改无需 `tdd`。
-仅当关键歧义无法从仓库事实解决，且会改变实现、范围、风险或验收结果时询问用户。
-## Context / CodeGraph
-以当前代码、配置、测试和版本化文档为事实来源；更具体的项目指令优先。
-- 有 issue/spec 时先读当前 issue；否则从用户问题和最相关 symbol/path 开始。
-- 只按当前未决问题逐步扩展上下文；README/package/tests/docs 按需读取。
-- 当前上下文已有充分且未过时的证据时，不做等价重复读取。
-- 当当前上下文不足、需要新增代码理解证据时，优先使用 `codegraph explore`；结果充分后不再 broad grep/read。
-实现时复用现有抽象、接口和依赖方向，不创建平行实现或无关扩展。
-## Validation
-验证应足以证明修改正确且未破坏直接受影响行为。
-优先验证原问题、相关测试和直接受影响模块；不重复已有有效证据。
-公共 API、共享抽象、跨模块调用链或局部验证不足时扩大验证范围；普通修改不自动运行全量测试。
-## Git
-* 仅在用户要求时 commit。
-* commit 前检查 diff，只 stage 本次任务文件。
-* 禁止 `git add .` / `git add -A`。
-* 不覆盖、回滚或混入已有未提交修改。
-## Security
-* 不读取、输出或提交未经授权的真实 secrets。
-* 按现有 lockfile 恢复依赖可直接执行。
-* 新增/升级依赖、部署、发布、`git push`、远程写入和破坏性操作必须明确授权。
-## Completion
-完成时简要说明结果和验证；有重要未验证项、限制或风险时说明；有 commit 时报告 hash。
+# Agent Entry
+
+先读项目根目录的 `PROJECT.md` 与 `CONTEXT.md`；项目本地规则追加在本文件其他位置。
+
+<!-- matt-skills:managed:start -->
+需求对齐 → Spec → 版本化到 `docs/specs/<slug>.md` →（用户确认后）Tickets → `tdd` → `code-review` → 验收。
+
+- 需求对齐 / 模糊设计 → `grill-to-spec`；已有共识 → `to-spec`。无论是否立即生成 ticket，已接受的 Spec 都必须持久化到目标仓库 `docs/specs/<slug>.md`；之后才能发布 ticket。
+- Spec 已落盘后，Tickets 才能在用户确认拆分后由 `to-tickets` 生成；tracker/ticket 必须引用该版本化 Spec。
+- 行为变更默认使用 `tdd`，完成后使用 `code-review` 并回到 Spec 验收。
+- `commit-check` 仅在用户明确要求 commit 时使用；它只检查，不 stage 或 commit。
+- 未命中 skill 时直接执行；上游 skills 保持原义。
+<!-- matt-skills:managed:end -->

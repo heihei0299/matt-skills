@@ -53,6 +53,14 @@ test('every explicitly-invoked skill has an opencode command (workspace + templa
   }
 });
 
+test('commit-check command is explicit and reports the new gate contract', () => {
+  const cmd = readFileSync(root('.opencode/commands/commit-check.md'), 'utf8');
+  assert.match(cmd, /显式调用/);
+  assert.match(cmd, /不自动 staging 或 commit/);
+  assert.match(cmd, /工作区候选/);
+  assert.match(cmd, /\$ARGUMENTS/);
+});
+
 test('template commands dir carries exactly the explicit-skill commands + issue-audit', () => {
   const expected = [...DISTRIBUTABLE_EXPLICIT_SKILLS, 'issue-audit'].map((n) => `${n}.md`).sort();
   const tmpl = readdirSync(root('template/.opencode/commands')).sort();

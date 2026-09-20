@@ -1,37 +1,61 @@
 # matt-skills
 
-Repository vocabulary for this project. This file defines domain terms only; execution policy belongs to the active `AGENTS.md`, and skill-specific behavior belongs to each live `SKILL.md` and its references.
+Personal workflow glossary. Execution policy belongs to `AGENTS.md`, project intent and boundaries belong to `PROJECT.md`, durable decisions belong to ADRs, and operational procedures belong to Skills.
 
-## Repository
+## Workflow
 
-**Template Repository** (模板仓库):
-This repository's identity. It is the config repo for mattpocock/skills: it distributes project-level config (AGENTS.md behavior routing, `.opencode/docs/agents/` discipline files, `.opencode/CONTEXT.md` glossary) and the explicitly allowed distributable Skills. The Workspace also retains repo-local maintenance Skills that are never distributed. The Template Snapshot projects the project skeleton; the CLI assembles selected distributable Skills from the Workspace when initializing or synchronizing a Target Repository. The Workspace copy also serves this repo's own sessions.
-_Avoid_: skill distribution repo
+**Personal Workflow**（个人工作流）:
+The owner's default way to turn work into an agreed, executable, reviewed, and accepted change. The repository and its deployment tools support this workflow but do not define a second public-first workflow.
+_Avoid_: generic agent workflow, distribution workflow
 
-**Upstream Repository** (上游仓库):
-mattpocock/skills — the source of the upstream Skill bodies mirrored into this repo's Workspace canonical Skill source and then distributed by the CLI. This repo syncs them via `scripts/sync-upstream.js` and `matt-skills sync`.
-_Avoid_: source repo, skill origin
+**Requirements Alignment**（需求对齐）:
+The stage where the user's problem, desired outcome, constraints, and acceptance shape become shared understanding before a Spec is written.
+_Avoid_: implementation planning, ticket drafting
 
-**Proprietary Skill** (独有技能):
-A skill that does not exist upstream and lives only in this repo. The current proprietary set is classified in `config/proprietary.json` as distributable or repo-local; that config is the source of truth for membership. Repo-local skills serve matt-skills maintenance and are never distributed. Before adding a new proprietary skill, check the Upstream Repository first.
-_Avoid_: private skill, local skill
+**Spec**（规格）:
+The agreed description of the problem, user-facing solution, decisions, scope, and acceptance boundary. A Spec is not a glossary or a list of implementation commands.
+_Avoid_: plan, task list
 
-**Workspace** (工作区):
-The root-level canonical working area: `.agents/skills/` for shared Skills, `.opencode/` and `.pi/` for harness configuration, plus repository docs and configuration. Shared Skills are authored here. Harness-specific `.pi/skills/` and `.opencode/skills/` are reserved for project-local custom Skills rather than shared mirrors.
-_Avoid_: working copy, source repo
+**Executable Ticket**（可执行票据）:
+A user-confirmed, independently actionable slice of work with a clear outcome, acceptance criteria, and any blocking relationship.
+_Avoid_: TODO, unconfirmed issue
 
-**Template Snapshot** (模板快照):
-Everything under `template/` that is generated or copied from Workspace sources for Target Repository initialization. The snapshot owns project skeleton/configuration, while shared Skills are assembled separately by the CLI from the Workspace canonical source. Skeleton sync is one-way: Workspace → Template Snapshot.
-_Avoid_: release snapshot, published snapshot
+**Acceptance**（验收）:
+The user's confirmation that the delivered behavior satisfies the agreed Spec and executable tickets.
+_Avoid_: test pass, code review
 
-**Target Repository** (目标仓库):
-A repository initialized from the Template Snapshot and selected distributable shared Skills. Its root `AGENTS.md` is the project-level execution policy. Shared Skills live in `.agents/skills/`; project-local custom Skills may live in harness-specific skill directories.
-_Avoid_: inheriting repo, child repo
+**Tracker**（任务跟踪器）:
+The place that records executable tickets, their blocking relationships, and their progress. It is not the source of domain vocabulary or durable architectural decisions.
+_Avoid_: source of truth for the whole project
 
-**Initialize** (初始化):
-The one-time action of setting up a Target Repository by copying the Template Snapshot skeleton and installing the selected distributable Skills. Repo-local Skills are intentionally excluded.
-_Avoid_: inherit, bootstrap
+**ADR**（架构决策记录）:
+A durable record of a hard-to-reverse, surprising, or trade-off-heavy decision and the reason it was chosen.
+_Avoid_: meeting note, implementation diary
 
-**Sync** (同步):
-`matt-skills sync` updates Target Repository skeleton/configuration and selected distributable Skills according to CLI policy. Default sync preserves project customization where the CLI can identify it; `--all` applies the broader distributable scope. Repo-local Skills are never newly distributed by sync.
-_Avoid_: update, force sync
+**Skill**（技能）:
+An operational procedure an agent can invoke for a particular kind of work. An upstream Skill keeps its upstream meaning; a wrapper may compose or route Skills without redefining them.
+_Avoid_: policy, project context
+
+**Upstream Skill**（上游技能）:
+A Skill whose body is maintained by the upstream source and mirrored into the Workspace. Local routing may select it, but personal workflow documents do not silently change its meaning.
+_Avoid_: forked behavior
+
+**Wrapper**（包装器）:
+A local routing layer that selects or sequences existing Skills for a workflow while leaving each selected Skill's own contract intact.
+_Avoid_: replacement skill
+
+**Behavior Change**（行为变更）:
+A change that affects a user- or caller-observable outcome and therefore normally follows the TDD discipline before Review and Acceptance.
+_Avoid_: every file edit
+
+**Simple Task**（简单任务）:
+A bounded task whose intent and result are already clear and whose work is mechanical or explicitly non-behavioral; it may take the smallest direct path.
+_Avoid_: under-specified task
+
+**Commit Check**（提交检查）:
+An explicit readiness assessment after Review and before staging. It reports `ready to stage` or a blocking reason; staging, committing, and repeating completed verification belong elsewhere.
+_Avoid_: commit executor
+
+**Template / CLI Deployment**（模板 / CLI 部署）:
+The mechanism that projects the personal Workspace into a target repository for reuse. It is a deployment concern, not the authority for the owner's workflow decisions.
+_Avoid_: primary product

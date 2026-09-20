@@ -13,6 +13,7 @@ const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 const SKILL_NAMES = [
   'ask-matt',
   'codebase-design',
+  'commit-check',
   'code-review',
   'diagnose-fix',
   'diagnosing-bugs',
@@ -23,7 +24,6 @@ const SKILL_NAMES = [
   'grilling',
   'handoff',
   'implement',
-  'implement-review-loop',
   'improve-codebase-architecture',
   'instance-test',
   'prototype',
