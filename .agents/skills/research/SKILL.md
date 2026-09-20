@@ -18,7 +18,6 @@ Before fetching remote pages, stage source ingestion:
 
 Do not fetch several URLs merely for coverage or flood one reasoning turn with uninspected output. Broader parallel collection remains valid when the user explicitly requests comprehensive literature coverage, multi-source fact verification, or a survey where breadth is itself the task; batch those sources when possible.
 
-This is workflow discipline only: do not add a runtime tool-call blocker or fetch guard.
 
 1. Investigate the question against **primary sources** (official docs, source code, specs, first-party APIs), not a secondary write-up of them. Follow every claim back to the source that owns it.
 2. Write the findings to a single Markdown file, citing each claim's source.

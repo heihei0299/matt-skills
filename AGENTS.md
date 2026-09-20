@@ -12,39 +12,19 @@
 * 无法归类 → `ask-matt`
 \仅当关键歧义会改变结果时询问用户。
 
-## 项目上下文
-开始任务前按需读取：
-- `PROJECT.md`（若存在）：项目目标、范围和主要入口
-- `README.md`（若存在）：用户视角的使用与开发说明
-- `CONTEXT.md`（若存在）：领域术语与边界
+## Context / CodeGraph
+开始任务前按需读取 `PROJECT.md`、`README.md`、`CONTEXT.md`；以当前代码、配置、测试和版本化文档为事实来源。
+- 有 issue/spec 时先读当前 issue；否则从用户问题和最相关 symbol/path 开始。
+- 只按当前未决问题逐步扩展上下文；README/package/tests/docs 按需读取。
+- 当前上下文已有充分且未过时的证据时，不做等价重复读取。
+- 当当前上下文不足、需要新增代码理解证据时，优先使用 `codegraph explore`；结果充分后不再 broad grep/read。
 
-## Progressive discovery
-发现按当前 issue/spec 逐步展开：先读取当前 issue/spec，定位相关 symbol/path，读取最小实现面；只有具体未决问题需要时才扩展。
-默认不自动读取 README.md、package.json、全部测试、架构文档或邻近模块。README、package/config、tests、docs 只在当前问题直接需要时读取，例如命令/包行为、公开契约、依赖版本、仓库执行规则或行为覆盖；合法的直接依赖仍可读取。
-
-## Evidence reuse
-当前上下文已有足够可靠证据时，不为确认同一事实重复搜索或读取。仅在证据不完整、与另一来源冲突、相关文件可能已过时、缺少所需精确来源位置/内容，或验证要求新观测时补充证据。
-证据优先顺序：当前精确源码/结果 → 当前 issue evidence → codegraph result → 已完成 issue 的 ledger/git history → 定向读取/搜索 → 广泛探索。摘要不替代编辑或证明所需的精确源码；必要时仍读取，且后续 issue 可复用 ledger/git history。
-
-## Codegraph query discipline
-具体实现问题的 codegraph 查询必须对应当前未决问题，优先询问 symbol、behavior、call-chain 或 state owner；查询结果足够后只读取回答问题所需的文件/范围，不默认用广泛 grep/find/read 重复相同发现。
-Read/grep 仍可用于精确源码、codegraph 未提供的范围、生成/动态路径或确认具体怀疑的引用；架构范围的探索仅在用户要求架构分析时展开。
-
-## CodeGraph
-仓库内代码理解首先使用：
+需要新增代码理解证据时运行：
 ```bash
 codegraph explore "<问题>"
 ```
-无 `.codegraph/` 时：
-```bash
-codegraph init
-codegraph explore "<问题>"
-```
-* 优先于 `Read`、`grep`、`rg`、`find` 和代码探索子代理。
-* 从最小必要上下文开始；返回完整源码即视为已读。
-* 信息不足时只针对缺口继续 `explore`；已锁定符号时使用 `codegraph node`。
-* CodeGraph 无法提供必要信息时，才降级到最小必要的读取 / 搜索。
-* `research` 只用于仓库外信息。
+无 `.codegraph/` 时先运行 `codegraph init`。
+`research` 只用于仓库外信息。
 ## 执行
 默认闭环：
 ```text

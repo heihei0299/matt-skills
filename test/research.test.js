@@ -13,5 +13,4 @@ test('research stages remote source ingestion', () => {
   assert.match(research, /1.?2/);
   assert.match(research, /unresolved question|uncertainty/i);
   assert.match(research, /comprehensive|multi-source/i);
-  assert.match(research, /no runtime|tool-call blocker/i);
 });

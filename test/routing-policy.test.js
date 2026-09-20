@@ -43,44 +43,15 @@ test('template keeps its independent workflow', () => {
   assertNoManualRoutes(templateAgents);
 });
 
-test('progressive discovery demand-loads repository context', () => {
+test('context guidance is compact and evidence-first', () => {
   for (const content of [agents, templateAgents]) {
-    assert.match(content, /## Progressive discovery/);
-    assert.match(content, /current issue\/spec|当前 issue\/spec/i);
-    assert.match(content, /README\.md/);
-    assert.match(content, /package\.json/);
-    assert.match(content, /all tests|全部测试/i);
-    assert.match(content, /architecture docs|架构文档/i);
-    assert.match(content, /only when.*directly needed|只在.*直接需要/i);
-    assert.match(content, /unresolved question|未决问题/i);
-    assert.match(content, /direct dependencies|直接依赖/i);
-  }
-});
-
-test('evidence reuse preserves exact-source and freshness exceptions', () => {
-  for (const content of [agents, templateAgents]) {
-    assert.match(content, /## Evidence reuse/);
-    assert.match(content, /sufficient.*reliable evidence|足够可靠证据/i);
-    assert.match(content, /incomplete|不完整/i);
-    assert.match(content, /conflict|冲突/i);
-    assert.match(content, /stale|过时/i);
-    assert.match(content, /exact source|精确源码/i);
-    assert.match(content, /ledger.*git history|ledger.*git|ledger.*历史/i);
-    assert.match(content, /broad exploration|广泛探索/i);
-    assert.match(content, /摘要不替代|summary.*not replace/i);
-  }
-});
-
-test('codegraph exploration stays question-scoped and supplemental reads stay narrow', () => {
-  for (const content of [agents, templateAgents]) {
-    assert.match(content, /## Codegraph query discipline/);
-    assert.match(content, /current.*question|当前.*问题/i);
-    assert.match(content, /symbol.*behavior.*call.?chain|symbol.*行为.*调用链/i);
-    assert.match(content, /only.*files?\/ranges?|只.*文件.*范围/i);
-    assert.match(content, /broad.*grep.*default|广泛.*grep|不默认.*grep/i);
-    assert.match(content, /exact.*source|精确.*源码/i);
-    assert.match(content, /generated.*dynamic|生成.*动态/i);
-    assert.match(content, /architecture.?wide|架构.*范围/i);
+    assert.match(content, /## Context \/ CodeGraph/);
+    assert.doesNotMatch(content, /## Progressive discovery|## Evidence reuse|## Codegraph query discipline/);
+    assert.match(content, /有 issue\/spec 时先读当前 issue；否则从用户问题和最相关 symbol\/path 开始。/);
+    assert.match(content, /只按当前未决问题逐步扩展上下文；README\/package\/tests\/docs 按需读取。/);
+    assert.match(content, /当前上下文已有充分且未过时的证据时，不做等价重复读取。/);
+    assert.match(content, /当当前上下文不足、需要新增代码理解证据时，优先使用 `codegraph explore`；结果充分后不再 broad grep\/read。/);
+    assert.doesNotMatch(content, /仓库内代码理解首先使用/);
   }
 });
 
