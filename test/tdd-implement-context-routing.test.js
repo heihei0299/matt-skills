@@ -13,7 +13,7 @@ const refs = ['orchestration.md', 'verify.md', 'finalize.md'];
 test('tdd-implement routes only execution, verification and finalization references', () => {
   for (const ref of refs) {
     assert.ok(existsSync(root(`.agents/skills/tdd-implement/references/${ref}`)), `${ref} must exist`);
-    assert.match(skill, new RegExp(`references/${ref.replace('.', '\\\\.')}`));
+    assert.match(skill, new RegExp(`references/${ref.replace('.', '\\.')}`));
   }
   assert.match(skill, /### ① Red-Green/);
   assert.match(skill, /### ② Verify/);
