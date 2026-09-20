@@ -26,7 +26,7 @@ disable-model-invocation: true
 维护唯一的受管区块，使用以下标记：
 
 ```md
-<!-- initialize-project:start -->
+<!-- matt-skills:managed:start -->
 ## 项目上下文
 ### 架构边界
 见 `PROJECT.md` 的“架构边界”。
@@ -40,18 +40,18 @@ disable-model-invocation: true
 见 `PROJECT.md` 的“项目约束”。
 ### 完成标准
 见 `PROJECT.md` 的“完成标准”。
-<!-- initialize-project:end -->
+<!-- matt-skills:managed:end -->
 ```
 
 - 六个 `###` 标题必须按 `架构边界`、`仓库地图`、`标准命令`、`测试规则`、`项目约束`、`完成标准` 顺序出现。
 - 受管区块总行数必须不超过 30 行；只写简要规则或 `PROJECT.md` 指针，详细事实只放 `PROJECT.md`。
 - 已有完整标记区块时原位替换；没有时追加到文件末尾；不得重排、覆盖或改写其他内容。
 - `AGENTS.md` 不存在时，优先复制目标项目的 `template/AGENTS.md`，再追加区块；模板不可用时创建最小 `AGENTS.md`，只包含该区块。
-- 只有在目标项目明确使用 `CLAUDE.md` 代替 `AGENTS.md` 时才改写 `CLAUDE.md`；否则固定使用 `AGENTS.md`。
+- 无论项目是否存在 `CLAUDE.md`，初始化状态和项目上下文都固定维护在 `AGENTS.md`。
 
 ## 3. 更新 `PROJECT.md`
 
-维护另一组受管标记：
+维护 `PROJECT.md` 专用受管标记（不要与 `AGENTS.md` 的 CLI 受管标记混用）：
 
 ```md
 <!-- initialize-project:start -->
