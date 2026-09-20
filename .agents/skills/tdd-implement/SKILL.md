@@ -6,23 +6,23 @@ disable-model-invocation: true
 
 # TDD Implement
 
-完成已确认的 spec/task。TDD 的红绿语义、测试质量、seam 和 mock 规则以 [tdd](.agents/skills/tdd/SKILL.md) 为唯一事实源；本技能负责 issue 级实现、证据记录，以及 batch 级 Review 与收尾编排。
+完成已确认的 spec/task。TDD 的红绿语义、测试质量、seam 和 mock 规则以 [tdd](.agents/skills/tdd/SKILL.md) 为唯一事实源；本技能负责 issue 级实现、验证、证据记录与收尾编排。
 
 > Ticket defines WHAT. TDD determines HOW to prove it. Repository determines HOW to implement it.
 
 ## 入口
 
-- **单 issue**：使用下方同一套 issue 与 batch lifecycle，等价于 batch size = 1。
-- **多 issue**：存在多个 `Type: task` 时，读取 [orchestration.md](references/orchestration.md) 后按依赖顺序执行。
+- **单 issue**：直接按下方 issue lifecycle 执行。
+- **多 issue**：存在多个 `Type: task` 时，读取 [orchestration.md](references/orchestration.md) 后按依赖顺序逐个完成。
 - `research`、`prototype`、`grilling` 类型任务分流到对应技能。
 
-正常 Red-Green / Verify 执行由当前 session 原生完成，不为每个 Behavior 或 issue 常规派发 implementer/reviewer。子代理只用于证据不足、证据冲突、复杂诊断等异常升级；常规独立 Review 只发生在 batch 末尾。
+正常 Red-Green / Verify 由当前 session 原生完成，不为每个 Behavior 或 issue 常规派发 implementer/reviewer。子代理只用于证据不足、证据冲突、复杂诊断等异常升级。`code-review` 是独立能力，不属于 `tdd-implement` 的自动生命周期；需要 Review 时由用户显式调用。
 
-## Issue lifecycle:
+## Issue lifecycle
 
-`Red-Green → Verify → Record`
+`Red-Green → Verify → Record → Finalize`
 
-Issue 状态可使用 `ready`、`in_progress`、`verified_pending_review`、`resolved`、`blocked`、`failed`。`verified_pending_review` 不是最终完成；只有 batch Review 与 finding fix 完成后才收敛为 `resolved`。
+Issue 状态使用 `ready`、`in_progress`、`verified`、`resolved`、`blocked`、`failed`。
 
 ### ① Red-Green
 
@@ -36,11 +36,16 @@ Issue 状态可使用 `ready`、`in_progress`、`verified_pending_review`、`res
 
 读取 [verify.md](references/verify.md)，执行当前 issue 所需的最终验证。Verify 只覆盖必要范围，不重复等价验证。
 
-**出口：**当前 issue 所需最终验证通过，并完成要求的真实运行验证；状态进入 `verified_pending_review`。
+**出口：**当前 issue 所需最终验证通过，并完成要求的真实运行验证；状态进入 `verified`。
 
-### ③ Record Evidence
+### ③ Record
 
-Verify 后将每个 issue 的最小充分证据写入 git-ignored `.scratch/tdd-implement/` ledger。只记录命令/场景和结果，不保存完整测试输出；记录 ticket/repository 冲突时使用 `Ruling: <finding> — <decision and why> — <cost if wrong>`。
+Verify 通过后形成当前 issue 唯一的 delivery commit，并记录最小充分证据：
+
+1. 将当前 issue 已完成并验证的代码、测试、交付文档和配置形成 1 个 delivery commit；不得按 Behavior、阶段或验证动作拆 commit；
+2. 设置 `issue_head = HEAD`；
+3. 将 evidence 写入 git-ignored `.scratch/tdd-implement/` ledger，只记录命令/场景和结果，不保存完整测试输出；
+4. ticket/repository 冲突使用 `Ruling: <finding> — <decision and why> — <cost if wrong>` 记录。
 
 ```text
 Issue: <id>
@@ -62,44 +67,30 @@ Rulings:
 - none
 ```
 
-**出口：**ledger 完整，包含 Acceptance、TDD、Verify 和 Rulings 结果；未将 `verified_pending_review` 对外宣称为最终 `resolved`。
+**出口：**delivery commit 已形成，`issue_head` 已记录，ledger 包含 Acceptance、TDD、Verify 和 Rulings 结果。
 
-## Batch lifecycle:
+### ④ Finalize
 
-`Batch Review → Finding Fix → Finalize → State Sync`
+读取 [finalize.md](references/finalize.md)。Finalize 只做当前 issue 的状态收敛和 tracker/progress/status 记录，不新增 Behavior、不修改产品实现、不补测试。
 
-全部当前 batch 可执行 issue 都完成 Red-Green、Verify 和 Evidence Record 后，才进入 batch lifecycle。batch review 是整个 execution batch 唯一的 fresh `code-review`；issue loop 内不调用 `code-review`。
+**出口：**当前 issue 已 `resolved`，已满足的 blockers 已解除；仓库内状态变更进入 batch state-sync 集合。
 
-### Batch Review
+## Batch State Sync
 
-读取 [review.md](references/review.md)，将 batch 内全部交付代码、测试、文档和配置形成唯一的 committed Review Point，再以 `batch_base...batch_review_head` 调用一次 `code-review`。继续复用 [code-review](.agents/skills/code-review/SKILL.md) 的 Standards / Spec 双轴结构，不修改其机制。
-
-### Finding Fix
-
-读取 [review.md](references/review.md) 的 finding-fix contract。Behavioral finding 通过真实 RED → GREEN 证据修复；non-behavioral finding 直接修复并做必要验证。全部 blocking findings 一次处理，最多一个 finding-fix commit；修复后不再次调用 `code-review`，不执行 Incremental Review。
-
-### Finalize
-
-读取 [finalize.md](references/finalize.md)。Finalize 只归档 Acceptance、Review、finding 和验证证据，将 `verified_pending_review → resolved`，解除已满足的 blockers，并记录最终 issue/batch head；不新增 Behavior、不修改产品实现、不偷偷补测试。
-
-### State Sync
-
-batch 结束时统一同步仓库内 tracker/progress/status；如确有待同步状态，最多创建 1 个 batch state-sync commit，且不混入产品实现或任何单个 issue 的提交范围。
+本次执行批次结束后，如仓库内 tracker/progress/status 存在待同步状态，统一写入并最多形成 1 个 batch state-sync commit。该 commit 不混入产品实现，也不属于任何单个 issue 的 `issue_base...issue_head` 范围。
 
 ## 运行纪律
 
 - Red-Green 必须覆盖当前 issue 的全部待实现 Behavior；Red-Green / Verify 不按 Behavior、阶段或验证动作拆 commit。
-- Verify 通过后先记录 evidence；不要因单个 issue 已验证就提前 Review 或宣称 resolved。
-- batch Review 前必须满足全部 issue Verify、ledger 完整、交付修改已提交且 working tree 没有遗漏。
-- 整个 execution batch 的 `code-review calls = 1`、`per-issue review = 0`、`incremental review = 0`。
-- 只有外部阻塞、需要用户决策、destructive / irreversible 操作、安全敏感行为或 ticket/plan 已无法可靠解释时才暂停。
-- 仅在当前 Step 达到出口后继续下一 Step；发现失败时保留实际状态，不把失败静默当作完成。
+- Verify 通过后形成当前 issue 唯一 delivery commit，再记录 evidence；Finalize 不创建实现 commit。
+- `tdd-implement` 不自动调用 `code-review`，不执行 per-issue Review、batch Review 或 Incremental Review。
+- 已有充分或等价证据时不重复搜索、读取或验证；后续 issue 优先消费 ledger 与 git history。
+- 只有外部阻塞、需要用户决策、destructive / irreversible 操作、安全敏感行为或 ticket/spec 已无法可靠解释时才暂停。
+- 当前 Step 达到出口后立即进入下一 Step；发现失败时保留实际状态，不把失败静默当作完成。
 
 ## References
 
 - TDD：[tdd](.agents/skills/tdd/SKILL.md)
 - Verify：[verify.md](references/verify.md)
-- Batch Review / Finding Fix：[review.md](references/review.md)
 - Finalize / State Sync：[finalize.md](references/finalize.md)
-- 唯一 Review：[code-review](.agents/skills/code-review/SKILL.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)

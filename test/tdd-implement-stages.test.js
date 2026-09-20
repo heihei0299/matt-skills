@@ -8,58 +8,38 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(dir, file), 'utf8');
 const skill = read('.agents/skills/tdd-implement/SKILL.md');
 const orchestration = read('.agents/skills/tdd-implement/references/orchestration.md');
-const review = read('.agents/skills/tdd-implement/references/review.md');
 const finalize = read('.agents/skills/tdd-implement/references/finalize.md');
 
-test('tdd-implement exposes separate issue and batch lifecycles', () => {
-  assert.match(skill, /Issue lifecycle:[\s\S]*`Red-Green → Verify → Record`/);
-  assert.match(skill, /Batch lifecycle:[\s\S]*`Batch Review → Finding Fix → Finalize → State Sync`/);
-  assert.doesNotMatch(skill, /`Red-Green → Verify → Review → Finalize`/);
-  assert.doesNotMatch(skill, /每个 issue 最多调用 1 次 `code-review`/);
+test('tdd-implement has no automatic review stage', () => {
+  assert.match(skill, /`Red-Green → Verify → Record → Finalize`/);
+  assert.doesNotMatch(skill, /Batch Review → Finding Fix/);
+  assert.match(skill, /`code-review` 是独立能力，不属于 `tdd-implement` 的自动生命周期/);
+  assert.match(skill, /`tdd-implement` 不自动调用 `code-review`/);
 });
 
-test('one batch review replaces per-issue review', () => {
-  assert.match(review, /batch_base/);
-  assert.match(review, /batch_review_head/);
-  assert.match(review, /full_review_done/);
-  assert.match(review, /code-review calls = 1/);
-  assert.match(review, /per-issue review = 0/);
-  assert.match(review, /incremental review = 0/);
-  assert.match(review, /fixed point = `batch_base`/);
-  assert.match(review, /review target = `batch_review_head`/);
-  assert.match(review, /diff = `batch_base\.\.\.batch_review_head`/);
-  assert.match(review, /evidence = execution ledger/);
+test('Record forms one delivery commit and evidence ledger', () => {
+  assert.match(skill, /当前 issue 唯一的 delivery commit/);
+  assert.match(skill, /设置 `issue_head = HEAD`/);
+  assert.match(skill, /\.scratch\/tdd-implement\//);
+  assert.match(skill, /不保存完整测试输出/);
 });
 
-test('behavioral findings use a RED to GREEN fix pass', () => {
-  assert.match(review, /Behavioral finding/);
-  assert.match(review, /write reproducing test/);
-  assert.match(review, /RED/);
-  assert.match(review, /minimal fix/);
-  assert.match(review, /GREEN/);
-  assert.match(review, /affected verification/);
-  assert.doesNotMatch(review, /修复阶段不得返回 Red-Green/);
-  assert.match(review, /最多一个 finding-fix commit/);
-  assert.match(review, /修复后不得再次调用 `code-review`/);
-});
-
-test('Finalize follows batch review and finding fix', () => {
-  assert.match(orchestration, /Batch Review[\s\S]*Finding Fix[\s\S]*Finalize completed issues[\s\S]*Batch State Sync/);
-  assert.match(finalize, /verified_pending_review → resolved/);
-  assert.match(finalize, /最多 1 个 batch state-sync commit/);
-  assert.match(finalize, /不属于任何单个 issue 的 `issue_base\.\.\.issue_head` 范围/);
+test('Finalize follows verification and evidence without review', () => {
+  assert.match(finalize, /Red-Green、Verify、delivery commit 和 Evidence Record/);
+  assert.match(finalize, /issue 已 `resolved`/);
+  assert.doesNotMatch(finalize, /batch Review|finding-fix|full_review_done|batch_review_head/);
+  assert.match(finalize, /最多创建 1 个 batch state-sync commit/);
 });
 
 test('normal execution stays in the current session', () => {
-  assert.match(skill, /正常 Red-Green \/ Verify 执行由当前 session 原生完成/);
+  assert.match(skill, /正常 Red-Green \/ Verify 由当前 session 原生完成/);
   assert.match(skill, /子代理只用于证据不足、证据冲突、复杂诊断等异常升级/);
-  assert.match(skill, /常规独立 Review 只发生在 batch 末尾/);
 });
 
-test('multi-issue orchestration carries the final issue HEAD forward', () => {
-  assert.match(orchestration, /issue_base = HEAD[\s\S]*Red-Green[\s\S]*Verify[\s\S]*Record Evidence[\s\S]*issue_head = HEAD/);
+test('multi-issue orchestration completes issue before advancing', () => {
+  assert.match(orchestration, /issue_base = HEAD[\s\S]*Red-Green[\s\S]*Verify[\s\S]*Record[\s\S]*Finalize[\s\S]*issue_head = HEAD/);
   assert.match(orchestration, /下一个 issue 以当前 `issue_head` 作为新的 `issue_base`/);
-  assert.match(orchestration, /单 issue 也使用同一套 batch lifecycle，等价于 batch size = 1/);
+  assert.match(orchestration, /`code-review` 调用次数为 0/);
 });
 
 test('dependency failures remain fail-closed', () => {
