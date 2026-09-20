@@ -10,6 +10,26 @@ disable-model-invocation: true
 
 > Ticket defines WHAT. TDD determines HOW to prove it. Repository determines HOW to implement it.
 
+## Issue context scope
+
+Implementation context is current-issue scoped.
+
+At issue startup:
+1. Read the current issue body.
+2. Do not read future issue bodies.
+3. Future issues may be inspected only by compact metadata: ID, title, status, and dependency.
+4. Expand another issue only when the current issue explicitly depends on a contract that cannot otherwise be resolved.
+5. Read only the specific dependent section needed.
+
+If the complete active Skill content is already present in the current conversation, do not read the same Skill file again merely to confirm its rules.
+
+Re-read only when:
+- the conversation contains only a partial/summary copy;
+- the file is known to have changed during the session; or
+- the user explicitly requests a fresh read.
+
+This scope does not prohibit current-issue referenced specs, code required to implement the current issue, relevant tests, or a genuinely required dependency contract.
+
 ## 入口
 
 - **单 issue**：直接按下方 issue lifecycle 执行。
