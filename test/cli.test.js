@@ -43,6 +43,7 @@ const SKILL_NAMES = [
   'wait-what',
   'wizard',
   'writing-for-agents',
+  'initialize-project',
 ];
 
 // 默认 programming subset: engineering + required + default proprietary.
@@ -72,6 +73,7 @@ const PROGRAMMING_SKILL_NAMES = [
   'triage',
   'wayfinder',
   'wizard',
+  'initialize-project',
 ];
 
 // Literal lines copied from the skills' SKILL.md frontmatter, including

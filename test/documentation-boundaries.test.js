@@ -20,8 +20,8 @@ const TEMPLATE_PI_RUNTIME = read('template/.pi/docs/agents/runtime-discipline.md
 const config = JSON.parse(read('config/proprietary.json'));
 
 test('README documents the proprietary distribution boundary', () => {
-  assert.match(README, /7 个独有|proprietary.*7/i);
-  const distributableSection = README.match(/### 可分发的 5 个([\s\S]*?)### 仓库内部的 2 个/)?.[1];
+  assert.match(README, /8 个独有|proprietary.*8/i);
+  const distributableSection = README.match(/### 可分发的 6 个([\s\S]*?)### 仓库内部的 2 个/)?.[1];
   const repoLocalSection = README.match(/### 仓库内部的 2 个([\s\S]*?)## 初始化/)?.[1];
   assert.ok(distributableSection, 'missing distributable proprietary section');
   assert.ok(repoLocalSection, 'missing repo-local proprietary section');
@@ -33,10 +33,10 @@ test('README documents the proprietary distribution boundary', () => {
     assert.match(repoLocalSection, new RegExp(name));
     assert.doesNotMatch(distributableSection, new RegExp(name));
   }
-  assert.match(README, /默认 programming 范围中的 4 个独有/);
+  assert.match(README, /默认 programming 范围中的 5 个独有/);
   for (const name of config.default) assert.match(README, new RegExp(name));
   assert.match(README, /不会.*(init|install|sync).*分发|不.*分发.*用户项目/s);
-  assert.doesNotMatch(README, /独有 6|全量 32|全量 33|默认.*26/);
+  assert.doesNotMatch(README, /独有 7|全量 33|全量 34|默认.*27/);
 });
 
 test('CONTEXT is repository vocabulary only and mirrors into both harness templates', () => {

@@ -23,6 +23,7 @@ const EXPECTED = {
     'commit-check',
     'scaffold-functional-test',
     'show-me',
+    'initialize-project',
   ],
   distributable: [
     'tdd-implement',
@@ -30,9 +31,10 @@ const EXPECTED = {
     'grill-to-spec',
     'scaffold-functional-test',
     'show-me',
+    'initialize-project',
   ],
   repoLocal: ['ci-guard', 'commit-check'],
-  default: ['tdd-implement', 'diagnose-fix', 'grill-to-spec', 'show-me'],
+  default: ['tdd-implement', 'diagnose-fix', 'grill-to-spec', 'show-me', 'initialize-project'],
 };
 
 test('proprietary config declares the four classification sets', () => {

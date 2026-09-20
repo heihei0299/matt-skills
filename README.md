@@ -28,15 +28,16 @@ template/
 
 ## 独有 skill 分发边界
 
-本仓库有 7 个独有（proprietary）skills：
+本仓库有 8 个独有（proprietary）skills：
 
-### 可分发的 5 个
+### 可分发的 6 个
 
 - `tdd-implement`
 - `diagnose-fix`
 - `grill-to-spec`
 - `scaffold-functional-test`
 - `show-me`
+- `initialize-project`
 
 ### 仓库内部的 2 个
 
@@ -64,7 +65,7 @@ npx @heihei0299/matt-skills sync --dry-run --json
 
 `init` 对已有 `AGENTS.md` 始终跳过；已有项目使用 `sync`。默认 `sync` 保留已有 `AGENTS.md` 和项目规则，`--all` 只扩大技能范围。需要显式刷新 `AGENTS.md` 时使用 `sync --refresh-agents`；无受管区块时会先备份为 `AGENTS.md.bak`。`sync` 不删除目标项目的额外文件或自定义 skills。
 
-默认 programming 范围中的 4 个独有 skills 是 `tdd-implement`、`diagnose-fix`、`grill-to-spec`、`show-me`。
+默认 programming 范围中的 5 个独有 skills 是 `tdd-implement`、`diagnose-fix`、`grill-to-spec`、`show-me`、`initialize-project`。
 
 ## CLI
 

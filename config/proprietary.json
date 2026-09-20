@@ -6,14 +6,16 @@
     "diagnose-fix",
     "commit-check",
     "scaffold-functional-test",
-    "show-me"
+    "show-me",
+    "initialize-project"
   ],
   "distributable": [
     "tdd-implement",
     "diagnose-fix",
     "grill-to-spec",
     "scaffold-functional-test",
-    "show-me"
+    "show-me",
+    "initialize-project"
   ],
   "repoLocal": [
     "ci-guard",
@@ -23,6 +25,7 @@
     "tdd-implement",
     "diagnose-fix",
     "grill-to-spec",
-    "show-me"
+    "show-me",
+    "initialize-project"
   ]
 }

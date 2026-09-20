@@ -16,5 +16,6 @@
   "to-tickets",
   "triage",
   "wayfinder",
-  "wizard"
+  "wizard",
+  "initialize-project"
 ]
