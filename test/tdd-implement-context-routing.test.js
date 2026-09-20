@@ -8,7 +8,7 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (file) => path.join(dir, file);
 const skill = readFileSync(root('.agents/skills/tdd-implement/SKILL.md'), 'utf8');
 
-const refs = ['orchestration.md', 'verify.md', 'finalize.md'];
+const refs = ['orchestration.md', 'finalize.md'];
 
 test('tdd-implement routes only execution, verification and finalization references', () => {
   for (const ref of refs) {
@@ -17,10 +17,14 @@ test('tdd-implement routes only execution, verification and finalization referen
   }
   assert.match(skill, /### ① Red-Green/);
   assert.match(skill, /### ② Verify/);
+  assert.match(skill, /ticket 要求真实运行验证时/);
+  assert.match(skill, /若修改产生新的 Behavior，返回 Red-Green/);
   assert.match(skill, /### ③ Record/);
   assert.match(skill, /### ④ Finalize/);
-  assert.match(skill, /## Batch State Sync/);
+  assert.doesNotMatch(skill, /## Batch State Sync/);
   assert.doesNotMatch(skill, /references\/review\.md/);
+  assert.doesNotMatch(skill, /references\/verify\.md/);
+  assert.equal(existsSync(root('.agents/skills/tdd-implement/references/verify.md')), false);
   assert.doesNotMatch(skill, /### Batch Review|### Finding Fix/);
 });
 

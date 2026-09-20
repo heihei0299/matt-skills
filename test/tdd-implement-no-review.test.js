@@ -15,7 +15,7 @@ test('issue execution has no review or reviewer dispatch', () => {
   assert.notEqual(issueLoop, '');
   assert.match(issueLoop, /Red-Green[\s\S]*Verify[\s\S]*Record[\s\S]*Finalize/);
   assert.doesNotMatch(issueLoop, /Review|code-review|Finding Fix/);
-  assert.match(orchestration, /Issue loop 不调用 `code-review`/);
+  assert.match(skill, /`tdd-implement` 不自动调用 `code-review`/);
 });
 
 test('verified issue writes minimal evidence and then resolves', () => {
@@ -29,5 +29,7 @@ test('verified issue writes minimal evidence and then resolves', () => {
 test('batch work is limited to one state sync commit', () => {
   assert.match(orchestration, /Batch State Sync/);
   assert.match(orchestration, /最多创建 1 个 batch state-sync commit/);
+  assert.doesNotMatch(skill, /## Batch State Sync/);
+  assert.doesNotMatch(finalize, /Batch State Sync|batch state-sync/);
   assert.doesNotMatch(orchestration, /Batch Review|Finding Fix|batch_review_head|full_review_done/);
 });

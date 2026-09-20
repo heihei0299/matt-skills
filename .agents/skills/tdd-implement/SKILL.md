@@ -54,7 +54,11 @@ Issue 状态使用 `ready`、`in_progress`、`verified`、`resolved`、`blocked`
 
 ### ② Verify
 
-读取 [verify.md](references/verify.md)，执行当前 issue 所需的最终验证。Verify 只覆盖必要范围，不重复等价验证。
+执行当前 issue 所需的最终验证。Verify 只覆盖必要范围，不重复等价验证。
+
+- ticket 要求真实运行验证时，执行与验收目标匹配的实际验证；
+- 验证通过后不机械重复等价验证；
+- 若修改产生新的 Behavior，返回 Red-Green 对该 Behavior 执行 TDD，完成后再验证受影响范围。
 
 **出口：**当前 issue 所需最终验证通过，并完成要求的真实运行验证；状态进入 `verified`。
 
@@ -93,11 +97,7 @@ Rulings:
 
 读取 [finalize.md](references/finalize.md)。Finalize 只做当前 issue 的状态收敛和 tracker/progress/status 记录，不新增 Behavior、不修改产品实现、不补测试。
 
-**出口：**当前 issue 已 `resolved`，已满足的 blockers 已解除；仓库内状态变更进入 batch state-sync 集合。
-
-## Batch State Sync
-
-本次执行批次结束后，如仓库内 tracker/progress/status 存在待同步状态，统一写入并最多形成 1 个 batch state-sync commit。该 commit 不混入产品实现，也不属于任何单个 issue 的 `issue_base...issue_head` 范围。
+**出口：**当前 issue 已 `resolved`，已满足的 blockers 已解除。
 
 ## 运行纪律
 
@@ -111,6 +111,5 @@ Rulings:
 ## References
 
 - TDD：[tdd](.agents/skills/tdd/SKILL.md)
-- Verify：[verify.md](references/verify.md)
-- Finalize / State Sync：[finalize.md](references/finalize.md)
+- Finalize：[finalize.md](references/finalize.md)
 - 多 issue 编排：[orchestration.md](references/orchestration.md)

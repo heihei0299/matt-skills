@@ -26,9 +26,11 @@ test('Record forms one delivery commit and evidence ledger', () => {
 
 test('Finalize follows verification and evidence without review', () => {
   assert.match(finalize, /Red-Green、Verify、delivery commit 和 Evidence Record/);
+  assert.match(finalize, /`issue_head` 仍指向 delivery commit/);
+  assert.match(finalize, /不改变 `issue_head`/);
   assert.match(finalize, /issue 已 `resolved`/);
   assert.doesNotMatch(finalize, /batch Review|finding-fix|full_review_done|batch_review_head/);
-  assert.match(finalize, /最多创建 1 个 batch state-sync commit/);
+  assert.doesNotMatch(finalize, /Batch State Sync|batch state-sync/);
 });
 
 test('normal execution stays in the current session', () => {
@@ -37,9 +39,8 @@ test('normal execution stays in the current session', () => {
 });
 
 test('multi-issue orchestration completes issue before advancing', () => {
-  assert.match(orchestration, /issue_base = HEAD[\s\S]*Red-Green[\s\S]*Verify[\s\S]*Record[\s\S]*Finalize[\s\S]*issue_head = HEAD/);
+  assert.match(orchestration, /issue_base = HEAD[\s\S]*Red-Green[\s\S]*Verify[\s\S]*Record \(delivery commit 后设置 issue_head = HEAD\)[\s\S]*Finalize/);
   assert.match(orchestration, /下一个 issue 以当前 `issue_head` 作为新的 `issue_base`/);
-  assert.match(orchestration, /`code-review` 调用次数为 0/);
 });
 
 test('dependency failures remain fail-closed', () => {

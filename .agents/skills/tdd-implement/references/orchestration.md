@@ -1,6 +1,6 @@
 # 多 issue 编排
 
-仅在存在多个 `Type: task` issue 时生效。每个 issue 都按 `Red-Green → Verify → Record → Finalize` 独立完成；本文件只负责依赖顺序与 batch state sync。
+仅在存在多个 `Type: task` issue 时生效。每个 issue 都按 `Red-Green → Verify → Record → Finalize` 独立完成；本文件只负责依赖顺序、失败关闭与 batch state sync。
 
 ## 1. 构建依赖图
 
@@ -22,38 +22,23 @@ for each dependency layer:
     issue_base = HEAD
     Red-Green
     Verify
-    Record
+    Record (delivery commit 后设置 issue_head = HEAD)
     Finalize
-    issue_head = HEAD
 ```
 
 - `Red-Green` 与 `Verify` 是当前 issue 的 correctness gate；
-- `Record` 形成当前 issue 唯一 delivery commit，设置 `issue_head` 并记录 evidence ledger；
-- `Finalize` 只收敛状态、解除已满足 blockers，并把仓库内 tracker/progress/status 变更加入 batch state-sync 集合；
-- Issue loop 不调用 `code-review`，不执行 per-issue Review、batch Review 或 Incremental Review。
+- `Record` 在 delivery commit 后设置 `issue_head`，然后进入 Finalize；
+- `Finalize` 只收敛状态、解除已满足 blockers。
 
 当前 issue Finalize 完成后，依赖它的 issue 才可进入可执行状态。下一个 issue 以当前 `issue_head` 作为新的 `issue_base`。
 
-## 3. 状态与证据
-
-每个完成 issue 只携带后续调度所需的最小状态：
-
-- `Status`；
-- `issue_base`；
-- `issue_head`；
-- Acceptance、TDD、Verify 和 Rulings evidence；
-- 已解除的 blockers。
-
-Issue evidence 使用 `.scratch/tdd-implement/` ledger。后续 issue 不重复研究前序 issue 已确认且已记录的事实；context compact 后优先使用 ledger 与 git history。Ledger 不保存完整测试输出，只保存命令/场景及结果。
-
-## 4. Batch State Sync
+## 3. Batch State Sync
 
 全部可执行 issue 完成后，如仓库内 tracker/progress/status 存在待同步状态，统一写入并最多创建 1 个 batch state-sync commit。该 commit：
 
 - 不混入产品实现、测试、交付文档或配置；
 - 不属于任何单个 issue 的 `issue_base...issue_head` 范围；
 - 不因 issue 数量增加而拆成多个 status commits；
-- 不触发 `code-review`。
 
 ## 冲突与失败
 
@@ -67,6 +52,5 @@ Issue evidence 使用 `.scratch/tdd-implement/` ledger。后续 issue 不重复�
 
 - 所有可执行 issue 均按依赖顺序完成并有 evidence ledger；
 - issue、依赖状态、Acceptance、Verify 与 progress 一致；
-- `tdd-implement` 的 `code-review` 调用次数为 0；
 - 不存在被误当作已完成的 blocked issue；
 - 仓库内状态同步如有需要，只形成最多 1 个 batch state-sync commit。
