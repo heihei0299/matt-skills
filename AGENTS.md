@@ -1,6 +1,6 @@
 ## 路由
 命中即执行，并简短声明使用的 skill / 工具。
-* 理解 / 定位 / 调用链 → `codegraph explore`
+* 需要新增代码理解证据的理解 / 定位 / 调用链 → `codegraph explore`
 * 外部调研 / 方案比较 → `research`
 * 原型 / PoC → `prototype`
 * 简单修改 → 直接实现

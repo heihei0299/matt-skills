@@ -57,7 +57,8 @@ test('context guidance is compact and evidence-first', () => {
 
 test('workspace and template expose their intended routing branches', () => {
   assert.match(agents, /## 路由/);
-  assert.match(agents, /理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
+  assert.match(agents, /需要新增代码理解证据的理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
+  assert.doesNotMatch(agents, /^\* 理解 \/ 定位 \/ 调用链 → `codegraph explore`$/m);
   assert.match(agents, /外部调研 \/ 方案比较 → `research`/);
   assert.match(agents, /原型 \/ PoC → `prototype`/);
   assert.match(agents, /简单修改 → 直接实现/);
@@ -69,7 +70,8 @@ test('workspace and template expose their intended routing branches', () => {
   assertNoManualRoutes(agents);
 
   assert.match(templateAgents, /## Workflow/);
-  assert.match(templateAgents, /代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
+  assert.match(templateAgents, /需要新增证据的代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
+  assert.doesNotMatch(templateAgents, /^\* 代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`$/m);
   assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
   assert.match(templateAgents, /多来源调研 \/ 方案比较 \/ 技术选型 \/ 最佳实践 \/ 外部实现 → `research`/);
   assert.match(templateAgents, /未命中 skill 时直接执行/);
