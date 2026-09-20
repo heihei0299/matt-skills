@@ -10,21 +10,21 @@
 
 ### 主要入口
 - 用户入口是 `package.json` 的 `bin.matt-skills`，实现位于 `bin/cli.js`；命令包括 `init`、`sync`、`list`、`install` 和 `check`。
-- 技能选择与边界位于 `bin/skill-selection.js`、`bin/skill-boundaries.js`、`bin/skill-config.js`，分类事实位于 `config/engineering.json`、`config/required.json`、`config/proprietary.json`。
+- 技能选择与边界位于 `bin/skill-selection.js`、`bin/skill-boundaries.js`、`bin/skill-config.js`，分类事实位于 `config/default.json`、`config/engineering.json`、`config/required.json`、`config/proprietary.json`。
 - 模板生成入口是 `scripts/build-template.js`；上游技能比较与应用入口是 `scripts/sync-upstream.js`；Codex 兼容性检查入口是 `scripts/codex-smoke.js`。
 - 维护者先看 `README.md`、`CONTEXT.md`、本文件和 `AGENTS.md`；行为回归先看 `test/` 中对应的 `node:test` 文件。
 
 ### 架构边界
 - `.agents/skills/` 是 Workspace 的 canonical skill source；`template/` 是由 Workspace 资料生成的 Target Repository skeleton，不是共享 skills 的持久镜像。
 - `scripts/build-template.js` 将 `config/template-AGENTS.md`、`CONTEXT.md`、`.opencode/`、`.pi/` 和 `docs/agents/` 等源资料投影到 `template/`；共享 skills 由 CLI 从 `.agents/skills/` 按选择规则另行组装。
-- CLI 只分发可分发 skills；`config/proprietary.json` 是独有 skill 的成员、distributable/repo-local 分类和默认集合的约束来源。默认范围由 engineering、required 和默认独有集合组成，`--all` 扩大到全部可分发集合。
+- CLI 只分发可分发 skills；`config/proprietary.json` 是独有 skill 的成员、distributable/repo-local 分类和默认集合的约束来源。默认范围由 `config/default.json` 的工作流闭包明确给出，`--all` 扩大到全部可分发集合；`engineering.json` 与 `required.json` 继续服务于上游同步范围。
 - `scripts/sync-upstream.js` 只比较或更新本地非独有 skills 与上游 `mattpocock/skills`；默认覆盖 engineering 与 required 范围，`--all` 才包含 productivity 范围。上游同步不负责改写模板骨架。
 - `AGENTS.md` 承载执行规则，`PROJECT.md` 承载项目事实，`CONTEXT.md` 承载术语边界；不要把三者职责合并。
 
 ### 仓库地图
 - `bin/`：CLI 主流程、技能边界、技能配置加载和选择逻辑。
 - `.agents/skills/`：Workspace canonical skills，包含可分发 skills 与仓库维护用的 repo-local skills。
-- `config/`：技能分类、默认/必需集合，以及模板 `AGENTS.md` 的独立源。
+- `config/`：技能分类、默认/上游同步集合，以及模板 `AGENTS.md` 的独立源。
 - `template/`：生成后的目标项目骨架，包含 `AGENTS.md`、`PROJECT.md`、pi / opencode 配置和文档副本。
 - `.opencode/`、`.pi/`：本仓库维护的 harness agents、commands、prompts 和设置源；`docs/` 保存 ADR、架构记录及 agent 资料。
 - `scripts/`：模板构建、上游同步和 Codex smoke 流程；`test/`：CLI、边界、模板分发、技能行为和配置的回归测试。

@@ -9,17 +9,14 @@ import { fileURLToPath } from 'node:url';
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const ROOT = path.resolve(path.dirname(CLI), '..');
 const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'config/proprietary.json'), 'utf8'));
-const engineering = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'config/engineering.json'), 'utf8')));
-const required = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'config/required.json'), 'utf8')));
+const defaults = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'config/default.json'), 'utf8')));
 const sourceNames = fs.readdirSync(path.join(ROOT, '.agents/skills'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && !entry.name.endsWith('.bak') && entry.name !== 'skill-creator' && entry.name !== '.git')
   .map((entry) => entry.name)
   .sort();
 const repoLocal = new Set(config.repoLocal);
 const distributableNames = sourceNames.filter((name) => !repoLocal.has(name));
-const defaultNames = sourceNames.filter((name) => (
-  config.default.includes(name) || engineering.has(name) || required.has(name)
-));
+const defaultNames = sourceNames.filter((name) => defaults.has(name));
 
 function runCli(args, cwd = ROOT, env = {}) {
   return spawnSync(process.execPath, [CLI, ...args], {
@@ -44,7 +41,7 @@ function listDirectories(dir) {
     .sort();
 }
 
-test('default list exposes only default programming skills', () => {
+test('default list exposes only default workflow skills', () => {
   const text = runCli(['list']);
   assert.equal(text.status, 0, text.stderr);
   assert.deepEqual(namesFromText(text.stdout), defaultNames);

@@ -26,7 +26,7 @@ test('CLI help uses distribution semantics instead of stale skill counts', () =>
     const result = runCli([command, '--help']);
     assert.equal(result.status, 0, result.stderr);
   }
-  assert.match(runCli(['init', '--help']).stdout, /default programming|默认.*编程/);
+  assert.match(runCli(['init', '--help']).stdout, /default workflow|默认.*workflow/);
   assert.match(runCli(['list', '--help']).stdout, /distributable|可分发/);
   assert.match(runCli(['install', '--help']).stdout, /distributable|可分发/);
   assert.match(runCli(['sync', '--help']).stdout, /distributable|可分发/);

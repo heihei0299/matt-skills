@@ -14,7 +14,7 @@ const TEMPLATE_FILES = [
   'AGENTS.md',
   'PROJECT.md',
   '.agents/skills/tdd-implement/SKILL.md',
-  '.agents/skills/diagnose-fix/SKILL.md',
+  '.agents/skills/wayfinder/SKILL.md',
   '.agents/skills/grilling/SKILL.md',
   '.opencode/CONTEXT.md',
   '.opencode/commands/issue-audit.md',
@@ -103,7 +103,7 @@ test('`init --all` includes every distributable source skill directory', () => {
   }
 });
 
-test('`init` copies the default programming template into the target', () => {
+test('`init` copies the default workflow template into the target', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
@@ -113,8 +113,12 @@ test('`init` copies the default programming template into the target', () => {
     for (const rel of TEMPLATE_FILES) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
-    // 独有所需 grilling/grill-me/handoff/show-me 默认安装，其余 productivity 默认不装
-    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')), '独有所需 grilling should be installed by default');
+    // 默认安装工作流闭包，不安装 grill-me 或其它未纳入默认集合的 skill。
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')), 'grilling should be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/initialize-project/SKILL.md')), 'initialize-project should be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/setup-matt-pocock-skills/SKILL.md')), 'setup-matt-pocock-skills should be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/wayfinder/SKILL.md')), 'wayfinder should be installed by default');
+    assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/grill-me/SKILL.md')), 'grill-me should NOT be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/teach/SKILL.md')), 'productivity teach should NOT be installed by default');
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -140,7 +144,7 @@ test('`init` copies shared skills only into .agents/skills', () => {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     for (const skillsDir of PROJECT_SKILL_DIRS) {
-      for (const name of ['tdd-implement', 'diagnose-fix']) {
+      for (const name of ['tdd-implement', 'initialize-project', 'wayfinder']) {
         assert.ok(
           fs.existsSync(path.join(dest, skillsDir, name, 'SKILL.md')),
           `${name} should land in ${skillsDir}`,
@@ -239,7 +243,8 @@ test('`init` without --dest targets the current working directory (programming)'
     assert.ok(fs.existsSync(path.join(cwd, 'AGENTS.md')));
     for (const skillsDir of PROJECT_SKILL_DIRS) {
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'tdd-implement', 'SKILL.md')));
-      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'diagnose-fix', 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'initialize-project', 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'wayfinder', 'SKILL.md')));
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should be installed by default`);
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grilling', 'SKILL.md')), `${skillsDir}/grilling should be installed by default`);
     }

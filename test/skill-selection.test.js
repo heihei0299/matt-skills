@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveSkillNames } from '../bin/skill-selection.js';
 
-test('default selection merges engineering, required, and default proprietary skills', () => {
+test('default selection uses the explicit default bundle and excludes repo-local skills', () => {
   const availableNames = [
     'zeta',
     'tdd-implement',
@@ -15,22 +15,9 @@ test('default selection merges engineering, required, and default proprietary sk
     [...resolveSkillNames({
       availableNames,
       mode: 'default',
-      engineering: new Set(['zeta', 'missing-engineering']),
-      required: new Set(['grilling', 'missing-required']),
+      defaults: ['zeta', 'missing-default', 'ci-guard'],
     })],
-    ['grilling', 'tdd-implement', 'zeta'],
-  );
-});
-
-test('repo-local names stay excluded from default selection even when requested', () => {
-  assert.deepEqual(
-    [...resolveSkillNames({
-      availableNames: ['tdd-implement', 'ci-guard', 'commit-check'],
-      mode: 'default',
-      engineering: ['ci-guard'],
-      required: ['commit-check'],
-    })],
-    ['tdd-implement'],
+    ['zeta'],
   );
 });
 
@@ -39,8 +26,6 @@ test('all selection includes available distributable skills and excludes repo-lo
     [...resolveSkillNames({
       availableNames: ['zeta', 'tdd-implement', 'ci-guard', 'commit-check', 'tdd-implement'],
       mode: 'all',
-      engineering: [],
-      required: [],
     })],
     ['tdd-implement', 'zeta'],
   );
@@ -48,25 +33,22 @@ test('all selection includes available distributable skills and excludes repo-lo
 
 test('selection is stable, deduplicated, and does not mutate inputs', () => {
   const availableNames = ['zeta', 'tdd-implement', 'zeta'];
-  const engineering = ['zeta', 'tdd-implement', 'zeta'];
-  const required = ['zeta'];
+  const defaults = ['zeta', 'tdd-implement', 'zeta'];
 
   assert.deepEqual(
-    [...resolveSkillNames({ availableNames, mode: 'default', engineering, required })],
+    [...resolveSkillNames({ availableNames, mode: 'default', defaults })],
     ['tdd-implement', 'zeta'],
   );
   assert.deepEqual(availableNames, ['zeta', 'tdd-implement', 'zeta']);
-  assert.deepEqual(engineering, ['zeta', 'tdd-implement', 'zeta']);
-  assert.deepEqual(required, ['zeta']);
+  assert.deepEqual(defaults, ['zeta', 'tdd-implement', 'zeta']);
 });
 
-test('unknown engineering and required names do not enter the result', () => {
+test('unknown default names do not enter the result', () => {
   assert.deepEqual(
     [...resolveSkillNames({
       availableNames: ['tdd-implement'],
       mode: 'default',
-      engineering: ['unknown-engineering'],
-      required: ['unknown-required'],
+      defaults: ['unknown-default', 'tdd-implement'],
     })],
     ['tdd-implement'],
   );

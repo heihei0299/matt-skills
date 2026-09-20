@@ -1,0 +1,36 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { resolveSkillNames } from '../bin/skill-selection.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const EXPECTED_DEFAULTS = [
+  'code-review',
+  'domain-modeling',
+  'grill-to-spec',
+  'grill-with-docs',
+  'grilling',
+  'handoff',
+  'implement',
+  'initialize-project',
+  'setup-matt-pocock-skills',
+  'tdd',
+  'tdd-implement',
+  'to-spec',
+  'to-tickets',
+  'wayfinder',
+];
+
+test('default distribution is the curated workflow closure', () => {
+  const configured = JSON.parse(fs.readFileSync(path.join(ROOT, 'config/default.json'), 'utf8'));
+  assert.deepEqual([...configured].sort(), EXPECTED_DEFAULTS);
+
+  const selected = resolveSkillNames({
+    availableNames: [...configured, 'grill-me', 'diagnose-fix', 'show-me', 'ci-guard', 'commit-check'],
+    mode: 'default',
+    defaults: configured,
+  });
+  assert.deepEqual(selected, EXPECTED_DEFAULTS);
+});

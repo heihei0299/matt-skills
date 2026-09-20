@@ -23,9 +23,7 @@
   ],
   "default": [
     "tdd-implement",
-    "diagnose-fix",
     "grill-to-spec",
-    "show-me",
     "initialize-project"
   ]
 }

@@ -33,7 +33,7 @@ test('README documents the proprietary distribution boundary', () => {
     assert.match(repoLocalSection, new RegExp(name));
     assert.doesNotMatch(distributableSection, new RegExp(name));
   }
-  assert.match(README, /默认 programming 范围中的 5 个独有/);
+  assert.match(README, /默认独有 skills 是/);
   for (const name of config.default) assert.match(README, new RegExp(name));
   assert.match(README, /不会.*(init|install|sync).*分发|不.*分发.*用户项目/s);
   assert.doesNotMatch(README, /独有 7|全量 33|全量 34|默认.*27/);

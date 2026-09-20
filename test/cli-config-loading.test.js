@@ -25,37 +25,37 @@ function runList(source) {
   });
 }
 
-test('list fails when engineering config is missing', () => {
+test('list fails when default config is missing', () => {
   const source = createCliFixture();
   try {
-    fs.rmSync(path.join(source, 'config/engineering.json'));
+    fs.rmSync(path.join(source, 'config/default.json'));
     const result = runList(source);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /unable to read engineering skill config/);
+    assert.match(result.stderr, /unable to read default skill config/);
   } finally {
     fs.rmSync(source, { recursive: true, force: true });
   }
 });
 
-test('list fails when required config is invalid JSON', () => {
+test('list fails when default config is invalid JSON', () => {
   const source = createCliFixture();
   try {
-    fs.writeFileSync(path.join(source, 'config/required.json'), '{');
+    fs.writeFileSync(path.join(source, 'config/default.json'), '{');
     const result = runList(source);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /invalid required skill config/);
+    assert.match(result.stderr, /invalid default skill config/);
   } finally {
     fs.rmSync(source, { recursive: true, force: true });
   }
 });
 
-test('list fails when engineering config is not a string array', () => {
+test('list fails when default config is not a string array', () => {
   const source = createCliFixture();
   try {
-    fs.writeFileSync(path.join(source, 'config/engineering.json'), JSON.stringify(['tdd', 1]));
+    fs.writeFileSync(path.join(source, 'config/default.json'), JSON.stringify(['tdd', 1]));
     const result = runList(source);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /invalid engineering skill config/);
+    assert.match(result.stderr, /invalid default skill config/);
   } finally {
     fs.rmSync(source, { recursive: true, force: true });
   }
@@ -63,5 +63,6 @@ test('list fails when engineering config is not a string array', () => {
 
 test('published package includes required skill config', () => {
   const packageJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
+  assert.ok(packageJson.files.includes('config/default.json'));
   assert.ok(packageJson.files.includes('config/required.json'));
 });

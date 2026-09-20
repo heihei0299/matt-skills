@@ -64,7 +64,7 @@ test('sync --apply 安全增量：AGENTS.md 含 tdd-implement 时跳过不盖且
 test('sync --apply 上游技能强制覆盖：本地修改被 rm+cp 恢复为上游', () => {
   const dest = createDestWithCustomAgents('LOCAL tdd-implement');
   const ups = upstreamSkillNames();
-  const skillName = ups[0];
+  const skillName = 'grill-with-docs';
   try {
     const skillDir = path.join(dest, '.agents/skills', skillName);
     // 确保技能存在

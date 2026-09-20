@@ -51,7 +51,7 @@ repo-local skills 不会通过 `init`、`install`、`sync` 分发到用户项目
 在目标仓库根目录执行：
 
 ```sh
-npx @heihei0299/matt-skills init              # 安装默认 programming skills
+npx @heihei0299/matt-skills init              # 安装默认 workflow skills
 npx @heihei0299/matt-skills init --all       # 安装全部可分发 skills
 ```
 
@@ -65,7 +65,7 @@ npx @heihei0299/matt-skills sync --dry-run --json
 
 `init` 对已有 `AGENTS.md` 始终跳过；已有项目使用 `sync`。默认 `sync` 保留已有 `AGENTS.md` 和项目规则，`--all` 只扩大技能范围。需要显式刷新 `AGENTS.md` 时使用 `sync --refresh-agents`；无受管区块时会先备份为 `AGENTS.md.bak`。`sync` 不删除目标项目的额外文件或自定义 skills。
 
-默认 programming 范围中的 5 个独有 skills 是 `tdd-implement`、`diagnose-fix`、`grill-to-spec`、`show-me`、`initialize-project`。
+默认 workflow 范围固定为 14 个入口及依赖 skills，包含 `initialize-project`、`setup-matt-pocock-skills`、`wayfinder`、`grill-to-spec`、`grill-with-docs`、`to-spec`、`to-tickets`、`tdd-implement`、`implement`、`handoff`、`grilling`、`domain-modeling`、`tdd` 和 `code-review`；其中默认独有 skills 是 `tdd-implement`、`grill-to-spec`、`initialize-project`。完整可分发集合仍通过 `--all` 获取。
 
 ## CLI
 
@@ -79,7 +79,7 @@ npx @heihei0299/matt-skills check [--all] [--json] [--upstream <url>] [--ref <re
 
 常用选项：
 
-- `--all`：包含全部可分发 skills，默认范围只包含 programming skills；不会隐式刷新 `AGENTS.md`。
+- `--all`：包含全部可分发 skills，默认范围只包含 workflow skills；不会隐式刷新 `AGENTS.md`。
 - `--refresh-agents`：显式刷新目标 `AGENTS.md`；与 `--all`、`--dry-run` 可组合。
 - `--dest <dir>`：指定目标目录。
 - `--tools <list>`：选择 `codex`、`pi`、`opencode` 或 `claude`；项目级 skills 统一写入 `.agents/skills/`，全局安装仍使用各工具目录。

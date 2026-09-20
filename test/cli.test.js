@@ -46,42 +46,30 @@ const SKILL_NAMES = [
   'initialize-project',
 ];
 
-// 默认 programming subset: engineering + required + default proprietary.
+// Default bundle: workflow roots plus their hard dependencies.
 const PROGRAMMING_SKILL_NAMES = [
-  'ask-matt',
   'code-review',
-  'codebase-design',
-  'diagnose-fix',
-  'diagnosing-bugs',
   'domain-modeling',
-  'grill-me',
   'grill-to-spec',
   'grill-with-docs',
   'grilling',
   'handoff',
   'implement',
-  'improve-codebase-architecture',
-  'prototype',
-  'research',
-  'resolving-merge-conflicts',
+  'initialize-project',
   'setup-matt-pocock-skills',
-  'show-me',
   'tdd',
   'tdd-implement',
   'to-spec',
   'to-tickets',
-  'triage',
   'wayfinder',
-  'wizard',
-  'initialize-project',
 ];
 
 // Literal lines copied from the skills' SKILL.md frontmatter, including
 // quoted, colon-containing, and non-ASCII descriptions.
 const SAMPLE_LINES = [
   'tdd — Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.',
-  'diagnosing-bugs — Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow.',
-  'resolving-merge-conflicts — Use when you need to resolve an in-progress git merge/rebase conflict.',
+  `code-review — Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to "review since X".`,
+  'implement — Implement a piece of work based on a spec or set of tickets.',
 ];
 
 const TDD_DESCRIPTION =
@@ -96,7 +84,7 @@ function runCli(args, cwd = REPO_ROOT, opts = {}) {
   });
 }
 
-test('`list` exits 0 and prints default programming skills by default', () => {
+test('`list` exits 0 and prints default workflow skills by default', () => {
   const { status, stdout, stderr } = runCli(['list']);
   assert.equal(status, 0, stderr);
   const lines = stdout.trim().split('\n').filter(Boolean);
@@ -122,7 +110,7 @@ test('`list` prints each skill description from its frontmatter', () => {
   }
 });
 
-test('`list --json` emits the default programming skills by default', () => {
+test('`list --json` emits the default workflow skills by default', () => {
   const { status, stdout, stderr } = runCli(['list', '--json']);
   assert.equal(status, 0, stderr);
   const skills = JSON.parse(stdout);
@@ -245,7 +233,7 @@ test('`install --force` overwrites existing skills', () => {
   }
 });
 
-test('interactive install exposes the default programming catalog', () => {
+test('interactive install exposes the default workflow catalog', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-interactive-install-'));
   try {
     const { status, stdout, stderr } = runCli(['install', '--tools', 'codex'], cwd, { input: 'a\n' });

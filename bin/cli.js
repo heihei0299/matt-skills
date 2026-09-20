@@ -15,18 +15,11 @@ import { loadSkillSet } from './skill-config.js';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
-const ENGINEERING_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'engineering.json');
-const REQUIRED_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'required.json');
-let ENGINEERING_SKILLS = null;
-async function loadEngineeringSkills() {
-  if (!ENGINEERING_SKILLS) ENGINEERING_SKILLS = await loadSkillSet(ENGINEERING_PATH, 'engineering');
-  return ENGINEERING_SKILLS;
-}
-
-let REQUIRED_SKILLS = null;
-async function loadRequiredSkills() {
-  if (!REQUIRED_SKILLS) REQUIRED_SKILLS = await loadSkillSet(REQUIRED_PATH, 'required');
-  return REQUIRED_SKILLS;
+const DEFAULT_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'default.json');
+let DEFAULT_SKILLS = null;
+async function loadDefaultSkills() {
+  if (!DEFAULT_SKILLS) DEFAULT_SKILLS = await loadSkillSet(DEFAULT_PATH, 'default');
+  return DEFAULT_SKILLS;
 }
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);
@@ -55,7 +48,7 @@ Usage:
 
 Init options:
   --dest <path>   Target directory (default: current directory)
-  --all           Include all distributable skills; default only default programming skills
+  --all           Include all distributable skills; default only default workflow skills
   --help, -h      Show this help
 提示：已有 AGENTS.md 时 init 始终跳过；需要更新已有项目请使用 sync。
 
@@ -76,7 +69,7 @@ Sync options:
   --help, -h         Show this help
   项目 skills：${PROJECT_SKILL_DIRS}
 
-说明：默认同步默认编程 skill 并保留现有 AGENTS.md；--all 只扩大技能范围。
+说明：默认同步默认 workflow skill 并保留现有 AGENTS.md；--all 只扩大技能范围。
       --refresh-agents 与 --all、--dry-run 可组合；上游检查请使用 check。
 
 提示：matt-skills --help 查看全量
@@ -88,7 +81,7 @@ Usage:
   matt-skills list [--all] [--json]
 
 List options:
-  --all           List all distributable skills (default only default programming skills)
+  --all           List all distributable skills (default only default workflow skills)
   --json          Output as JSON
   --help, -h      Show this help
 
@@ -117,7 +110,7 @@ Usage:
 
 Install options:
   --tools <a,b>   Install for the given tools (codex, pi, opencode, claude); skips tool selection
-  --all           Install all distributable skills (default only default programming); skips skill selection
+  --all           Install all distributable skills (default only default workflow); skips skill selection
   --force         Overwrite existing skills
   --global        Install to the user's global skill directories
   --project       Install to project skill directories (default)
@@ -160,8 +153,7 @@ async function listSkillNames({ onlyProgramming = false } = {}) {
   return resolveSkillNames({
     availableNames: await listAvailableSkillNames(),
     mode: onlyProgramming ? 'default' : 'all',
-    engineering: onlyProgramming ? await loadEngineeringSkills() : [],
-    required: onlyProgramming ? await loadRequiredSkills() : [],
+    defaults: onlyProgramming ? await loadDefaultSkills() : [],
   });
 }
 
@@ -410,17 +402,17 @@ async function initCommand({ dest, all }) {
     installed = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== '.git' && e.name !== 'skill-creator' && !isRepoLocalSkill(e.name)).length;
   } catch {}
   const allSkillsFull = await listSkills({ onlyProgramming: false });
-  const programmingSkills = await listSkills({ onlyProgramming: true });
-  const programmingCount = programmingSkills.length;
+  const defaultSkills = await listSkills({ onlyProgramming: true });
+  const defaultCount = defaultSkills.length;
   const upstreamFull = allSkillsFull.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
-  const upstreamProg = programmingSkills.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
-  const displayTotal = onlyProgramming ? programmingCount : allSkillsFull.length;
-  const displayUpstream = onlyProgramming ? upstreamProg : upstreamFull;
+  const upstreamDefault = defaultSkills.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
+  const displayTotal = onlyProgramming ? defaultCount : allSkillsFull.length;
+  const displayUpstream = onlyProgramming ? upstreamDefault : upstreamFull;
   if (path.resolve(skillsDir) === path.resolve(SKILLS_DIR)) {
-    process.stdout.write(`技能：已装 ${installed}、跳过 0（可分发 ${allSkillsFull.length}，含上游 ${upstreamFull}；默认编程 ${programmingCount}，含上游 ${upstreamProg}）\n`);
+    process.stdout.write(`技能：已装 ${installed}、跳过 0（可分发 ${allSkillsFull.length}，含上游 ${upstreamFull}；默认 workflow ${defaultCount}，含上游 ${upstreamDefault}）\n`);
   } else {
     if (onlyProgramming) {
-      process.stdout.write(`技能：已装 ${installed}（默认编程 ${displayTotal}，含上游 ${displayUpstream}；可分发 ${allSkillsFull.length}，含上游 ${upstreamFull}）\n`);
+      process.stdout.write(`技能：已装 ${installed}（默认 workflow ${displayTotal}，含上游 ${displayUpstream}；可分发 ${allSkillsFull.length}，含上游 ${upstreamFull}）\n`);
     } else {
       process.stdout.write(`技能：已装 ${installed}（可分发 ${displayTotal}，含上游 ${displayUpstream}）\n`);
     }
@@ -454,7 +446,7 @@ async function compareDryRunTrees(target, stage) {
 function formatTargetComparison({ target, result, onlyProgramming, refreshAgents }) {
   const lines = [
     `目标: ${target}`,
-    `范围: ${onlyProgramming ? '默认编程' : '全部可分发'}${refreshAgents ? '；刷新 AGENTS.md' : ''}`,
+    `范围: ${onlyProgramming ? '默认 workflow' : '全部可分发'}${refreshAgents ? '；刷新 AGENTS.md' : ''}`,
     '',
   ];
   const totalDiff = result.added.length + result.updated.length + result.removed.length;
@@ -635,7 +627,7 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
   if (preservedRepoLocal.length) {
     output(`迁移提示：${preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
   }
-  const modeLabel = onlyProgramming ? '默认编程' : '全部可分发';
+  const modeLabel = onlyProgramming ? '默认 workflow' : '全部可分发';
   output(`技能：新增 ${installed}、更新 ${updated}（${modeLabel} ${allSkills.length}）\n`);
   output(`目标路径：${target}\n`);
 }

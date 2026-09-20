@@ -34,7 +34,7 @@ const EXPECTED = {
     'initialize-project',
   ],
   repoLocal: ['ci-guard', 'commit-check'],
-  default: ['tdd-implement', 'diagnose-fix', 'grill-to-spec', 'show-me', 'initialize-project'],
+  default: ['tdd-implement', 'grill-to-spec', 'initialize-project'],
 };
 
 test('proprietary config declares the four classification sets', () => {

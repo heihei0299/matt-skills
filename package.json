@@ -13,6 +13,7 @@
     "scripts/sync-upstream.js",
     "scripts/codex-smoke.js",
     "config/proprietary.json",
+    "config/default.json",
     "config/engineering.json",
     "config/required.json",
     "README.md"
