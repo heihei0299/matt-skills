@@ -4,7 +4,9 @@
 
 ## 1. 构建依赖图
 
-读取每个 issue 的 `Blocked by`：
+构建依赖图时，只提取各 issue 的调度元数据：ID、Status、Blocked by / dependency。
+不得为构建依赖图读取未来 issue 正文、Acceptance Criteria、实现说明或其它 body 内容。
+如果调度元数据位于独立 issue 文件中，使用定点搜索/范围读取只取得对应 metadata 字段；不要全文打开所有 future issue 文件。
 
 - 无依赖时视为可直接调度；
 - 引用了其它 issue 时建立依赖边；
