@@ -51,3 +51,19 @@ codegraph explore "<问题>"
 * 提交前检查 diff。
 * 只 stage 本次任务文件。
 * 不使用 `git add .` / `git add -A`。
+
+<!-- matt-skills:managed:start -->
+## 项目上下文
+### 架构边界
+见 `PROJECT.md` 的“架构边界”。
+### 仓库地图
+见 `PROJECT.md` 的“仓库地图”。
+### 标准命令
+见 `PROJECT.md` 的“标准命令”。
+### 测试规则
+见 `PROJECT.md` 的“测试规则”。
+### 项目约束
+见 `PROJECT.md` 的“项目约束”。
+### 完成标准
+见 `PROJECT.md` 的“完成标准”。
+<!-- matt-skills:managed:end -->
