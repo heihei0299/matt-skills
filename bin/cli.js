@@ -309,11 +309,11 @@ async function promptTools() {
 
 async function promptSkills(skills) {
   const res = await prompts({
-    type: 'multiselect',
+    type: 'autocompleteMultiselect',
     name: 'skills',
     message: '选择要安装的技能',
     choices: skills.map((s) => ({ title: s.name, value: s.name })),
-    instructions: '空格勾选，回车确认',
+    instructions: '输入过滤，空格勾选，回车确认',
   });
   return Array.isArray(res?.skills) ? res.skills : [];
 }

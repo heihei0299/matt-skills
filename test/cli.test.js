@@ -53,15 +53,12 @@ const PROGRAMMING_SKILL_NAMES = [
   'grill-to-spec',
   'grill-with-docs',
   'grilling',
-  'handoff',
-  'implement',
   'initialize-project',
   'setup-matt-pocock-skills',
   'tdd',
   'tdd-implement',
   'to-spec',
   'to-tickets',
-  'wayfinder',
 ];
 
 // Literal lines copied from the skills' SKILL.md frontmatter, including
@@ -69,7 +66,6 @@ const PROGRAMMING_SKILL_NAMES = [
 const SAMPLE_LINES = [
   'tdd — Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.',
   `code-review — Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to "review since X".`,
-  'implement — Implement a piece of work based on a spec or set of tickets.',
 ];
 
 const TDD_DESCRIPTION =
@@ -233,18 +229,18 @@ test('`install --force` overwrites existing skills', () => {
   }
 });
 
-test('interactive install exposes the default workflow catalog', () => {
+test('interactive install searches and selects from the default workflow catalog', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-interactive-install-'));
   try {
-    const { status, stdout, stderr } = runCli(['install', '--tools', 'codex'], cwd, { input: 'a\n' });
+    const { status, stdout, stderr } = runCli(['install', '--tools', 'codex'], cwd, { input: 'tdd-impl \n' });
     assert.equal(status, 0, stderr);
     const installed = fs
       .readdirSync(path.join(cwd, '.agents', 'skills'), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort();
-    assert.deepEqual(installed, [...PROGRAMMING_SKILL_NAMES].sort());
-    assert.match(stdout, new RegExp(`codex：已装 ${PROGRAMMING_SKILL_NAMES.length}、跳过 0`));
+    assert.deepEqual(installed, ['tdd-implement']);
+    assert.match(stdout, /codex：已装 1、跳过 0/);
     assert.ok(!installed.includes('teach'), 'interactive install should not expose optional productivity skills');
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });

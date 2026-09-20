@@ -65,7 +65,7 @@ npx @heihei0299/matt-skills sync --dry-run --json
 
 `init` 对已有 `AGENTS.md` 始终跳过；已有项目使用 `sync`。默认 `sync` 保留已有 `AGENTS.md` 和项目规则，`--all` 只扩大技能范围。需要显式刷新 `AGENTS.md` 时使用 `sync --refresh-agents`；无受管区块时会先备份为 `AGENTS.md.bak`。`sync` 不删除目标项目的额外文件或自定义 skills。
 
-默认 workflow 范围固定为 14 个入口及依赖 skills，包含 `initialize-project`、`setup-matt-pocock-skills`、`wayfinder`、`grill-to-spec`、`grill-with-docs`、`to-spec`、`to-tickets`、`tdd-implement`、`implement`、`handoff`、`grilling`、`domain-modeling`、`tdd` 和 `code-review`；其中默认独有 skills 是 `tdd-implement`、`grill-to-spec`、`initialize-project`。完整可分发集合仍通过 `--all` 获取。
+默认 workflow 范围固定为 11 个入口及依赖 skills，包含 `initialize-project`、`setup-matt-pocock-skills`、`grill-to-spec`、`grill-with-docs`、`to-spec`、`to-tickets`、`tdd-implement`、`grilling`、`domain-modeling`、`tdd` 和 `code-review`；其中默认独有 skills 是 `tdd-implement`、`grill-to-spec`、`initialize-project`。完整可分发集合（包括 `wayfinder`、`handoff` 和 `implement`）仍通过 `--all` 获取。
 
 ## CLI
 

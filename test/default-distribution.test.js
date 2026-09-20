@@ -12,15 +12,12 @@ const EXPECTED_DEFAULTS = [
   'grill-to-spec',
   'grill-with-docs',
   'grilling',
-  'handoff',
-  'implement',
   'initialize-project',
   'setup-matt-pocock-skills',
   'tdd',
   'tdd-implement',
   'to-spec',
   'to-tickets',
-  'wayfinder',
 ];
 
 test('default distribution is the curated workflow closure', () => {
