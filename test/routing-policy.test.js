@@ -57,6 +57,20 @@ test('progressive discovery demand-loads repository context', () => {
   }
 });
 
+test('evidence reuse preserves exact-source and freshness exceptions', () => {
+  for (const content of [agents, templateAgents]) {
+    assert.match(content, /## Evidence reuse/);
+    assert.match(content, /sufficient.*reliable evidence|足够可靠证据/i);
+    assert.match(content, /incomplete|不完整/i);
+    assert.match(content, /conflict|冲突/i);
+    assert.match(content, /stale|过时/i);
+    assert.match(content, /exact source|精确源码/i);
+    assert.match(content, /ledger.*git history|ledger.*git|ledger.*历史/i);
+    assert.match(content, /broad exploration|广泛探索/i);
+    assert.match(content, /摘要不替代|summary.*not replace/i);
+  }
+});
+
 test('workspace and template expose their intended routing branches', () => {
   assert.match(agents, /## 路由/);
   assert.match(agents, /理解 \/ 定位 \/ 调用链 → `codegraph explore`/);
