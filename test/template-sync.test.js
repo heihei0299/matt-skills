@@ -47,8 +47,9 @@ test('template/AGENTS.md uses the independent template source', () => {
 
 test('template/AGENTS.md contains only the distributed workflow', () => {
   const agents = readFileSync(root('template/AGENTS.md'), 'utf8');
-  assert.match(agents, /^<!-- matt-skills:managed:start -->\n# AGENTS\.md\n\n## Workflow/m);
-  assert.match(agents, /<!-- matt-skills:managed:end -->\n$/);
+  assert.match(agents, /^## Workflow\n/);
+  assert.doesNotMatch(agents, /matt-skills:managed|^# AGENTS\.md$/m);
+  assert.doesNotMatch(agents, /\n\n/);
   assert.match(agents, /\* 代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
   assert.match(agents, /## Validation/);
   assert.match(agents, /## Security/);

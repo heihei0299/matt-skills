@@ -88,7 +88,7 @@ test('sync --refresh-agents 无受管区块时备份并整体刷新 AGENTS.md', 
   }
 });
 
-test('sync --refresh-agents 有受管区块时只刷新区块并保留自定义内容', () => {
+test('sync --refresh-agents 对无 managed template 的现有 AGENTS.md 备份并整体刷新', () => {
   const current = [
     '# Project AGENTS',
     'project-prefix-rule',
@@ -99,16 +99,14 @@ test('sync --refresh-agents 有受管区块时只刷新区块并保留自定义�
   ].join('\n') + '\n';
   const dest = createDestWithCustomAgents(current);
   try {
-    const { status } = runCli(['sync', '--refresh-agents', '--dest', dest]);
+    const { status, stdout } = runCli(['sync', '--refresh-agents', '--dest', dest]);
     assert.equal(status, 0);
-    const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
-    const template = fs.readFileSync(path.join(REPO_ROOT, 'template/AGENTS.md'), 'utf8');
-    const start = template.indexOf('<!-- matt-skills:managed:start -->');
-    const end = template.indexOf('<!-- matt-skills:managed:end -->') + '<!-- matt-skills:managed:end -->'.length;
-    assert.match(after, /project-prefix-rule/);
-    assert.match(after, /project-suffix-rule/);
-    assert.equal(after.includes(template.slice(start, end)), true);
-    assert.equal(fs.existsSync(path.join(dest, 'AGENTS.md.bak')), false);
+    assert.match(stdout, /AGENTS\.md 已刷新/);
+    assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md.bak'), 'utf8'), current);
+    assert.equal(
+      fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'),
+      fs.readFileSync(path.join(REPO_ROOT, 'template/AGENTS.md'), 'utf8'),
+    );
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
@@ -150,7 +148,7 @@ test('sync 默认同步共享目录并保留自定义与 repo-local skills', () 
   }
 });
 
-test('sync 默认只更新 managed 区块并保留项目自定义内容', () => {
+test('sync 默认保留无法与 markerless template 合并的现有 AGENTS.md', () => {
   const current = [
     '# AGENTS.md',
     '',
@@ -168,10 +166,8 @@ test('sync 默认只更新 managed 区块并保留项目自定义内容', () => 
   try {
     const { stdout } = runCli(['sync', '--dest', dest]);
     const after = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
-    assert.match(after, /project-prefix-rule/);
-    assert.match(after, /keep-this-rule/);
-    assert.doesNotMatch(after, /OLD MANAGED CONTENT/);
-    assert.match(stdout, /AGENTS\.md 受管区块已更新/);
+    assert.equal(after, current);
+    assert.match(stdout, /AGENTS\.md 未受管、skills：\.agents\/skills，已原样保留/);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }
