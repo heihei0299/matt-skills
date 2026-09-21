@@ -31,7 +31,7 @@ export async function runInit(args) {
   if (await pathExists(marker)) {
     process.stdout.write('模板已存在（AGENTS.md），跳过\n');
   } else {
-    await copyTemplate(target);
+    await copyTemplate(target, { includeHarness: all });
     const selectedSkills = await listSkillNames({ onlyProgramming });
     await distributeProjectSkills({ target, sourceDir: SKILLS_DIR, skillNames: selectedSkills });
     process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILLS_DIR}）\n`);

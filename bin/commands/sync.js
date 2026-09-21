@@ -55,7 +55,7 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
   }
 
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
-  const template = await syncTemplate({ target, refreshAgents });
+  const template = await syncTemplate({ target, refreshAgents, includeHarness: all });
   if (template.initialized) {
     output('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
     output(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILLS_DIR}）\n`);

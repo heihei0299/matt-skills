@@ -34,7 +34,7 @@ Usage:
 
 Init options:
   --dest <path>   Target directory (default: current directory)
-  --all           Include all distributable skills; default only default workflow skills
+  --all           Include all distributable skills and .pi/.opencode; default workflow skills only
   --help, -h      Show this help
 提示：已有 AGENTS.md 时 init 始终跳过；需要更新已有项目请使用 sync。
 
@@ -47,7 +47,7 @@ Usage:
   matt-skills sync [--all|--dry-run|--refresh-agents] [--dest <path>]
 
 Sync options:
-  --all              同步全部可分发技能；不改变 AGENTS.md 刷新策略
+  --all              同步全部可分发技能和 .pi/.opencode；不改变 AGENTS.md 刷新策略
   --refresh-agents   显式刷新 AGENTS.md；无受管区块时先备份为 AGENTS.md.bak
   --dry-run          预演目标项目变化，只比对不写盘
   --json             仅与 --dry-run 一起使用，输出机器可读结果

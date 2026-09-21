@@ -8,17 +8,18 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const TEMPLATE_DIR = path.join(ROOT, 'template');
 const DRY_RUN_PATHS = ['AGENTS.md', 'AGENTS.md.bak', '.opencode', '.pi', '.agents/skills', '.claude/skills'];
 
-function shouldCopyTemplatePath(src) {
+function shouldCopyTemplatePath(src, includeHarness) {
   const relative = path.relative(TEMPLATE_DIR, src);
   const parts = relative.split(path.sep);
-  return !(parts[0] === '.agents' && parts[1] === 'skills');
+  if (parts[0] === '.agents' && parts[1] === 'skills') return false;
+  return includeHarness || (parts[0] !== '.pi' && parts[0] !== '.opencode');
 }
 
-export async function copyTemplate(target) {
+export async function copyTemplate(target, { includeHarness = true } = {}) {
   await cp(TEMPLATE_DIR, target, {
     recursive: true,
     force: true,
-    filter: shouldCopyTemplatePath,
+    filter: (src) => shouldCopyTemplatePath(src, includeHarness),
   });
 }
 
@@ -77,10 +78,10 @@ export async function refreshAgentsFile(targetFile) {
   return 'full';
 }
 
-export async function syncTemplate({ target, refreshAgents }) {
+export async function syncTemplate({ target, refreshAgents, includeHarness = true }) {
   const marker = path.join(target, 'AGENTS.md');
   if (!(await pathExists(marker))) {
-    await copyTemplate(target);
+    await copyTemplate(target, { includeHarness });
     return { initialized: true, agentsManaged: false, agentsRefreshed: false, agentsRefreshMode: null };
   }
 
@@ -95,7 +96,9 @@ export async function syncTemplate({ target, refreshAgents }) {
       agentsManaged = await syncManagedAgents(marker, path.join(TEMPLATE_DIR, 'AGENTS.md'));
     } catch {}
   }
-  await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
-  await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
+  if (includeHarness) {
+    await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
+    await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
+  }
   return { initialized: false, agentsManaged, agentsRefreshed, agentsRefreshMode };
 }

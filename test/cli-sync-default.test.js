@@ -20,6 +20,31 @@ function createTarget() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-dest-'));
 }
 
+test('sync 默认初始化不分发 .pi 与 .opencode', () => {
+  const dest = createTarget();
+  try {
+    const result = runCli(['sync', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(fs.existsSync(path.join(dest, 'AGENTS.md')));
+    assert.equal(fs.existsSync(path.join(dest, '.pi')), false);
+    assert.equal(fs.existsSync(path.join(dest, '.opencode')), false);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('sync --all 初始化仍分发 .pi 与 .opencode', () => {
+  const dest = createTarget();
+  try {
+    const result = runCli(['sync', '--all', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(fs.existsSync(path.join(dest, '.pi')));
+    assert.ok(fs.existsSync(path.join(dest, '.opencode')));
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
 test('sync --dry-run 预演目标项目，不写盘也不访问上游', () => {
   const dest = createTarget();
   try {

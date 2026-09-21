@@ -134,8 +134,8 @@ test('sync --apply 不执行 remove：本地多余技能仍保留', () => {
   }
 });
 
-// Seam 4: template/.opencode/.pi 增量 add/update 不 remove
-test('sync --apply 模板增量：.opencode 自定义文件保留且模板文件更新', () => {
+// Seam 4: --all template/.opencode/.pi 增量 add/update 不 remove
+test('sync --all --apply 模板增量：.opencode 自定义文件保留且模板文件更新', () => {
   const dest = createDestWithCustomAgents('LOCAL tdd-implement');
   const customFile = path.join(dest, '.opencode', 'custom-keep.md');
   try {
@@ -148,7 +148,7 @@ test('sync --apply 模板增量：.opencode 自定义文件保留且模板文件
       fs.mkdirSync(path.dirname(destContext), { recursive: true });
       fs.writeFileSync(destContext, 'OLD CONTENT');
     }
-    const { status } = runCli(['sync', '--apply', '--dest', dest]);
+    const { status } = runCli(['sync', '--all', '--apply', '--dest', dest]);
     assert.equal(status, 0);
     // 自定义文件应保留
     assert.ok(fs.existsSync(customFile), '自定义 .opencode 文件应保留');
@@ -163,7 +163,7 @@ test('sync --apply 模板增量：.opencode 自定义文件保留且模板文件
     const customPi = path.join(dest, '.pi', 'custom-keep.md');
     fs.writeFileSync(customPi, 'pi keep');
     // 再次 apply 验证不删
-    const { status: s2 } = runCli(['sync', '--apply', '--dest', dest]);
+    const { status: s2 } = runCli(['sync', '--all', '--apply', '--dest', dest]);
     assert.equal(s2, 0);
     assert.ok(fs.existsSync(customPi), '.pi 自定义文件应保留');
   } finally {

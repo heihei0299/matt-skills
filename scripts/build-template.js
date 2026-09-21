@@ -28,7 +28,7 @@ async function main() {
     path.join(ROOT, 'template/PROJECT.md'),
     '# Project Context\n\n<!-- 请在目标仓库中填写项目目标、范围、主要入口和关键约束。代理操作规则放在 AGENTS.md。 -->\n',
   );
-  // Harness skill dirs are initialized as default project skill targets.
+  // Harness skill dirs are available when --all distributes the full skeleton.
   await mkdir(path.join(ROOT, 'template/.pi/skills'), { recursive: true });
   await mkdir(path.join(ROOT, 'template/.opencode/skills'), { recursive: true });
   await writeFile(path.join(ROOT, 'template/.pi/skills/.gitkeep'), '');

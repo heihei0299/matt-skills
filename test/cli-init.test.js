@@ -18,6 +18,9 @@ const TEMPLATE_FILES = [
   '.agents/skills/grilling/SKILL.md',
   '.agents/skills/to-spec/SKILL.md',
   '.agents/skills/to-tickets/SKILL.md',
+];
+
+const HARNESS_TEMPLATE_FILES = [
   '.opencode/CONTEXT.md',
   '.opencode/docs/agents/runtime-discipline.md',
   '.pi/skills/.gitkeep',
@@ -116,6 +119,8 @@ test('`init` copies the default workflow template into the target', () => {
     for (const rel of ['.opencode/commands', '.opencode/agents', '.pi/agents', '.pi/prompts', '.codex']) {
       assert.equal(fs.existsSync(path.join(dest, rel)), false, `${rel} should not be distributed`);
     }
+    assert.equal(fs.existsSync(path.join(dest, '.opencode')), false, '.opencode should not be distributed by default');
+    assert.equal(fs.existsSync(path.join(dest, '.pi')), false, '.pi should not be distributed by default');
     // 默认安装工作流闭包，不安装 grill-me 或其它未纳入默认集合的 skill。
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/domain-modeling/SKILL.md')), 'domain-modeling should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grill-with-docs/SKILL.md')), 'grill-with-docs should be installed by default');
@@ -145,6 +150,9 @@ test('`init --all` copies all distributable skills', () => {
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
     assert.equal(status, 0, stderr);
     for (const rel of TEMPLATE_FILES) {
+      assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
+    }
+    for (const rel of HARNESS_TEMPLATE_FILES) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
   } finally {
@@ -272,6 +280,8 @@ test('`init` without --dest targets the current working directory (programming)'
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'diagnosing-bugs', 'SKILL.md')), `${skillsDir}/diagnosing-bugs should be installed by default`);
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grilling', 'SKILL.md')), `${skillsDir}/grilling should be installed by default`);
     }
+    assert.equal(fs.existsSync(path.join(cwd, '.opencode')), false, '.opencode should not be distributed by default');
+    assert.equal(fs.existsSync(path.join(cwd, '.pi')), false, '.pi should not be distributed by default');
     for (const skillsDir of HARNESS_SKILL_DIRS) {
       assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'tdd-implement', 'SKILL.md')));
     }
