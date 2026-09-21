@@ -22,8 +22,6 @@
     "commit-check"
   ],
   "default": [
-    "tdd-implement",
-    "grill-to-spec",
     "initialize-project"
   ]
 }

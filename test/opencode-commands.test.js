@@ -1,14 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Guard the opencode commands for the explicitly-invoked skills. AGENTS.md
-// lists ten skills as "显式触发（须用户 / 发起）" — each must ship as a
-// .opencode/commands/<name>.md so opencode users can invoke them via /name.
-// pi needs no commands (its skills auto-discover; issue-audit ships separately
-// as a .pi/prompts/ template).
+// Commands are workspace-only harness conveniences. The distributed template
+// carries only the basic framework; skills are discovered from .agents/skills.
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (p) => path.join(dir, p);
@@ -25,38 +22,20 @@ const EXPLICIT_SKILLS = [
   'writing-for-agents',
   'commit-check',
 ];
-const DISTRIBUTABLE_EXPLICIT_SKILLS = EXPLICIT_SKILLS.filter((skill) => skill !== 'commit-check');
 
-function readDirRecursive(dirPath) {
-  const out = [];
-  for (const entry of readdirSync(dirPath)) {
-    const full = path.join(dirPath, entry);
-    if (statSync(full).isDirectory()) out.push(...readDirRecursive(full));
-    else out.push(full);
-  }
-  return out.sort();
-}
-
-test('every explicitly-invoked skill has an opencode command (workspace + template)', () => {
+test('workspace commands stay local and are not projected into the template', () => {
   for (const skill of EXPLICIT_SKILLS) {
     const wsFile = root(path.join('.opencode/commands', `${skill}.md`));
-    assert.ok(statSync(wsFile).isFile(), `missing opencode command for ${skill}`);
+    assert.ok(statSync(wsFile).isFile(), `missing workspace command for ${skill}`);
     const ws = readFileSync(wsFile, 'utf8');
-    if (skill === 'commit-check') continue;
-    const tmplFile = root(path.join('template/.opencode/commands', `${skill}.md`));
-    const tmpl = readFileSync(tmplFile, 'utf8');
-    assert.equal(tmpl, ws, `template command for ${skill} out of sync`);
-    // command shape: description frontmatter + body naming the skill + $ARGUMENTS passthrough
     assert.match(ws, /^description: /m, `${skill} command needs a description`);
     assert.match(ws, /技能/, `${skill} command should mention loading the skill`);
     assert.match(ws, /\$ARGUMENTS/, `${skill} command should pass through arguments`);
   }
-});
-
-test('template commands dir carries exactly the explicit-skill commands + issue-audit', () => {
-  const expected = [...DISTRIBUTABLE_EXPLICIT_SKILLS, 'issue-audit'].map((n) => `${n}.md`).sort();
-  const tmpl = readdirSync(root('template/.opencode/commands')).sort();
-  assert.deepEqual(tmpl, expected);
+  assert.equal(existsSync(root('template/.opencode/commands')), false);
+  assert.equal(existsSync(root('template/.opencode/agents')), false);
+  assert.equal(existsSync(root('template/.pi/agents')), false);
+  assert.equal(existsSync(root('template/.pi/prompts')), false);
 });
 
 test('issue-audit keeps its subagent delegation; explicit-skill commands are main-agent', () => {

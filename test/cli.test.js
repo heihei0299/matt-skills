@@ -48,15 +48,11 @@ const SKILL_NAMES = [
 
 // Default bundle: workflow roots plus their hard dependencies.
 const PROGRAMMING_SKILL_NAMES = [
-  'code-review',
   'domain-modeling',
-  'grill-to-spec',
   'grill-with-docs',
   'grilling',
   'initialize-project',
   'setup-matt-pocock-skills',
-  'tdd',
-  'tdd-implement',
   'to-spec',
   'to-tickets',
 ];
@@ -64,12 +60,11 @@ const PROGRAMMING_SKILL_NAMES = [
 // Literal lines copied from the skills' SKILL.md frontmatter, including
 // quoted, colon-containing, and non-ASCII descriptions.
 const SAMPLE_LINES = [
-  'tdd — Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.',
-  `code-review — Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to "review since X".`,
+  'grill-with-docs — A relentless interview to sharpen a plan or design, which also creates docs (ADR\'s and glossary) as we go.',
 ];
 
-const TDD_DESCRIPTION =
-  'Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.';
+const GRILL_WITH_DOCS_DESCRIPTION =
+  'A relentless interview to sharpen a plan or design, which also creates docs (ADR\'s and glossary) as we go.';
 
 function runCli(args, cwd = REPO_ROOT, opts = {}) {
   return spawnSync(process.execPath, [CLI, ...args], {
@@ -116,8 +111,8 @@ test('`list --json` emits the default workflow skills by default', () => {
     [...PROGRAMMING_SKILL_NAMES].sort(),
   );
   assert.deepEqual(
-    skills.find((s) => s.name === 'tdd'),
-    { name: 'tdd', description: TDD_DESCRIPTION },
+    skills.find((s) => s.name === 'grill-with-docs'),
+    { name: 'grill-with-docs', description: GRILL_WITH_DOCS_DESCRIPTION },
   );
 });
 
@@ -232,16 +227,28 @@ test('`install --force` overwrites existing skills', () => {
 test('interactive install searches and selects from the default workflow catalog', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-interactive-install-'));
   try {
-    const { status, stdout, stderr } = runCli(['install', '--tools', 'codex'], cwd, { input: 'tdd-impl \n' });
+    const { status, stdout, stderr } = runCli(['install', '--tools', 'codex'], cwd, { input: 'grill-with-docs \n' });
     assert.equal(status, 0, stderr);
     const installed = fs
       .readdirSync(path.join(cwd, '.agents', 'skills'), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort();
-    assert.deepEqual(installed, ['tdd-implement']);
+    assert.deepEqual(installed, ['grill-with-docs']);
     assert.match(stdout, /codex：已装 1、跳过 0/);
     assert.ok(!installed.includes('teach'), 'interactive install should not expose optional productivity skills');
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('interactive install handles a search with no matches', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-interactive-install-empty-'));
+  try {
+    const { status, stdout, stderr } = runCli(['install', '--tools', 'codex'], cwd, { input: 'no-such-skill\n' });
+    assert.equal(status, 0, stderr);
+    assert.match(stdout, /未选择任何技能/);
+    assert.ok(!fs.existsSync(path.join(cwd, '.agents', 'skills')));
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }

@@ -138,7 +138,7 @@ test('sync 默认同步共享目录并保留自定义与 repo-local skills', () 
 
     const { status, stdout, stderr } = runCli(['sync', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.ok(fs.existsSync(path.join(dest, '.agents/skills', 'tdd-implement', 'SKILL.md')), '.agents/skills should receive shared skills');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills', 'grill-with-docs', 'SKILL.md')), '.agents/skills should receive default shared skills');
     for (const rel of skillDirs) {
       assert.equal(fs.readFileSync(path.join(dest, rel, 'ci-guard', 'SKILL.md'), 'utf8'), `KEEP ${rel}`);
     }

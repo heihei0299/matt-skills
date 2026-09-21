@@ -105,7 +105,7 @@ test('sync --apply 覆盖 PROPRIETARY：独有技能随全量同步被更新', (
     fs.writeFileSync(mdPath, 'LOCAL PROPRIETARY EDIT');
     const before = fs.readFileSync(mdPath, 'utf8');
     const srcContent = fs.readFileSync(path.join(REPO_ROOT, '.agents/skills', propSkill, 'SKILL.md'), 'utf8');
-    const { status } = runCli(['sync', '--apply', '--dest', dest]);
+    const { status } = runCli(['sync', '--apply', '--all', '--dest', dest]);
     assert.equal(status, 0);
     const after = fs.readFileSync(mdPath, 'utf8');
     assert.equal(after, srcContent, 'PROPRIETARY 技能随全量同步应被覆盖为最新');

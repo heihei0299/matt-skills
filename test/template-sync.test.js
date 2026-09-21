@@ -28,14 +28,16 @@ test('template harness skill dirs start as empty target placeholders', () => {
 });
 
 
-test('template issue-audit projection keeps its configuration contract', () => {
-  const prompt = readFileSync(root('template/.pi/prompts/issue-audit.md'), 'utf8');
-  const agent = readFileSync(root('template/.opencode/agents/issue-audit.md'), 'utf8');
-  assert.match(prompt, /^argument-hint: /m);
-  assert.match(prompt, /\$ARGUMENTS/);
-  assert.doesNotMatch(prompt, /^agent: /m);
-  assert.match(agent, /^mode: subagent/m);
-  assert.match(agent, /# Issue Auditor/);
+test('template harness directories contain only the basic framework', () => {
+  for (const rel of [
+    'template/.opencode/commands',
+    'template/.opencode/agents',
+    'template/.pi/agents',
+    'template/.pi/prompts',
+    'template/.codex',
+  ]) {
+    assert.equal(existsSync(root(rel)), false, `${rel} should not be distributed`);
+  }
 });
 
 test('template/AGENTS.md uses the independent template source', () => {

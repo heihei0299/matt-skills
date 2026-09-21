@@ -13,12 +13,13 @@ const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
 const TEMPLATE_FILES = [
   'AGENTS.md',
   'PROJECT.md',
-  '.agents/skills/tdd-implement/SKILL.md',
+  '.agents/skills/initialize-project/SKILL.md',
+  '.agents/skills/grill-with-docs/SKILL.md',
   '.agents/skills/grilling/SKILL.md',
+  '.agents/skills/to-spec/SKILL.md',
+  '.agents/skills/to-tickets/SKILL.md',
   '.opencode/CONTEXT.md',
-  '.opencode/commands/issue-audit.md',
   '.opencode/docs/agents/runtime-discipline.md',
-  '.pi/prompts/issue-audit.md',
   '.pi/skills/.gitkeep',
   '.opencode/skills/.gitkeep',
 ];
@@ -47,7 +48,7 @@ test('`init` assembles skills from the canonical source, not the template mirror
   const source = createCliFixture();
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
-    const mirror = path.join(source, 'template', '.agents', 'skills', 'tdd-implement');
+    const mirror = path.join(source, 'template', '.agents', 'skills', 'grill-with-docs');
     fs.mkdirSync(mirror, { recursive: true });
     fs.writeFileSync(path.join(mirror, 'SKILL.md'), 'TEMPLATE MIRROR ONLY');
 
@@ -57,8 +58,8 @@ test('`init` assembles skills from the canonical source, not the template mirror
     });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(
-      fs.readFileSync(path.join(dest, '.agents', 'skills', 'tdd-implement', 'SKILL.md'), 'utf8'),
-      fs.readFileSync(path.join(source, '.agents', 'skills', 'tdd-implement', 'SKILL.md'), 'utf8'),
+      fs.readFileSync(path.join(dest, '.agents', 'skills', 'grill-with-docs', 'SKILL.md'), 'utf8'),
+      fs.readFileSync(path.join(source, '.agents', 'skills', 'grill-with-docs', 'SKILL.md'), 'utf8'),
     );
   } finally {
     fs.rmSync(source, { recursive: true, force: true });
@@ -112,10 +113,21 @@ test('`init` copies the default workflow template into the target', () => {
     for (const rel of TEMPLATE_FILES) {
       assert.ok(fs.existsSync(path.join(dest, rel)), `missing ${rel}`);
     }
+    for (const rel of ['.opencode/commands', '.opencode/agents', '.pi/agents', '.pi/prompts', '.codex']) {
+      assert.equal(fs.existsSync(path.join(dest, rel)), false, `${rel} should not be distributed`);
+    }
     // 默认安装工作流闭包，不安装 grill-me 或其它未纳入默认集合的 skill。
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/domain-modeling/SKILL.md')), 'domain-modeling should be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grill-with-docs/SKILL.md')), 'grill-with-docs should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')), 'grilling should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/initialize-project/SKILL.md')), 'initialize-project should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/setup-matt-pocock-skills/SKILL.md')), 'setup-matt-pocock-skills should be installed by default');
+    assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/tdd/SKILL.md')), 'tdd should NOT be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/to-spec/SKILL.md')), 'to-spec should be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/to-tickets/SKILL.md')), 'to-tickets should be installed by default');
+    assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/code-review/SKILL.md')), 'code-review should NOT be installed by default');
+    assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/grill-to-spec/SKILL.md')), 'grill-to-spec should NOT be installed by default');
+    assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/tdd-implement/SKILL.md')), 'tdd-implement should NOT be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/wayfinder/SKILL.md')), 'wayfinder should NOT be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/handoff/SKILL.md')), 'handoff should NOT be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/implement/SKILL.md')), 'implement should NOT be installed by default');
@@ -145,13 +157,15 @@ test('`init` copies shared skills only into .agents/skills', () => {
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     for (const skillsDir of PROJECT_SKILL_DIRS) {
-      for (const name of ['tdd-implement', 'initialize-project']) {
+      for (const name of ['initialize-project', 'grill-with-docs']) {
         assert.ok(
           fs.existsSync(path.join(dest, skillsDir, name, 'SKILL.md')),
           `${name} should land in ${skillsDir}`,
         );
       }
-      assert.ok(fs.existsSync(path.join(dest, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should be installed by default`);
+      assert.ok(fs.existsSync(path.join(dest, skillsDir, 'to-spec', 'SKILL.md')), `${skillsDir}/to-spec should be installed by default`);
+      assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should NOT be installed by default`);
+      assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'tdd-implement', 'SKILL.md')), `${skillsDir}/tdd-implement should NOT be installed by default`);
       assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'ci-guard', 'SKILL.md')), `${skillsDir}/ci-guard should NOT be installed by default`);
     }
     const sharedSkills = fs.readdirSync(path.join(dest, '.agents/skills'), { withFileTypes: true })
@@ -193,14 +207,14 @@ test('`init` on an already-initialized project skips without overwriting', () =>
     const first = runCli(['init', '--dest', dest]);
     assert.equal(first.status, 0, first.stderr);
     fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL EDIT');
-    fs.writeFileSync(path.join(dest, '.agents', 'skills', 'tdd', 'SKILL.md'), 'LOCAL EDIT');
+    fs.writeFileSync(path.join(dest, '.agents', 'skills', 'grill-with-docs', 'SKILL.md'), 'LOCAL EDIT');
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
     assert.match(stdout, /模板已存在（AGENTS.md），跳过/);
     // 模板已存在时不再打印新增计数，而是跳过
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT');
     assert.equal(
-      fs.readFileSync(path.join(dest, '.agents', 'skills', 'tdd', 'SKILL.md'), 'utf8'),
+      fs.readFileSync(path.join(dest, '.agents', 'skills', 'grill-with-docs', 'SKILL.md'), 'utf8'),
       'LOCAL EDIT',
     );
   } finally {
@@ -243,12 +257,14 @@ test('`init` without --dest targets the current working directory (programming)'
     assert.equal(status, 0, stderr);
     assert.ok(fs.existsSync(path.join(cwd, 'AGENTS.md')));
     for (const skillsDir of PROJECT_SKILL_DIRS) {
-      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'tdd-implement', 'SKILL.md')));
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'initialize-project', 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grill-with-docs', 'SKILL.md')));
       assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'wayfinder', 'SKILL.md')));
       assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'handoff', 'SKILL.md')));
       assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'implement', 'SKILL.md')));
-      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should be installed by default`);
+      assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'code-review', 'SKILL.md')));
+      assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should NOT be installed by default`);
+      assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'tdd-implement', 'SKILL.md')), `${skillsDir}/tdd-implement should NOT be installed by default`);
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grilling', 'SKILL.md')), `${skillsDir}/grilling should be installed by default`);
     }
     for (const skillsDir of HARNESS_SKILL_DIRS) {

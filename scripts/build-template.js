@@ -42,19 +42,9 @@ async function main() {
     '# 项目技能（opencode）\n\n此目录仅用于存放 opencode 的项目自定义 skills。共享技能统一分发到 `.agents/skills/`；同步不会删除额外的项目自定义 skills。\n',
   );
 
-  await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.opencode/agents'));
-  await copyDirRecursive(
-    path.join(ROOT, '.opencode/commands'),
-    path.join(ROOT, 'template/.opencode/commands'),
-    (source) => path.basename(source) !== 'commit-check.md',
-  );
   for (const name of ['.gitignore', 'package.json', 'package-lock.json']) {
     await tryCopy(path.join(ROOT, '.opencode', name), path.join(ROOT, 'template/.opencode', name));
   }
-  const issueAuditPrompt = path.join(ROOT, 'template/.pi/prompts/issue-audit.md');
-  await mkdir(path.dirname(issueAuditPrompt), { recursive: true });
-  await cp(path.join(ROOT, '.pi/prompts/issue-audit.md'), issueAuditPrompt);
-  await copyDirRecursive(path.join(ROOT, '.opencode/agents'), path.join(ROOT, 'template/.pi/agents'));
   const templateAgents = await readFile(path.join(ROOT, 'config/template-AGENTS.md'), 'utf8');
   await writeFile(path.join(ROOT, 'template/AGENTS.md'), templateAgents);
   await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));

@@ -43,7 +43,7 @@ test('sync --dry-run 有目标差异时 exit 1 并保留目标不变', () => {
   try {
     const init = runCli(['init', '--dest', dest]);
     assert.equal(init.status, 0, init.stderr);
-    const skill = path.join(dest, '.agents', 'skills', 'tdd', 'SKILL.md');
+    const skill = path.join(dest, '.agents', 'skills', 'grill-with-docs', 'SKILL.md');
     fs.appendFileSync(skill, '\nLOCAL DRY-RUN EDIT\n');
     const result = runCli(['sync', '--dry-run', '--dest', dest]);
     assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
@@ -59,7 +59,7 @@ test('sync --dry-run --json 输出目标差异 JSON', () => {
   try {
     const init = runCli(['init', '--dest', dest]);
     assert.equal(init.status, 0, init.stderr);
-    fs.rmSync(path.join(dest, '.agents', 'skills', 'tdd'), { recursive: true, force: true });
+    fs.rmSync(path.join(dest, '.agents', 'skills', 'grill-with-docs'), { recursive: true, force: true });
     const result = runCli(['sync', '--dry-run', '--json', '--dest', dest]);
     const json = JSON.parse(result.stdout);
     assert.equal(result.status, 1);
@@ -67,7 +67,7 @@ test('sync --dry-run --json 输出目标差异 JSON', () => {
     assert.equal(json.onlyProgramming, true);
     assert.equal(json.refreshAgents, false);
     assert.ok(json.result.updated.includes('.agents/skills'));
-    assert.equal(fs.existsSync(path.join(dest, '.agents', 'skills', 'tdd')), false);
+    assert.equal(fs.existsSync(path.join(dest, '.agents', 'skills', 'grill-with-docs')), false);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
   }

@@ -314,6 +314,12 @@ async function promptSkills(skills) {
     message: '选择要安装的技能',
     choices: skills.map((s) => ({ title: s.name, value: s.name })),
     instructions: '输入过滤，空格勾选，回车确认',
+    onRender() {
+      if (this.inputValue && this.filteredOptions.length === 0) {
+        this.filteredOptions = [{ title: '没有匹配的技能', value: '__no-match__', disabled: true }];
+        this.cursor = 0;
+      }
+    },
   });
   return Array.isArray(res?.skills) ? res.skills : [];
 }

@@ -161,7 +161,8 @@ test('Codex static contract includes skill metadata and template instructions', 
   assert.match(metadata, /short_description:/);
   assert.match(templateAgents, /^## Workflow/m);
   assert.match(templateAgents, /代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
-  assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
+  assert.match(templateAgents, /模糊需求、设计讨论并同步 ADR \/ glossary → `grill-with-docs`/);
+  assert.doesNotMatch(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
 });
 
 test('smoke classifies malformed JSONL as FAIL_ENV', () => {

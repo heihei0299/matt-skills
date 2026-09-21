@@ -12,8 +12,6 @@ const templateAgents = read('template/AGENTS.md');
 
 const manualSkills = [
   'commit-check',
-  'to-spec',
-  'to-tickets',
   'triage',
   'teach',
   'handoff',
@@ -37,8 +35,12 @@ test('workspace keeps its direct route', () => {
 test('template keeps its independent workflow', () => {
   assert.match(templateAgents, /## Workflow/);
   assert.match(templateAgents, /## Validation/);
-  assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
   assert.match(templateAgents, /## Git/);
+  assert.match(templateAgents, /每个独立 issue\/spec 对应一个 commit；不得按实现、测试、review 等阶段拆分。/);
+  assert.match(templateAgents, /仅在本次改动完成并通过相关验证后提交。checkpoint 例外，但须明确标注未完成或未通过的验证。/);
+  assert.match(templateAgents, /commit 前检查 `git diff` 和 `git status`；只 stage 本次任务改动，不覆盖、回滚或提交用户及其他任务的既有修改。/);
+  assert.match(templateAgents, /`commit` 不授权 `push` 或发布；远程写入须单独授权。/);
+  assert.match(templateAgents, /commit 后报告 hash、验证命令及结果。/);
   assert.match(templateAgents, /## Security/);
   assertNoManualRoutes(templateAgents);
 });
@@ -72,10 +74,13 @@ test('workspace and template expose their intended routing branches', () => {
   assert.match(templateAgents, /## Workflow/);
   assert.match(templateAgents, /需要新增证据的代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
   assert.doesNotMatch(templateAgents, /^\* 代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`$/m);
-  assert.match(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
-  assert.match(templateAgents, /多来源调研 \/ 方案比较 \/ 技术选型 \/ 最佳实践 \/ 外部实现 → `research`/);
+  assert.match(templateAgents, /目标项目首次初始化或刷新项目上下文 → `initialize-project`/);
+  assert.match(templateAgents, /首次使用 spec \/ tickets 流程，需要配置 issue tracker 和领域文档 → `setup-matt-pocock-skills`/);
+  assert.match(templateAgents, /模糊需求、设计讨论并同步 ADR \/ glossary → `grill-with-docs`/);
+  assert.match(templateAgents, /已有共识，需要发布 spec → `to-spec`/);
+  assert.match(templateAgents, /已有 spec \/ 计划，需要拆分可执行 tickets → `to-tickets`/);
   assert.match(templateAgents, /未命中 skill 时直接执行/);
-  assert.doesNotMatch(templateAgents, /prototype|code-review|grilling|domain-modeling|ask-matt/);
+  assert.doesNotMatch(templateAgents, /research|prototype|code-review|grill-to-spec|tdd-implement|implement|tdd|grilling|domain-modeling|ask-matt/);
   assertNoManualRoutes(templateAgents);
 
   assert.match(agents, /bug \/ 异常 \/ 性能 → `diagnose-fix`/);

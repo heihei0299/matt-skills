@@ -207,9 +207,10 @@ test('sync updates shared skills from the canonical source', () => {
   for (const args of [['sync'], ['sync', '--all']]) {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-update-'));
     const projectLocalSkill = path.join(dest, '.pi/skills/project-local-skill/SKILL.md');
+    const sharedName = args.includes('--all') ? 'tdd-implement' : 'grill-with-docs';
     try {
       for (const rel of projectDirs) {
-        const sharedSkill = path.join(dest, rel, 'tdd-implement/SKILL.md');
+        const sharedSkill = path.join(dest, rel, `${sharedName}/SKILL.md`);
         fs.mkdirSync(path.dirname(sharedSkill), { recursive: true });
         fs.writeFileSync(sharedSkill, 'STALE SHARED COPY');
       }
@@ -220,8 +221,8 @@ test('sync updates shared skills from the canonical source', () => {
       assert.equal(result.status, 0, result.stderr);
       for (const rel of projectDirs) {
         assert.equal(
-          fs.readFileSync(path.join(dest, rel, 'tdd-implement/SKILL.md'), 'utf8'),
-          fs.readFileSync(path.join(ROOT, '.agents/skills/tdd-implement/SKILL.md'), 'utf8'),
+          fs.readFileSync(path.join(dest, rel, `${sharedName}/SKILL.md`), 'utf8'),
+          fs.readFileSync(path.join(ROOT, '.agents/skills', sharedName, 'SKILL.md'), 'utf8'),
         );
       }
       assert.equal(fs.readFileSync(projectLocalSkill, 'utf8'), 'PROJECT-LOCAL COPY');

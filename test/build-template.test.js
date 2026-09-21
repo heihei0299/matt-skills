@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,7 +24,7 @@ function createBuilderFixture() {
   return root;
 }
 
-test('build-template fails when a required harness source is missing', () => {
+test('build-template does not require workspace-only harness sources', () => {
   const root = createBuilderFixture();
   try {
     rmSync(path.join(root, '.opencode', 'commands'), { recursive: true, force: true });
@@ -32,8 +32,7 @@ test('build-template fails when a required harness source is missing', () => {
       cwd: root,
       encoding: 'utf8',
     });
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /ENOENT/);
+    assert.equal(result.status, 0, result.stderr);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -50,12 +49,8 @@ test('build-template creates the skeleton without a shared Skill source or mirro
     assert.equal(existsSync(path.join(root, 'template', '.agents')), false);
     assert.equal(existsSync(path.join(root, 'template', '.agents', 'skills')), false);
     assert.equal(existsSync(path.join(root, 'template', 'AGENTS.md')), true);
-    assert.equal(existsSync(path.join(root, 'template', '.opencode', 'agents', 'issue-audit.md')), true);
-    assert.equal(existsSync(path.join(root, 'template', '.pi', 'agents', 'issue-audit.md')), true);
-    assert.equal(existsSync(path.join(root, 'template', '.pi', 'prompts', 'issue-audit.md')), true);
-    for (const name of readdirSync(path.join(root, '.opencode', 'commands'))) {
-      if (name === 'commit-check.md') continue;
-      assert.equal(existsSync(path.join(root, 'template', '.opencode', 'commands', name)), true, `missing command ${name}`);
+    for (const rel of ['.opencode/commands', '.opencode/agents', '.pi/agents', '.pi/prompts', '.codex']) {
+      assert.equal(existsSync(path.join(root, 'template', rel)), false, `${rel} should not be projected`);
     }
     assert.equal(existsSync(path.join(root, 'template', '.opencode', 'docs', 'agents')), true);
   } finally {
