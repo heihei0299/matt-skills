@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveSkillNames } from '../bin/skill-selection.js';
+import { resolveSkillNames } from '../bin/skills/selection.js';
 
 test('default selection uses the explicit default bundle and excludes repo-local skills', () => {
   const availableNames = [

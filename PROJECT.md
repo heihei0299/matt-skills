@@ -10,7 +10,7 @@
 
 ### 主要入口
 - 用户入口是 `package.json` 的 `bin.matt-skills`，实现位于 `bin/cli.js`；命令包括 `init`、`sync`、`list`、`install` 和 `check`。
-- 技能选择与边界位于 `bin/skill-selection.js`、`bin/skill-boundaries.js`、`bin/skill-config.js`，分类事实位于 `config/default.json`、`config/engineering.json`、`config/required.json`、`config/proprietary.json`。
+- 技能选择与边界位于 `bin/skills/selection.js`、`bin/skills/boundaries.js`、`bin/skills/config.js`，分类事实位于 `config/default.json`、`config/engineering.json`、`config/required.json`、`config/proprietary.json`。
 - 模板生成入口是 `scripts/build-template.js`；上游技能比较与应用入口是 `scripts/sync-upstream.js`；Codex 兼容性检查入口是 `scripts/codex-smoke.js`。
 - 维护者先看 `README.md`、`CONTEXT.md`、本文件和 `AGENTS.md`；行为回归先看 `test/` 中对应的 `node:test` 文件。
 

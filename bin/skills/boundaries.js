@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CONFIG_PATH = path.join(ROOT, 'config', 'proprietary.json');
 const config = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
 

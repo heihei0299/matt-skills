@@ -10,10 +10,10 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 
 function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-config-'));
-  fs.mkdirSync(path.join(root, 'bin'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'bin', 'skills'), { recursive: true });
   fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
-  fs.cpSync(path.join(REPO_ROOT, 'bin/skill-boundaries.js'), path.join(root, 'bin/skill-boundaries.js'));
-  fs.cpSync(path.join(REPO_ROOT, 'bin/skill-config.js'), path.join(root, 'bin/skill-config.js'));
+  fs.cpSync(path.join(REPO_ROOT, 'bin/skills/boundaries.js'), path.join(root, 'bin/skills/boundaries.js'));
+  fs.cpSync(path.join(REPO_ROOT, 'bin/skills/config.js'), path.join(root, 'bin/skills/config.js'));
   fs.cpSync(path.join(REPO_ROOT, 'scripts/sync-upstream.js'), path.join(root, 'scripts/sync-upstream.js'));
   fs.cpSync(path.join(REPO_ROOT, 'config'), path.join(root, 'config'), { recursive: true });
   fs.cpSync(path.join(REPO_ROOT, '.agents/skills/tdd'), path.join(root, '.agents/skills/tdd'), { recursive: true });

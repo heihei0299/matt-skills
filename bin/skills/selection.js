@@ -1,4 +1,4 @@
-import { isDistributableSkill } from './skill-boundaries.js';
+import { isDistributableSkill } from './boundaries.js';
 
 function asSet(value) {
   return value instanceof Set ? new Set(value) : new Set(value ?? []);

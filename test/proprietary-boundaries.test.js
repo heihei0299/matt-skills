@@ -9,7 +9,7 @@ import {
   REPO_LOCAL_SKILLS,
   DEFAULT_PROPRIETARY_SKILLS,
   isDistributableSkill,
-} from '../bin/skill-boundaries.js';
+} from '../bin/skills/boundaries.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(readFileSync(path.join(ROOT, 'config/proprietary.json'), 'utf8'));

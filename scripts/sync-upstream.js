@@ -5,8 +5,8 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { PROPRIETARY_SKILLS } from '../bin/skill-boundaries.js';
-import { loadSkillSet } from '../bin/skill-config.js';
+import { PROPRIETARY_SKILLS } from '../bin/skills/boundaries.js';
+import { loadSkillSet } from '../bin/skills/config.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_SKILLS_DIR = path.join(ROOT, '.agents', 'skills');
