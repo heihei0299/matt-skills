@@ -159,9 +159,9 @@ test('Codex static contract includes skill metadata and template instructions', 
   assert.match(metadata, /interface:/);
   assert.match(metadata, /display_name:/);
   assert.match(metadata, /short_description:/);
-  assert.match(templateAgents, /^## Workflow/m);
-  assert.match(templateAgents, /代码理解 \/ 定位 \/ 调用链 \/ 依赖关系 \/ 数据流 → `codegraph explore`/);
-  assert.match(templateAgents, /模糊需求、设计讨论并同步 ADR \/ glossary → `grill-with-docs`/);
+  assert.match(templateAgents, /^本仓库遵循全局 `AGENTS\.md`；以下规则仅用于具体化本项目工作流/m);
+  assert.match(templateAgents, /当前上下文不足且需要新增代码理解证据时，优先使用 `codegraph explore`/);
+  assert.match(templateAgents, /项目已有针对当前改动的验证入口时优先使用，不自行创建等价验证流程。/);
   assert.doesNotMatch(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
 });
 

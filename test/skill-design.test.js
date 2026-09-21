@@ -50,12 +50,11 @@ test('runtime-discipline.md delegates policy to its owners', () => {
   assert.doesNotMatch(runtime, /BASE_HEAD|Turn Continuity|Chunking|Git History Preservation/);
 });
 
-test('AGENTS.md is the router: points at the runtime discipline entry points', () => {
-  assert.match(agents, /## 路由/);
-  assert.match(agents, /## Context \/ CodeGraph/);
+test('AGENTS.md delegates to global policy and points at project workflow boundaries', () => {
+  assert.match(agents, /^本仓库遵循全局 `AGENTS\.md`；以下规则仅用于具体化本项目工作流/);
+  assert.match(agents, /## Context \/ CodeGraph|## Validation|## Git|## Completion/g);
   assert.match(agents, /codegraph explore/);
-  // Quantitative thresholds belong in the owning discipline files, not here.
-  assert.doesNotMatch(agents, /150 行/);
+  assert.doesNotMatch(agents, /## 路由|## Workflow|150 行/);
 });
 
 test('diagnosis report is marked as landed', () => {
@@ -74,4 +73,3 @@ test('runtime-discipline.md leaves git history policy to AGENTS.md', () => {
   assert.match(runtime, /Git policy come from the active `AGENTS\.md`/);
   assert.doesNotMatch(runtime, /BASE_HEAD|merge-base --is-ancestor|git reset --hard|git checkout \.|git clean -fd|stash push --include-untracked/);
 });
-
