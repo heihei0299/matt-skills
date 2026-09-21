@@ -4,9 +4,7 @@ import { PROPRIETARY_SKILLS, isRepoLocalSkill } from '../skills/boundaries.js';
 import { listSkillNames, listSkills, SKILLS_DIR } from '../skills/discovery.js';
 import { pathExists } from '../project/filesystem.js';
 import { copyTemplate } from '../project/template.js';
-import { distributeProjectSkills } from '../project/skills.js';
-
-const PROJECT_SKILL_DIRS = '.agents/skills';
+import { distributeProjectSkills, PROJECT_SKILLS_DIR } from '../project/skills.js';
 
 export function parseInitArgs(args) {
   let dest;
@@ -36,7 +34,7 @@ export async function runInit(args) {
     await copyTemplate(target);
     const selectedSkills = await listSkillNames({ onlyProgramming });
     await distributeProjectSkills({ target, sourceDir: SKILLS_DIR, skillNames: selectedSkills });
-    process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
+    process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILLS_DIR}）\n`);
   }
   // 统计（区分编程 vs 全量）
   const skillsDir = path.join(target, '.agents', 'skills');

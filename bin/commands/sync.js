@@ -4,9 +4,7 @@ import path from 'node:path';
 import { REPO_LOCAL_SKILLS } from '../skills/boundaries.js';
 import { listSkillNames, SKILLS_DIR } from '../skills/discovery.js';
 import { copyDryRunInputs, compareDryRunTrees, formatTargetComparison, syncTemplate } from '../project/template.js';
-import { syncProjectSkills } from '../project/skills.js';
-
-const PROJECT_SKILL_DIRS = '.agents/skills';
+import { PROJECT_SKILLS_DIR, syncProjectSkills } from '../project/skills.js';
 
 export function parseSyncArgs(args) {
   let dest;
@@ -60,17 +58,17 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
   const template = await syncTemplate({ target, refreshAgents });
   if (template.initialized) {
     output('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
-    output(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
+    output(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILLS_DIR}）\n`);
   } else {
     output('同步：检测到现有项目，将增量更新\n');
     if (template.agentsRefreshed && template.agentsRefreshMode === 'managed') {
-      output(`模板：已同步（AGENTS.md 受管区块已刷新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
+      output(`模板：已同步（AGENTS.md 受管区块已刷新、skills：${PROJECT_SKILLS_DIR}，项目自定义内容已保留）\n`);
     } else if (template.agentsRefreshed) {
-      output(`模板：已同步（AGENTS.md 已刷新，旧文件备份为 AGENTS.md.bak、skills：${PROJECT_SKILL_DIRS}）\n`);
+      output(`模板：已同步（AGENTS.md 已刷新，旧文件备份为 AGENTS.md.bak、skills：${PROJECT_SKILLS_DIR}）\n`);
     } else if (template.agentsManaged) {
-      output(`模板：已同步（AGENTS.md 受管区块已更新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
+      output(`模板：已同步（AGENTS.md 受管区块已更新、skills：${PROJECT_SKILLS_DIR}，项目自定义内容已保留）\n`);
     } else {
-      output(`模板：已同步（AGENTS.md 未受管、skills：${PROJECT_SKILL_DIRS}，已原样保留）\n`);
+      output(`模板：已同步（AGENTS.md 未受管、skills：${PROJECT_SKILLS_DIR}，已原样保留）\n`);
     }
   }
   // --all 只扩大技能范围；同名覆盖、不存在新增，不删除目标中的额外技能。

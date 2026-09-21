@@ -7,8 +7,7 @@ import { runInit } from './commands/init.js';
 import { runInstall } from './commands/install.js';
 import { runList } from './commands/list.js';
 import { runSync } from './commands/sync.js';
-
-const PROJECT_SKILL_DIRS = '.agents/skills';
+import { PROJECT_SKILLS_DIR } from './project/skills.js';
 
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);
@@ -18,7 +17,7 @@ process.stdout.on('error', (err) => {
 const HELP_GLOBAL = `matt-skills — install and manage this skill collection
 
 Usage:
-  matt-skills init [options]                   Initialize a project: template + skills (${PROJECT_SKILL_DIRS})
+  matt-skills init [options]                   Initialize a project: template + skills (${PROJECT_SKILLS_DIR})
   matt-skills sync [--all|--dry-run|--refresh-agents] [--dest <path>]   Sync existing project to latest template + skills
   matt-skills list [--all] [--json]            List available skills and their descriptions
   matt-skills install [options]                Install skills (interactive by default)
@@ -28,7 +27,7 @@ Usage:
   matt-skills --version | -v                  Show version
 `;
 
-const HELP_INIT = `matt-skills init [options] — Initialize a project: template + skills (${PROJECT_SKILL_DIRS})
+const HELP_INIT = `matt-skills init [options] — Initialize a project: template + skills (${PROJECT_SKILLS_DIR})
 
 Usage:
   matt-skills init [options]
@@ -54,7 +53,7 @@ Sync options:
   --json             仅与 --dry-run 一起使用，输出机器可读结果
   --dest <path>      Target directory (default: current directory)
   --help, -h         Show this help
-  项目 skills：${PROJECT_SKILL_DIRS}
+  项目 skills：${PROJECT_SKILLS_DIR}
 
 说明：默认同步默认 workflow skill 并保留现有 AGENTS.md；--all 只扩大技能范围。
       --refresh-agents 与 --all、--dry-run 可组合；上游检查请使用 check。

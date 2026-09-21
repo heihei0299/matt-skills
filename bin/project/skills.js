@@ -5,11 +5,13 @@ import { isSafeRealPath, pathExists, sameTree } from './filesystem.js';
 
 export const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
 
+export const PROJECT_SKILLS_DIR = '.agents/skills';
+
 export const PROJECT_DIRS = {
-  codex: '.agents/skills',
-  pi: '.agents/skills',
-  opencode: '.agents/skills',
-  claude: '.agents/skills',
+  codex: PROJECT_SKILLS_DIR,
+  pi: PROJECT_SKILLS_DIR,
+  opencode: PROJECT_SKILLS_DIR,
+  claude: PROJECT_SKILLS_DIR,
 };
 
 export const LEGACY_PROJECT_SKILL_DIRS = ['.pi/skills', '.opencode/skills', '.claude/skills'];
