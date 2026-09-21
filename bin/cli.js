@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, writeFile, cp, lstat, rm, mkdir, mkdtemp } from 'node:fs/promises';
+import { readdir, readFile, rm, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,10 +11,22 @@ import {
   REPO_LOCAL_SKILLS,
 } from './skills/boundaries.js';
 import { listSkillNames, listSkills, SKILLS_DIR } from './skills/discovery.js';
-import { mergeManagedAgents, syncManagedAgents } from './project/agents.js';
-import { isSafeRealPath, pathExists, sameTree } from './project/filesystem.js';
+import { pathExists } from './project/filesystem.js';
+import {
+  copyDryRunInputs,
+  compareDryRunTrees,
+  copyTemplate,
+  formatTargetComparison,
+  syncTemplate,
+} from './project/template.js';
+import {
+  TOOLS,
+  copySkills,
+  distributeProjectSkills,
+  syncProjectSkills,
+  toolDir,
+} from './project/skills.js';
 
-const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
 process.stdout.on('error', (err) => {
   if (err.code === 'EPIPE') process.exit(0);
   throw err;
@@ -116,46 +128,6 @@ Install options:
 
 const HELP = HELP_GLOBAL;
 
-const DRY_RUN_PATHS = ['AGENTS.md', 'AGENTS.md.bak', '.opencode', '.pi', '.agents/skills', '.claude/skills'];
-
-function shouldCopyTemplatePath(src) {
-  const relative = path.relative(TEMPLATE_DIR, src);
-  const parts = relative.split(path.sep);
-  return !(parts[0] === '.agents' && parts[1] === 'skills');
-}
-
-const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
-
-const PROJECT_DIRS = {
-  codex: '.agents/skills',
-  pi: '.agents/skills',
-  opencode: '.agents/skills',
-  claude: '.agents/skills',
-};
-
-function projectSkillTargets(target) {
-  const targets = new Map();
-  for (const tool of TOOLS) {
-    const dir = path.resolve(target, PROJECT_DIRS[tool]);
-    if (!targets.has(dir)) targets.set(dir, { tool, dir });
-  }
-  return [...targets.values()];
-}
-
-const LEGACY_PROJECT_SKILL_DIRS = ['.pi/skills', '.opencode/skills', '.claude/skills'];
-
-const GLOBAL_DIRS = {
-  codex: '.codex/skills',
-  pi: '.pi/agent/skills',
-  opencode: '.config/opencode/skills',
-  claude: '.claude/skills',
-};
-
-function toolDir(tool, global) {
-  if (global) return path.join(os.homedir(), GLOBAL_DIRS[tool]);
-  return path.resolve(process.cwd(), PROJECT_DIRS[tool]);
-}
-
 async function promptTools() {
   const res = await prompts({
     type: 'multiselect',
@@ -219,17 +191,12 @@ async function installCommand({ dest, all, force, tools, global }) {
     }
   }
   for (const { tool, dir } of targets) {
-    let installed = 0;
-    let skipped = 0;
-    for (const name of selected) {
-      const dst = path.join(dir, name);
-      if (!force && (await pathExists(dst))) {
-        skipped++;
-        continue;
-      }
-      await cp(path.join(SKILLS_DIR, name), dst, { recursive: true, force: true });
-      installed++;
-    }
+    const { installed, skipped } = await copySkills({
+      sourceDir: SKILLS_DIR,
+      targetDir: dir,
+      skillNames: selected,
+      force,
+    });
     if (tool) process.stdout.write(`${tool}：已装 ${installed}、跳过 ${skipped}\n`);
     else process.stdout.write(`已装 ${installed}、跳过 ${skipped}\n`);
     process.stdout.write(`目标路径：${dir}\n`);
@@ -243,21 +210,9 @@ async function initCommand({ dest, all }) {
   if (await pathExists(marker)) {
     process.stdout.write('模板已存在（AGENTS.md），跳过\n');
   } else {
-    await cp(TEMPLATE_DIR, target, {
-      recursive: true,
-      force: true,
-      filter: shouldCopyTemplatePath,
-    });
+    await copyTemplate(target);
     const selectedSkills = await listSkillNames({ onlyProgramming });
-    for (const { dir } of projectSkillTargets(target)) {
-      await mkdir(dir, { recursive: true });
-      for (const name of selectedSkills) {
-        const source = path.join(SKILLS_DIR, name);
-        const destination = path.join(dir, name);
-        if (path.resolve(source) === path.resolve(destination)) continue;
-        await cp(source, destination, { recursive: true, force: true });
-      }
-    }
+    await distributeProjectSkills({ target, sourceDir: SKILLS_DIR, skillNames: selectedSkills });
     process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
   }
   // 统计（区分编程 vs 全量）
@@ -285,61 +240,6 @@ async function initCommand({ dest, all }) {
   }
   process.stdout.write(`目标路径：${target}\n`);
 }
-async function copyDryRunInputs(target, stage) {
-  for (const relative of DRY_RUN_PATHS) {
-    const source = path.join(target, relative);
-    if (!await pathExists(source)) continue;
-    const destination = path.join(stage, relative);
-    await mkdir(path.dirname(destination), { recursive: true });
-    await cp(source, destination, { recursive: true, force: true });
-  }
-}
-
-async function compareDryRunTrees(target, stage) {
-  const result = { added: [], updated: [], removed: [] };
-  for (const relative of DRY_RUN_PATHS) {
-    const before = path.join(target, relative);
-    const after = path.join(stage, relative);
-    const beforeExists = await pathExists(before);
-    const afterExists = await pathExists(after);
-    if (!beforeExists && afterExists) result.added.push(relative);
-    else if (beforeExists && !afterExists) result.removed.push(relative);
-    else if (beforeExists && afterExists && !await sameTree(before, after)) result.updated.push(relative);
-  }
-  return result;
-}
-
-function formatTargetComparison({ target, result, onlyProgramming, refreshAgents }) {
-  const lines = [
-    `目标: ${target}`,
-    `范围: ${onlyProgramming ? '默认 workflow' : '全部可分发'}${refreshAgents ? '；刷新 AGENTS.md' : ''}`,
-    '',
-  ];
-  const totalDiff = result.added.length + result.updated.length + result.removed.length;
-  if (totalDiff === 0) {
-    lines.push('✅ 无需更新');
-    return lines.join('\n');
-  }
-  if (result.added.length) lines.push(`新增 (${result.added.length}): ${result.added.join(', ')}`);
-  if (result.updated.length) lines.push(`更新 (${result.updated.length}): ${result.updated.join(', ')}`);
-  if (result.removed.length) lines.push(`删除 (${result.removed.length}): ${result.removed.join(', ')}`);
-  return lines.join('\n');
-}
-
-async function refreshAgentsFile(targetFile) {
-  const templateFile = path.join(TEMPLATE_DIR, 'AGENTS.md');
-  const current = await readFile(targetFile, 'utf8');
-  const template = await readFile(templateFile, 'utf8');
-  const merged = mergeManagedAgents(current, template);
-  if (merged !== null) {
-    if (merged !== current) await writeFile(targetFile, merged);
-    return 'managed';
-  }
-  await cp(targetFile, `${targetFile}.bak`, { force: true });
-  await cp(templateFile, targetFile, { force: true });
-  return 'full';
-}
-
 async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = false }) {
   const onlyProgramming = !all;
   const output = (text) => {
@@ -365,38 +265,17 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
   }
 
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
-  const marker = path.join(target, 'AGENTS.md');
-  async function copyTemplateFiltered() {
-    await cp(TEMPLATE_DIR, target, {
-      recursive: true,
-      force: true,
-      filter: shouldCopyTemplatePath,
-    });
-  }
-  if (!(await pathExists(marker))) {
+  const template = await syncTemplate({ target, refreshAgents });
+  if (template.initialized) {
     output('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
-    await copyTemplateFiltered();
     output(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILL_DIRS}）\n`);
   } else {
     output('同步：检测到现有项目，将增量更新\n');
-    let agentsManaged = false;
-    let agentsRefreshed = false;
-    let agentsRefreshMode = null;
-    if (refreshAgents) {
-      agentsRefreshMode = await refreshAgentsFile(marker);
-      agentsRefreshed = true;
-    } else {
-      try {
-        agentsManaged = await syncManagedAgents(marker, path.join(TEMPLATE_DIR, 'AGENTS.md'));
-      } catch {}
-    }
-    await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
-    await cp(path.join(TEMPLATE_DIR, '.pi'), path.join(target, '.pi'), { recursive: true, force: true });
-    if (agentsRefreshed && agentsRefreshMode === 'managed') {
+    if (template.agentsRefreshed && template.agentsRefreshMode === 'managed') {
       output(`模板：已同步（AGENTS.md 受管区块已刷新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
-    } else if (agentsRefreshed) {
+    } else if (template.agentsRefreshed) {
       output(`模板：已同步（AGENTS.md 已刷新，旧文件备份为 AGENTS.md.bak、skills：${PROJECT_SKILL_DIRS}）\n`);
-    } else if (agentsManaged) {
+    } else if (template.agentsManaged) {
       output(`模板：已同步（AGENTS.md 受管区块已更新、skills：${PROJECT_SKILL_DIRS}，项目自定义内容已保留）\n`);
     } else {
       output(`模板：已同步（AGENTS.md 未受管、skills：${PROJECT_SKILL_DIRS}，已原样保留）\n`);
@@ -404,97 +283,21 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
   }
   // --all 只扩大技能范围；同名覆盖、不存在新增，不删除目标中的额外技能。
   const allSkills = await listSkillNames({ onlyProgramming });
-  const skillTargets = projectSkillTargets(target);
-  const skillsDir = path.resolve(target, PROJECT_DIRS.codex);
-  const legacyLocations = LEGACY_PROJECT_SKILL_DIRS.map((relative) => ({
-    dir: path.resolve(target, relative),
-    label: relative,
-    isWorkspaceSource: false,
-  }));
-  const preservedRepoLocal = [];
-  const preserveLocations = [
-    ...skillTargets.map(({ tool, dir }) => ({
-      dir,
-      label: PROJECT_DIRS[tool],
-      isWorkspaceSource: path.resolve(dir) === path.resolve(SKILLS_DIR),
-    })),
-    ...legacyLocations,
-  ];
-  for (const { dir } of skillTargets) await mkdir(dir, { recursive: true });
-  for (const name of REPO_LOCAL_SKILLS) {
-    for (const location of preserveLocations) {
-      if (!location.isWorkspaceSource && await pathExists(path.join(location.dir, name))) {
-        preservedRepoLocal.push(`${location.label}/${name}`);
-      }
-    }
+  const result = await syncProjectSkills({
+    target,
+    sourceDir: SKILLS_DIR,
+    skillNames: allSkills,
+    distributableSkillNames: (await listSkillNames({ onlyProgramming: false })).filter((name) => !REPO_LOCAL_SKILLS.has(name)),
+    repoLocalSkills: REPO_LOCAL_SKILLS,
+  });
+  if (result.cleanedLegacy.length) {
+    output(`迁移清理：${result.cleanedLegacy.join(', ')} 旧共享副本已移除\n`);
   }
-  let installed = 0;
-  let updated = 0;
-  for (const { dir } of skillTargets) {
-    for (const name of allSkills) {
-      const src = path.join(SKILLS_DIR, name);
-      const dst = path.join(dir, name);
-      if (path.resolve(src) === path.resolve(dst)) {
-        if (path.resolve(dir) === skillsDir) updated++;
-        continue;
-      }
-      const exists = await pathExists(dst);
-      if (exists) {
-        await rm(dst, { recursive: true, force: true });
-        await cp(src, dst, { recursive: true, force: true });
-        if (path.resolve(dir) === skillsDir) updated++;
-      } else {
-        await cp(src, dst, { recursive: true, force: true });
-        if (path.resolve(dir) === skillsDir) installed++;
-      }
-    }
-  }
-  const distributableSkillNames = (await listSkillNames({ onlyProgramming: false })).filter((name) => !REPO_LOCAL_SKILLS.has(name));
-  const cleanedLegacy = [];
-  for (const location of legacyLocations) {
-    let entries;
-    try {
-      if (!await isSafeRealPath(location.dir)) continue;
-      const locationInfo = await lstat(location.dir);
-      if (!locationInfo.isDirectory()) continue;
-      entries = await readdir(location.dir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (!entry.isDirectory() || entry.name === '.git' || entry.name.endsWith('.bak')) continue;
-      if (!distributableSkillNames.includes(entry.name)) continue;
-      const src = path.join(SKILLS_DIR, entry.name);
-      const dst = path.join(location.dir, entry.name);
-      try {
-        if (await sameTree(src, dst)) {
-          await rm(dst, { recursive: true, force: true });
-          cleanedLegacy.push(`${location.label}/${entry.name}`);
-        }
-      } catch {}
-    }
-  }
-  // Legacy harness dirs may contain project-local Skills. Only exact canonical
-  // trees of clearly distributable skills are removed; repo-local, modified or
-  // unknown trees remain untouched.
-  // 清理过时的 .pi/settings.json 指向
-  try {
-    const piSettings = path.join(target, '.pi/settings.json');
-    if (await pathExists(piSettings)) {
-      const txt = await readFile(piSettings, 'utf8');
-      if (txt.includes('.opencode/skills') || txt.includes('../.opencode')) {
-        await writeFile(piSettings, '{}\n');
-      }
-    }
-  } catch {}
-  if (cleanedLegacy.length) {
-    output(`迁移清理：${cleanedLegacy.join(', ')} 旧共享副本已移除\n`);
-  }
-  if (preservedRepoLocal.length) {
-    output(`迁移提示：${preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
+  if (result.preservedRepoLocal.length) {
+    output(`迁移提示：${result.preservedRepoLocal.join(', ')} 已不再分发，现有副本已保留\n`);
   }
   const modeLabel = onlyProgramming ? '默认 workflow' : '全部可分发';
-  output(`技能：新增 ${installed}、更新 ${updated}（${modeLabel} ${allSkills.length}）\n`);
+  output(`技能：新增 ${result.installed}、更新 ${result.updated}（${modeLabel} ${allSkills.length}）\n`);
   output(`目标路径：${target}\n`);
 }
 
