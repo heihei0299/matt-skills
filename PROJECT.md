@@ -22,7 +22,7 @@
 - `AGENTS.md` 承载执行规则，`PROJECT.md` 承载项目事实，`CONTEXT.md` 承载术语边界；不要把三者职责合并。
 
 ### 仓库地图
-- `bin/`：CLI 主流程、技能边界、技能配置加载和选择逻辑。
+- `bin/`：`cli.js` composition root；`commands/` 负责命令编排，`project/` 负责模板与项目分发机制，`skills/` 负责技能策略与发现。
 - `.agents/skills/`：Workspace canonical skills，包含可分发 skills 与仓库维护用的 repo-local skills。
 - `config/`：技能分类、默认/上游同步集合，以及模板 `AGENTS.md` 的独立源。
 - `template/`：生成后的目标项目骨架，包含 `AGENTS.md`、`PROJECT.md`、pi / opencode 配置和文档副本。
