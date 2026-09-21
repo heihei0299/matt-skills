@@ -7,11 +7,13 @@ import { resolveSkillNames } from '../bin/skills/selection.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EXPECTED_DEFAULTS = [
+  'diagnosing-bugs',
   'domain-modeling',
   'grill-with-docs',
   'grilling',
   'initialize-project',
   'setup-matt-pocock-skills',
+  'tdd',
   'to-spec',
   'to-tickets',
 ];

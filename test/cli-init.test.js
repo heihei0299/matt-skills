@@ -122,7 +122,8 @@ test('`init` copies the default workflow template into the target', () => {
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')), 'grilling should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/initialize-project/SKILL.md')), 'initialize-project should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/setup-matt-pocock-skills/SKILL.md')), 'setup-matt-pocock-skills should be installed by default');
-    assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/tdd/SKILL.md')), 'tdd should NOT be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/tdd/SKILL.md')), 'tdd should be installed by default');
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/diagnosing-bugs/SKILL.md')), 'diagnosing-bugs should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/to-spec/SKILL.md')), 'to-spec should be installed by default');
     assert.ok(fs.existsSync(path.join(dest, '.agents/skills/to-tickets/SKILL.md')), 'to-tickets should be installed by default');
     assert.ok(!fs.existsSync(path.join(dest, '.agents/skills/code-review/SKILL.md')), 'code-review should NOT be installed by default');
@@ -164,6 +165,8 @@ test('`init` copies shared skills only into .agents/skills', () => {
         );
       }
       assert.ok(fs.existsSync(path.join(dest, skillsDir, 'to-spec', 'SKILL.md')), `${skillsDir}/to-spec should be installed by default`);
+      assert.ok(fs.existsSync(path.join(dest, skillsDir, 'tdd', 'SKILL.md')), `${skillsDir}/tdd should be installed by default`);
+      assert.ok(fs.existsSync(path.join(dest, skillsDir, 'diagnosing-bugs', 'SKILL.md')), `${skillsDir}/diagnosing-bugs should be installed by default`);
       assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should NOT be installed by default`);
       assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'tdd-implement', 'SKILL.md')), `${skillsDir}/tdd-implement should NOT be installed by default`);
       assert.ok(!fs.existsSync(path.join(dest, skillsDir, 'ci-guard', 'SKILL.md')), `${skillsDir}/ci-guard should NOT be installed by default`);
@@ -265,6 +268,8 @@ test('`init` without --dest targets the current working directory (programming)'
       assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'code-review', 'SKILL.md')));
       assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'grill-to-spec', 'SKILL.md')), `${skillsDir}/grill-to-spec should NOT be installed by default`);
       assert.ok(!fs.existsSync(path.join(cwd, skillsDir, 'tdd-implement', 'SKILL.md')), `${skillsDir}/tdd-implement should NOT be installed by default`);
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'tdd', 'SKILL.md')), `${skillsDir}/tdd should be installed by default`);
+      assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'diagnosing-bugs', 'SKILL.md')), `${skillsDir}/diagnosing-bugs should be installed by default`);
       assert.ok(fs.existsSync(path.join(cwd, skillsDir, 'grilling', 'SKILL.md')), `${skillsDir}/grilling should be installed by default`);
     }
     for (const skillsDir of HARNESS_SKILL_DIRS) {

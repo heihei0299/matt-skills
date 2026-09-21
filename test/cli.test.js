@@ -48,11 +48,13 @@ const SKILL_NAMES = [
 
 // Default bundle: workflow roots plus their hard dependencies.
 const PROGRAMMING_SKILL_NAMES = [
+  'diagnosing-bugs',
   'domain-modeling',
   'grill-with-docs',
   'grilling',
   'initialize-project',
   'setup-matt-pocock-skills',
+  'tdd',
   'to-spec',
   'to-tickets',
 ];
