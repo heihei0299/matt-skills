@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, writeFile, cp, stat, lstat, rm, mkdir, mkdtemp } from 'node:fs/promises';
+import { readdir, readFile, writeFile, cp, lstat, rm, mkdir, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +12,8 @@ import {
 } from './skill-boundaries.js';
 import { resolveSkillNames } from './skill-selection.js';
 import { loadSkillSet } from './skill-config.js';
+import { mergeManagedAgents, syncManagedAgents } from './project/agents.js';
+import { isSafeRealPath, pathExists, sameTree } from './project/filesystem.js';
 
 const SKILLS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.agents', 'skills');
 const TEMPLATE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'template');
@@ -172,47 +174,10 @@ async function listSkills({ onlyProgramming = false } = {}) {
   return skills.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
-async function pathExists(p) {
-  try {
-    await stat(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function shouldCopyTemplatePath(src) {
   const relative = path.relative(TEMPLATE_DIR, src);
   const parts = relative.split(path.sep);
   return !(parts[0] === '.agents' && parts[1] === 'skills');
-}
-
-const AGENTS_MANAGED_START = '<!-- matt-skills:managed:start -->';
-const AGENTS_MANAGED_END = '<!-- matt-skills:managed:end -->';
-
-function findManagedBlock(content) {
-  const start = content.indexOf(AGENTS_MANAGED_START);
-  if (start < 0 || content.indexOf(AGENTS_MANAGED_START, start + AGENTS_MANAGED_START.length) >= 0) return null;
-  const endStart = content.indexOf(AGENTS_MANAGED_END, start + AGENTS_MANAGED_START.length);
-  if (endStart < 0 || content.indexOf(AGENTS_MANAGED_END, endStart + AGENTS_MANAGED_END.length) >= 0) return null;
-  return { start, end: endStart + AGENTS_MANAGED_END.length };
-}
-
-function mergeManagedAgents(current, template) {
-  const currentBlock = findManagedBlock(current);
-  const templateBlock = findManagedBlock(template);
-  if (!currentBlock || !templateBlock) return null;
-  const managed = template.slice(templateBlock.start, templateBlock.end);
-  return current.slice(0, currentBlock.start) + managed + current.slice(currentBlock.end);
-}
-
-async function syncManagedAgents(targetFile) {
-  const current = await readFile(targetFile, 'utf8');
-  const template = await readFile(path.join(TEMPLATE_DIR, 'AGENTS.md'), 'utf8');
-  const merged = mergeManagedAgents(current, template);
-  if (merged === null) return false;
-  if (merged !== current) await writeFile(targetFile, merged);
-  return true;
 }
 
 const TOOLS = ['codex', 'pi', 'opencode', 'claude'];
@@ -234,55 +199,6 @@ function projectSkillTargets(target) {
 }
 
 const LEGACY_PROJECT_SKILL_DIRS = ['.pi/skills', '.opencode/skills', '.claude/skills'];
-
-async function isSafeRealPath(targetPath) {
-  const absolute = path.resolve(targetPath);
-  const root = path.parse(absolute).root;
-  let current = root;
-  for (const segment of path.relative(root, absolute).split(path.sep).filter(Boolean)) {
-    current = path.join(current, segment);
-    try {
-      if ((await lstat(current)).isSymbolicLink()) return false;
-    } catch {
-      return false;
-    }
-  }
-  return true;
-}
-
-function sameMetadata(left, right) {
-  return (left.mode & 0o7777) === (right.mode & 0o7777)
-    && left.uid === right.uid
-    && left.gid === right.gid;
-}
-
-async function sameTree(left, right) {
-  try {
-    const [leftInfo, rightInfo] = await Promise.all([lstat(left), lstat(right)]);
-    if (leftInfo.isSymbolicLink() || rightInfo.isSymbolicLink()) return false;
-    if (leftInfo.isDirectory() !== rightInfo.isDirectory()) return false;
-    if (leftInfo.isDirectory()) {
-      const [leftEntries, rightEntries] = await Promise.all([
-        readdir(left, { withFileTypes: true }),
-        readdir(right, { withFileTypes: true }),
-      ]);
-      if (!sameMetadata(leftInfo, rightInfo) || leftEntries.length !== rightEntries.length) return false;
-      const rightNames = new Set(rightEntries.map((entry) => entry.name));
-      for (const entry of leftEntries) {
-        if (!rightNames.has(entry.name) || !await sameTree(path.join(left, entry.name), path.join(right, entry.name))) {
-          return false;
-        }
-      }
-      return true;
-    }
-    if (leftInfo.isFile() && rightInfo.isFile()) {
-      return (await readFile(left)).equals(await readFile(right)) && sameMetadata(leftInfo, rightInfo);
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
 
 const GLOBAL_DIRS = {
   codex: '.codex/skills',
@@ -527,7 +443,7 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
       agentsRefreshed = true;
     } else {
       try {
-        agentsManaged = await syncManagedAgents(marker);
+        agentsManaged = await syncManagedAgents(marker, path.join(TEMPLATE_DIR, 'AGENTS.md'));
       } catch {}
     }
     await cp(path.join(TEMPLATE_DIR, '.opencode'), path.join(target, '.opencode'), { recursive: true, force: true });
