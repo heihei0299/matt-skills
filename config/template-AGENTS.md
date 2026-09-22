@@ -2,10 +2,6 @@
 
 ## Context / CodeGraph
 
-以当前代码、配置、测试和版本化文档为项目事实来源；更具体的目录级规则优先。
-有当前 issue / spec 时先读它；否则从用户问题和最相关的 symbol / path 开始。
-只围绕当前未决问题扩展上下文；README、package、tests、docs 按需读取。
-当前上下文已有充分且未过时的证据时，不做等价重复读取。
 若仓库不存在 `.codegraph/`，先执行 `codegraph init`。
 代码理解、定位、架构/调用流分析、排错及修改前探索优先使用 `codegraph explore`。
 直接描述问题，或提供相关 symbol / 文件；分析 X → Y 时提供关键端点。
