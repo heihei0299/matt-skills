@@ -1,5 +1,0 @@
-interface:
-  display_name: "CI Guard"
-  short_description: "Guard release pipeline: orchestrate flows, enforce verify gate, self-correct after publish"
-policy:
-  allow_implicit_invocation: false
