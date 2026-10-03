@@ -1,0 +1,5 @@
+interface:
+  display_name: "Scaffold Functional Test"
+  short_description: "Scaffold a repo-specific functional-test skill from spec — not for running tests nor TDD"
+policy:
+  allow_implicit_invocation: true

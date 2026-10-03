@@ -1,0 +1,5 @@
+interface:
+  display_name: "Instance Test"
+  short_description: "matt-skills 专属功能测试示范 — 验证 sync 合并 update 后行为"
+policy:
+  allow_implicit_invocation: false
