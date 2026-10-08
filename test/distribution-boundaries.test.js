@@ -253,7 +253,10 @@ test('sync legacy cleanup does not follow symlink ancestors or discard permissio
 
     const permissionMirror = path.join(dest, '.opencode/skills/show-me');
     fs.cpSync(path.join(sourceRoot, 'show-me'), permissionMirror, { recursive: true });
-    fs.chmodSync(path.join(permissionMirror, 'SKILL.md'), 0o600);
+    const permissionFile = path.join(permissionMirror, 'SKILL.md');
+    // Keep a permission-only difference even when the source is already 0600.
+    const permissionMode = (fs.statSync(permissionFile).mode & 0o777) ^ 0o040;
+    fs.chmodSync(permissionFile, permissionMode);
 
     const result = runCli(['sync', '--all', '--dest', dest]);
     assert.equal(result.status, 0, result.stderr);
@@ -262,7 +265,7 @@ test('sync legacy cleanup does not follow symlink ancestors or discard permissio
     assert.equal(fs.lstatSync(path.join(childMirror, 'SKILL.md')).isSymbolicLink(), true);
     assert.equal(fs.existsSync(outsideFile), true);
     assert.equal(fs.existsSync(permissionMirror), true);
-    assert.equal(fs.statSync(path.join(permissionMirror, 'SKILL.md')).mode & 0o777, 0o600);
+    assert.equal(fs.statSync(permissionFile).mode & 0o777, permissionMode);
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
     fs.rmSync(outside, { recursive: true, force: true });

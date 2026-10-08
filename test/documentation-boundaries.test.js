@@ -22,7 +22,7 @@ const config = JSON.parse(read('config/proprietary.json'));
 test('README documents the proprietary distribution boundary', () => {
   assert.match(README, /8 个独有|proprietary.*8/i);
   const distributableSection = README.match(/### 可分发的 6 个([\s\S]*?)### 仓库内部的 2 个/)?.[1];
-  const repoLocalSection = README.match(/### 仓库内部的 2 个([\s\S]*?)## 初始化/)?.[1];
+  const repoLocalSection = README.match(/### 仓库内部的 2 个([\s\S]*?)(?:\n## |$)/)?.[1];
   assert.ok(distributableSection, 'missing distributable proprietary section');
   assert.ok(repoLocalSection, 'missing repo-local proprietary section');
   for (const name of config.distributable) {

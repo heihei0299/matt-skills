@@ -31,9 +31,18 @@ npx @heihei0299/matt-skills sync --dry-run --json
 - 共享 Skills 从 Workspace 的 canonical source 组装到项目的 `.agents/skills/`。
 - 模板提供 `AGENTS.md`、`PROJECT.md` 以及 pi / opencode 配置骨架。
 - 默认 workflow 包含 `initialize-project`、`setup-matt-pocock-skills`、`grill-with-docs`、`to-spec`、`to-tickets`、`grilling`、`domain-modeling`、`tdd` 和 `diagnosing-bugs`。
-- 可分发的独有 Skills：`tdd-implement`、`diagnose-fix`、`grill-to-spec`、`scaffold-functional-test`、`show-me`、`initialize-project`。`ci-guard` 和 `commit-check` 仅用于维护本仓库。
 
 Codex 项目 Skills 同样安装在 `.agents/skills/`；全局 Skills 位于 `~/.codex/skills`。
+
+本仓库共维护 8 个独有 Skills，分为以下两类。默认独有 skills 是 `initialize-project`。
+
+### 可分发的 6 个
+
+`tdd-implement`、`diagnose-fix`、`grill-to-spec`、`scaffold-functional-test`、`show-me`、`initialize-project`。
+
+### 仓库内部的 2 个
+
+`ci-guard` 和 `commit-check` 仅用于维护本仓库，不会通过 `init`、`install` 或 `sync` 分发到用户项目。
 
 ## 开发与发布
 
