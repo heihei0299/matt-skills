@@ -10,18 +10,20 @@ on:
         required: false
         default: 'HEAD'
       dry_run:
-        description: '仅检查，不提 PR'
+        description: '仅检查，不写回 main'
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   sync:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      UPSTREAM_REF: ${{ inputs.ref || 'HEAD' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,11 +41,10 @@ jobs:
       - name: Check upstream diff
         id: check
         run: |
-          REF="${{ inputs.ref || 'HEAD' }}"
-          if [ "$REF" = "HEAD" ]; then
-            node scripts/sync-upstream.js --check --json > /tmp/sync-check.json || true
+          if [ "$UPSTREAM_REF" = "HEAD" ]; then
+            node scripts/sync-upstream.js --check --json > /tmp/sync-check.json
           else
-            node scripts/sync-upstream.js --check --json --ref "$REF" > /tmp/sync-check.json || true
+            node scripts/sync-upstream.js --check --json --ref "$UPSTREAM_REF" > /tmp/sync-check.json
           fi
           cat /tmp/sync-check.json
           # 判断是否有差异
@@ -64,51 +65,44 @@ jobs:
       - name: Apply sync
         if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
         run: |
-          REF="${{ inputs.ref || 'HEAD' }}"
-          if [ "$REF" = "HEAD" ]; then
+          if [ "$UPSTREAM_REF" = "HEAD" ]; then
             node scripts/sync-upstream.js --apply
           else
-            node scripts/sync-upstream.js --apply --ref "$REF"
+            node scripts/sync-upstream.js --apply --ref "$UPSTREAM_REF"
           fi
           echo "=== 应用后状态 ==="
-          npm test 2>&1 | tail -n 50 || true
 
       - name: Build template after sync (if changed)
         if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
         run: |
           # 上游技能不进 template，但为保险重建一次（幂等）
-          npm run build:template || true
+          npm run build:template
           git status --short
 
-      - name: Create Pull Request
+      - name: Validate sync before updating main
         if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: upstream-sync/${{ steps.check.outputs.head }}
-          branch-suffix: timestamp
-          title: 'chore(upstream): 同步 mattpocock/skills 至 ${{ steps.check.outputs.head }}'
-          commit-message: 'chore(upstream): 同步 mattpocock/skills 至 ${{ steps.check.outputs.head }}'
-          body: |
-            自动同步上游技能 `mattpocock/skills` HEAD `${{ steps.check.outputs.head }}`。
+        run: |
+          npm test
+          if ! git diff --exit-code -- template/ .agents/skills/ci-guard/ config/proprietary.json 2>&1; then
+            echo "::error::template/ 与 .agents/skills 漂移，请检查生成结果"
+            git diff --stat
+            exit 1
+          fi
 
-            - 触发：定时任务 / 手动 dispatch
-            - 工具：`node scripts/sync-upstream.js --apply`（覆盖 `.agents/skills` 非独有技能，自动处理 `writing-great-skills → writing-for-agents` 重命名）
-            - 独有技能（`config/proprietary.json`）不受影响，不进 `template/`
-            - 请审查 diff 后合入；合入后按需打 `v*` 标签触发 npm 发布（自动 patch 发版可在后续扩展为自动 bump）
-
-            差异摘要（`scripts/sync-upstream.js --check --json`）：
-
-            ```json
-            ${{ steps.check.outputs.head }}
-            ```
-            详见 Actions 日志中 `/tmp/sync-check.json`。
-
-            合入后请：
-            1. 本地 `npm test` 全绿
-            2. 需要发版时 `git tag vX.Y.Z && git push origin vX.Y.Z`
-          labels: upstream-sync
-          delete-branch: true
+      - name: Commit and push to main
+        if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
+        env:
+          UPSTREAM_HEAD: ${{ steps.check.outputs.head }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- .agents/skills template/
+          if git diff --cached --quiet; then
+            echo "No sync changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(upstream): sync mattpocock/skills to $UPSTREAM_HEAD"
+          git push origin HEAD:main
 
       - name: No diff summary
         if: steps.check.outputs.has_diff == 'false'
