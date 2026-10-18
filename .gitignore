@@ -27,4 +27,6 @@ spec/
 # Agent harness 目录：已跟踪配置继续纳入版本控制，后续本地新增文件默认忽略
 .pi/
 .opencode/
-.agents/
+# 只忽略 .agents 下的本地生成物；.agents/skills 是分发源的版本化内容
+.agents/*
+!.agents/skills/
