@@ -1,50 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, statSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Commands are workspace-only harness conveniences. The distributed template
-// carries only the basic framework; skills are discovered from .agents/skills.
+// Commands, agents, and prompts are workspace-only harness conveniences. The
+// harness directories are not versioned, so a clean checkout cannot assert their
+// contents; what must hold everywhere is that the distributed template carries
+// only the basic framework while skills are discovered from .agents/skills.
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = (p) => path.join(dir, p);
 
-const EXPLICIT_SKILLS = [
-  'grill-to-spec',
-  'wayfinder',
-  'to-spec',
-  'to-tickets',
-  'triage',
-  'improve-codebase-architecture',
-  'teach',
-  'handoff',
-  'writing-for-agents',
-  'commit-check',
-];
-
-test('workspace commands stay local and are not projected into the template', () => {
-  for (const skill of EXPLICIT_SKILLS) {
-    const wsFile = root(path.join('.opencode/commands', `${skill}.md`));
-    assert.ok(statSync(wsFile).isFile(), `missing workspace command for ${skill}`);
-    const ws = readFileSync(wsFile, 'utf8');
-    assert.match(ws, /^description: /m, `${skill} command needs a description`);
-    assert.match(ws, /技能/, `${skill} command should mention loading the skill`);
-    assert.match(ws, /\$ARGUMENTS/, `${skill} command should pass through arguments`);
+test('workspace-only commands, agents, and prompts are not projected into the template', () => {
+  for (const rel of ['.opencode/commands', '.opencode/agents', '.pi/agents', '.pi/prompts', '.codex']) {
+    assert.equal(existsSync(root(path.join('template', rel))), false, `${rel} should not be projected`);
   }
-  assert.equal(existsSync(root('template/.opencode/commands')), false);
-  assert.equal(existsSync(root('template/.opencode/agents')), false);
-  assert.equal(existsSync(root('template/.pi/agents')), false);
-  assert.equal(existsSync(root('template/.pi/prompts')), false);
 });
 
-test('issue-audit keeps its subagent delegation; explicit-skill commands are main-agent', () => {
-  const issueAudit = readFileSync(root('.opencode/commands/issue-audit.md'), 'utf8');
-  assert.match(issueAudit, /^agent: /m);
-  assert.match(issueAudit, /^subtask: /m);
-  for (const skill of EXPLICIT_SKILLS) {
-    const cmd = readFileSync(root(path.join('.opencode/commands', `${skill}.md`)), 'utf8');
-    assert.doesNotMatch(cmd, /^agent: /m, `${skill} command must not delegate to a subagent`);
-    assert.doesNotMatch(cmd, /^subtask: /m, `${skill} command must not be a subtask`);
-  }
+test('template keeps the basic harness framework', () => {
+  assert.ok(existsSync(root('template/.opencode/CONTEXT.md')), 'template/.opencode/CONTEXT.md');
+  assert.ok(existsSync(root('template/.pi/CONTEXT.md')), 'template/.pi/CONTEXT.md');
+  assert.ok(existsSync(root('template/.opencode/docs/agents')), 'template/.opencode/docs/agents');
 });

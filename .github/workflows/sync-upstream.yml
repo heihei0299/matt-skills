@@ -41,12 +41,20 @@ jobs:
       - name: Check upstream diff
         id: check
         run: |
+          # --check 在存在上游差异时以 exit 1 退出，属于正常信号而非失败
+          set +e
           if [ "$UPSTREAM_REF" = "HEAD" ]; then
             node scripts/sync-upstream.js --check --json > /tmp/sync-check.json
           else
             node scripts/sync-upstream.js --check --json --ref "$UPSTREAM_REF" > /tmp/sync-check.json
           fi
+          STATUS=$?
+          set -e
           cat /tmp/sync-check.json
+          if [ "$STATUS" -gt 1 ] || ! node -e "JSON.parse(require('fs').readFileSync('/tmp/sync-check.json', 'utf8'))" 2>/dev/null; then
+            echo "::error::sync-upstream --check 未产出可解析结果（exit $STATUS）"
+            exit 1
+          fi
           # 判断是否有差异
           HAS_DIFF=$(node -p "const j=require('/tmp/sync-check.json'); (j.result.added.length+j.result.updated.length+j.result.removed.length+j.result.renamed.length)>0 ? 'true' : 'false'")
           echo "has_diff=$HAS_DIFF" >> "$GITHUB_OUTPUT"
