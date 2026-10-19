@@ -13,7 +13,7 @@ mattpocock/skills — the source of the upstream Skill bodies mirrored into this
 _Avoid_: source repo, skill origin
 
 **Proprietary Skill** (独有技能):
-A skill that does not exist upstream and lives only in this repo. The current proprietary set is classified in `config/proprietary.json` as distributable or repo-local; that config is the source of truth for membership. Repo-local skills serve matt-skills maintenance and are never distributed. Before adding a new proprietary skill, check the Upstream Repository first.
+A Skill maintained as this repository's own rather than mirrored from the Upstream Repository; an upstream name collision does not transfer that ownership. The current proprietary set is classified in `config/proprietary.json` as distributable or repo-local; that config is the source of truth for membership. Repo-local skills serve matt-skills maintenance and are never distributed. Before adding a new proprietary skill, check the Upstream Repository first.
 _Avoid_: private skill, local skill
 
 **Workspace** (工作区):
@@ -28,8 +28,24 @@ _Avoid_: release snapshot, published snapshot
 A repository initialized from the Template Snapshot and selected distributable shared Skills. Its root `AGENTS.md` is the project-level execution policy. Shared Skills live in `.agents/skills/`; project-local custom Skills may live in harness-specific skill directories.
 _Avoid_: inheriting repo, child repo
 
+**Default Workflow** (默认工作流):
+The curated distributable Skill set for a Target Repository, including its explicitly required child Skills even when their use is conditional. It is distinct from the Upstream Repository's engineering bucket.
+_Avoid_: engineering skills, fixed nine-skill bundle
+
+**Managed Skill** (受管技能):
+A selected distributable shared Skill in a Target Repository whose canonical content belongs to the Template Repository. A project edit to that shared copy does not make it a project-local Skill.
+_Avoid_: all installed skills, managed project
+
+**Project-owned Content** (项目自有内容):
+Project-local Skills and configuration outside explicitly managed content, owned by the Target Repository. Sharing a harness directory with Managed Skills does not transfer that ownership.
+_Avoid_: extra files, disposable configuration
+
+**Ownership Conflict** (归属冲突):
+A name claimed both by a Proprietary Skill and by a Skill in the Upstream Repository. Matching names alone do not make them the same managed content.
+_Avoid_: ordinary addition, automatic adoption
+
 **Initialize** (初始化):
-The one-time action of setting up a Target Repository by copying the Template Snapshot skeleton and installing the selected distributable Skills. Repo-local Skills are intentionally excluded.
+The setup of a Target Repository using the Template Snapshot skeleton and selected distributable Skills, including completion of an interrupted setup; repo-local Skills are excluded. Existing project execution policy remains project-owned and does not imply that Skill setup is complete.
 _Avoid_: inherit, bootstrap
 
 **Sync** (同步):
