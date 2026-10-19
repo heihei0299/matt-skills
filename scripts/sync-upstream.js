@@ -139,6 +139,11 @@ export async function compare({ upstreamUrl, tmpDir, ref, onlyProgramming = true
   const fetched = await fetchUpstream({ tmpDir, upstreamUrl, ref });
   const upstreamRoot = fetched.dest;
   const upstreamMapFull = await collectUpstreamSkills(upstreamRoot);
+  const conflicts = [...upstreamMapFull.keys()].filter((name) => proprietary.has(name)).sort();
+  if (conflicts.length) {
+    await rm(upstreamRoot, { recursive: true, force: true });
+    throw new Error(`ownership conflict with proprietary skills: ${conflicts.join(', ')}`);
+  }
   const localMapFull = await collectLocalSkills(proprietary, localSkillsDir);
   // 默认范围：engineering 桶（编程）+ 独有所需（config/required.json，如 grill-to-spec 经 grill-with-docs 所需的 grilling）；--all 则含全部 productivity
   const upstreamMap = onlyProgramming

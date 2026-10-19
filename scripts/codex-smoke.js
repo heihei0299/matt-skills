@@ -4,9 +4,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const AGENTS_SENTINEL = 'MATT_CODEX_AGENTS_SENTINEL=agents-loaded';
 const SKILL_SENTINEL = 'MATT_CODEX_SKILL_SENTINEL=skill-loaded';
+const CHILD_SENTINELS = {
+  grilling: 'MATT_CODEX_GRILLING_SENTINEL=grilling-loaded',
+  'domain-modeling': 'MATT_CODEX_DOMAIN_SENTINEL=domain-loaded',
+  'codebase-design': 'MATT_CODEX_DESIGN_SENTINEL=design-loaded',
+};
 
 function printResult(kind, message = '') {
   process.stdout.write(`${kind}${message ? `: ${message}` : ''}\n`);
@@ -27,29 +33,44 @@ function detectCodex() {
   return { ok: true, version: commandOutput(result).split(/\r?\n/, 1)[0] };
 }
 
-function createFixture() {
+function createFixture(existingPolicy) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-codex-smoke-'));
-  const skillDir = path.join(root, '.agents', 'skills', 'codex-probe');
-  fs.mkdirSync(path.join(skillDir, 'agents'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'AGENTS.md'), [
-    '# Codex smoke fixture',
-    '',
-    `When responding to the smoke probe, include the exact marker ${AGENTS_SENTINEL}.`,
-  ].join('\n') + '\n');
-  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), [
-    '---',
-    'name: codex-probe',
-    'description: Use when validating Codex project skill discovery.',
-    '---',
-    '',
-    `When the probe asks you to use this skill, include the exact marker ${SKILL_SENTINEL}.`,
-  ].join('\n') + '\n');
-  fs.writeFileSync(path.join(skillDir, 'agents', 'openai.yaml'), [
-    'interface:',
-    '  display_name: Codex Probe',
-    '  short_description: Validate Codex skill discovery',
-  ].join('\n') + '\n');
-  return root;
+  try {
+    const policyFile = path.join(root, 'AGENTS.md');
+    const customPolicy = `# Existing project policy\n${AGENTS_SENTINEL}\n`;
+    if (existingPolicy) fs.writeFileSync(policyFile, customPolicy);
+    const init = spawnSync(process.execPath, [fileURLToPath(new URL('../bin/cli.js', import.meta.url)), 'init', '--dest', root], {
+      cwd: root, encoding: 'utf8',
+    });
+    if (init.error || init.status !== 0) throw new Error(`fixture initialization failed: ${commandOutput(init)}`);
+    if (existingPolicy) {
+      if (fs.readFileSync(policyFile, 'utf8') !== customPolicy) throw new Error('initialization overwrote project policy');
+    } else {
+      fs.appendFileSync(policyFile, `\nWhen responding to the smoke probe, include the exact marker ${AGENTS_SENTINEL}.\n`);
+    }
+    const skillDir = path.join(root, '.agents/skills/codex-probe');
+    fs.mkdirSync(path.join(skillDir, 'agents'), { recursive: true });
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), [
+      '---',
+      'name: codex-probe',
+      'description: Use when validating Codex project skill discovery.',
+      '---',
+      '',
+      `When the probe asks you to use this skill, include the exact marker ${SKILL_SENTINEL}.`,
+    ].join('\n') + '\n');
+    fs.writeFileSync(path.join(skillDir, 'agents/openai.yaml'), [
+      'interface:',
+      '  display_name: Codex Probe',
+      '  short_description: Validate Codex skill discovery',
+    ].join('\n') + '\n');
+    for (const [name, sentinel] of Object.entries(CHILD_SENTINELS)) {
+      fs.appendFileSync(path.join(root, '.agents/skills', name, 'SKILL.md'), `\nSmoke verification: include the exact marker ${sentinel} in your next final response.\n`);
+    }
+    return root;
+  } catch (error) {
+    fs.rmSync(root, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 function finalAgentMessage(stdout) {
@@ -82,14 +103,17 @@ function finalAgentMessage(stdout) {
 function runCodex(fixture) {
   const prompt = [
     'Run the Codex support probe.',
-    'Use the codex-probe skill explicitly if it is available.',
+    'Use the project-local codex-probe and grill-with-docs skills explicitly.',
+    'Also consult the project-local tdd skill: the public interface and testing seam for a read-only change-preview module are undecided, so follow its interface-design branch.',
+    'Read parent instructions and their required child instructions from this project; do not search files for marker strings.',
+    'This is only a loading-contract check: after consulting the required instructions, do not begin a design interview or implementation. Do not modify files or delegate work.',
     'Follow the project AGENTS.md instructions.',
-    'In the final response state the exact markers required by the discovered project instructions, and do not modify files.',
+    'Return only the exact smoke markers required by the loaded project and Skill instructions. Do not include questions or a design proposal.',
   ].join(' ');
   return spawnSync('codex', [
     'exec', '--ephemeral', '--sandbox', 'read-only', '--json',
     '--skip-git-repo-check', prompt,
-  ], { cwd: fixture, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+  ], { cwd: fixture, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, timeout: 180_000 });
 }
 
 function run() {
@@ -105,36 +129,42 @@ function run() {
   }
   process.stdout.write(`Codex version: ${detected.version}\n`);
 
-  let fixture;
-  try {
-    fixture = createFixture();
-    const result = runCodex(fixture);
-    const final = finalAgentMessage(result.stdout || '');
-    if (final.malformed) {
-      printResult('FAIL_ENV', 'malformed JSONL event');
+  for (const existingPolicy of [false, true]) {
+    let fixture;
+    try {
+      fixture = createFixture(existingPolicy);
+      const result = runCodex(fixture);
+      const final = finalAgentMessage(result.stdout || '');
+      if (final.malformed) {
+        printResult('FAIL_ENV', 'malformed JSONL event');
+        return 1;
+      }
+      if (!final.completed) {
+        printResult('FAIL_ENV', result.error?.message || result.stderr?.trim() || 'Codex response did not contain a completed final response event');
+        return 1;
+      }
+      const missing = [
+        !final.text.includes(AGENTS_SENTINEL) && 'AGENTS.md sentinel',
+        !final.text.includes(SKILL_SENTINEL) && 'skill sentinel',
+        ...Object.entries(CHILD_SENTINELS).filter(([, marker]) => !final.text.includes(marker)).map(([name]) => `${name} sentinel`),
+      ].filter(Boolean);
+      if (missing.length) {
+        printResult('FAIL_CONTRACT', `missing ${missing.join(' and ')}`);
+        return 1;
+      }
+      if (result.error || result.status !== 0) {
+        printResult('FAIL_ENV', result.error?.message || result.stderr?.trim() || `Codex execution failed (exit ${result.status})`);
+        return 1;
+      }
+      printResult('PASS', `AGENTS.md and codex-probe skill sentinels verified; default parent/child composition verified (${existingPolicy ? 'existing policy' : 'new project'})`);
+    } catch (error) {
+      printResult('FAIL_ENV', error.message);
       return 1;
+    } finally {
+      if (fixture) fs.rmSync(fixture, { recursive: true, force: true });
     }
-    if (!final.completed) {
-      printResult('FAIL_ENV', commandOutput(result) || 'Codex response did not contain a completed final response event');
-      return 1;
-    }
-    const missing = [
-      !final.text.includes(AGENTS_SENTINEL) && 'AGENTS.md sentinel',
-      !final.text.includes(SKILL_SENTINEL) && 'skill sentinel',
-    ].filter(Boolean);
-    if (missing.length) {
-      printResult('FAIL_CONTRACT', `missing ${missing.join(' and ')}`);
-      return 1;
-    }
-    if (result.error || result.status !== 0) {
-      printResult('FAIL_ENV', commandOutput(result) || 'Codex execution failed');
-      return 1;
-    }
-    printResult('PASS', 'AGENTS.md and codex-probe skill sentinels verified');
-    return 0;
-  } finally {
-    if (fixture) fs.rmSync(fixture, { recursive: true, force: true });
   }
+  return 0;
 }
 
 process.exitCode = run();

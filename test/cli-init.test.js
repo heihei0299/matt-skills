@@ -191,7 +191,7 @@ test('`init` copies shared skills only into .agents/skills', () => {
   }
 });
 
-test('`init --all` 对已有目标也跳过，刷新交给 sync', () => {
+test('`init --all` preserves project policy and repo-local skills while reinstalling managed skills', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const first = runCli(['init', '--all', '--dest', dest]);
@@ -201,7 +201,7 @@ test('`init --all` 对已有目标也跳过，刷新交给 sync', () => {
     fs.writeFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'STALE SKILL');
     const { status, stdout, stderr } = runCli(['init', '--all', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /模板已存在（AGENTS\.md），跳过/);
+    assert.match(stdout, /AGENTS\.md.*保留/);
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'STALE AGENTS');
     assert.equal(
       fs.readFileSync(path.join(dest, '.agents', 'skills', 'ci-guard', 'SKILL.md'), 'utf8'),
@@ -212,21 +212,23 @@ test('`init --all` 对已有目标也跳过，刷新交给 sync', () => {
   }
 });
 
-test('`init` on an already-initialized project skips without overwriting', () => {
+test('`init` reinstalls managed skills without overwriting project policy or project-local skills', () => {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-'));
   try {
     const first = runCli(['init', '--dest', dest]);
     assert.equal(first.status, 0, first.stderr);
     fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'LOCAL EDIT');
     fs.writeFileSync(path.join(dest, '.agents', 'skills', 'grill-with-docs', 'SKILL.md'), 'LOCAL EDIT');
+    fs.mkdirSync(path.join(dest, '.agents/skills/project-only'));
+    fs.writeFileSync(path.join(dest, '.agents/skills/project-only/SKILL.md'), 'project content');
     const { status, stdout, stderr } = runCli(['init', '--dest', dest]);
     assert.equal(status, 0, stderr);
-    assert.match(stdout, /模板已存在（AGENTS.md），跳过/);
-    // 模板已存在时不再打印新增计数，而是跳过
+    assert.match(stdout, /AGENTS\.md.*保留/);
     assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'LOCAL EDIT');
+    assert.equal(fs.readFileSync(path.join(dest, '.agents/skills/project-only/SKILL.md'), 'utf8'), 'project content');
     assert.equal(
       fs.readFileSync(path.join(dest, '.agents', 'skills', 'grill-with-docs', 'SKILL.md'), 'utf8'),
-      'LOCAL EDIT',
+      fs.readFileSync(path.join(REPO_ROOT, '.agents/skills/grill-with-docs/SKILL.md'), 'utf8'),
     );
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
@@ -288,5 +290,102 @@ test('`init` without --dest targets the current working directory (programming)'
     assert.match(stdout, new RegExp(`目标路径：${cwd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+
+test('init installs selected skills into a repository with pre-existing project rules', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-existing-'));
+  try {
+    fs.writeFileSync(path.join(dest, 'AGENTS.md'), 'Project policy stays byte-for-byte.\n');
+    const result = runCli(['init', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), 'Project policy stays byte-for-byte.\n');
+    for (const name of ['tdd', 'codebase-design', 'grill-with-docs', 'grilling', 'domain-modeling']) {
+      assert.ok(fs.existsSync(path.join(dest, '.agents/skills', name, 'SKILL.md')), `${name} must be installed`);
+    }
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+
+test('init retries an interrupted skill copy while preserving the project policy', () => {
+  const source = createCliFixture();
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-interrupted-'));
+  try {
+    const preload = path.join(source, 'fail-copy.cjs');
+    fs.writeFileSync(preload, `
+      const fs = require('node:fs/promises');
+      const cp = fs.cp;
+      fs.cp = async (from, ...args) => {
+        if (require('node:path').basename(String(from)) === 'grilling') throw new Error('injected skill copy failure');
+        return cp(from, ...args);
+      };
+      require('node:module').syncBuiltinESMExports();
+    `);
+    const cli = path.join(source, 'bin/cli.js');
+    const failed = spawnSync(process.execPath, ['--require', preload, cli, 'init', '--dest', dest], { cwd: source, encoding: 'utf8' });
+    assert.notEqual(failed.status, 0);
+    assert.match(failed.stderr, /injected skill copy failure/);
+    const policy = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
+    const retried = spawnSync(process.execPath, [cli, 'init', '--dest', dest], { cwd: source, encoding: 'utf8' });
+    assert.equal(retried.status, 0, retried.stderr);
+    assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), policy);
+    assert.ok(fs.existsSync(path.join(dest, '.agents/skills/grilling/SKILL.md')));
+  } finally {
+    fs.rmSync(source, { recursive: true, force: true });
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('init preserves existing project documents even when AGENTS.md is absent', () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-docs-'));
+  try {
+    fs.writeFileSync(path.join(dest, 'PROJECT.md'), 'project-owned facts\n');
+    const result = runCli(['init', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.readFileSync(path.join(dest, 'PROJECT.md'), 'utf8'), 'project-owned facts\n');
+    assert.ok(fs.existsSync(path.join(dest, 'AGENTS.md')));
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+
+test('init retries a partial template copy instead of treating AGENTS.md as complete setup', () => {
+  const source = createCliFixture();
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-init-template-retry-'));
+  try {
+    const preload = path.join(source, 'fail-template.cjs');
+    fs.writeFileSync(preload, `
+      const fs = require('node:fs/promises');
+      const path = require('node:path');
+      const cp = fs.cp;
+      fs.cp = async (from, to, ...args) => {
+        if (path.basename(String(from)) === 'template') {
+          await fs.mkdir(to, { recursive: true });
+          await fs.copyFile(path.join(from, 'AGENTS.md'), path.join(to, 'AGENTS.md'));
+          throw new Error('injected template copy failure');
+        }
+        return cp(from, to, ...args);
+      };
+      require('node:module').syncBuiltinESMExports();
+    `);
+    const cli = path.join(source, 'bin/cli.js');
+    const args = [cli, 'init', '--all', '--dest', dest];
+    const failed = spawnSync(process.execPath, ['--require', preload, ...args], { cwd: source, encoding: 'utf8' });
+    assert.notEqual(failed.status, 0);
+    assert.match(failed.stderr, /injected template copy failure/);
+    const policy = fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8');
+    const retried = spawnSync(process.execPath, args, { cwd: source, encoding: 'utf8' });
+    assert.equal(retried.status, 0, retried.stderr);
+    assert.equal(fs.readFileSync(path.join(dest, 'AGENTS.md'), 'utf8'), policy);
+    for (const relative of ['PROJECT.md', '.pi/CONTEXT.md', '.opencode/CONTEXT.md', '.agents/skills/grilling/SKILL.md']) {
+      assert.ok(fs.existsSync(path.join(dest, relative)), `${relative} must be completed on retry`);
+    }
+  } finally {
+    fs.rmSync(source, { recursive: true, force: true });
+    fs.rmSync(dest, { recursive: true, force: true });
   }
 });

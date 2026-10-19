@@ -186,3 +186,29 @@ test('applySync leaves the live skill tree unchanged when staging fails', async 
     fs.rmSync(fixture.local, { recursive: true, force: true });
   }
 });
+
+
+test('proprietary upstream collisions block comparison and every apply before writing', async () => {
+  const fixture = createApplyFixture();
+  const clone = path.join(os.tmpdir(), `matt-skills-conflict-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  try {
+    const collisionDir = path.join(fixture.upstream, 'skills/productivity/grill-to-spec');
+    fs.mkdirSync(collisionDir, { recursive: true });
+    fs.writeFileSync(path.join(collisionDir, 'SKILL.md'), 'upstream collision\n');
+    writeLocalSkill(fixture.local, 'grill-to-spec', { 'SKILL.md': 'local proprietary\n' });
+    git(fixture.upstream, ['add', '.']);
+    git(fixture.upstream, ['commit', '-m', 'name collision']);
+    for (const onlyProgramming of [true, false]) {
+      const options = { upstreamUrl: `file://${fixture.upstream}`, localSkillsDir: fixture.local, tmpDir: clone, onlyProgramming };
+      await assert.rejects(compare(options), /ownership conflict.*grill-to-spec/i);
+      assert.equal(fs.existsSync(clone), false);
+      await assert.rejects(applySync({ ...options, force: true }), /ownership conflict.*grill-to-spec/i);
+      assert.equal(fs.existsSync(clone), false);
+      assert.equal(fs.readFileSync(path.join(fixture.local, 'grill-to-spec/SKILL.md'), 'utf8'), 'local proprietary\n');
+      assert.equal(fs.readFileSync(path.join(fixture.local, 'test-a/SKILL.md'), 'utf8'), 'old a\n');
+      assert.equal(fs.existsSync(path.join(fixture.local, 'obsolete/SKILL.md')), true);
+    }
+  } finally {
+    for (const dir of [fixture.upstream, fixture.local, clone]) fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

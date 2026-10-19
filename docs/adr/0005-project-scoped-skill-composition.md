@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted on 2026-10-19. Implementation and real cross-harness execution verification remain pending.
+Accepted on 2026-10-19; the project loading convention and composition smoke implemented on 2026-10-20. Actual harness verification and limitations are recorded in `docs/architecture/maintainability-decisions.md`.
 
 ## Decision
 

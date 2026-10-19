@@ -18,7 +18,7 @@ function shouldCopyTemplatePath(src, includeHarness) {
 export async function copyTemplate(target, { includeHarness = true } = {}) {
   await cp(TEMPLATE_DIR, target, {
     recursive: true,
-    force: true,
+    force: false,
     filter: (src) => shouldCopyTemplatePath(src, includeHarness),
   });
 }

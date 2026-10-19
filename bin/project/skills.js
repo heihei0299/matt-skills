@@ -1,4 +1,4 @@
-import { cp, lstat, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, lstat, mkdir, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { isSafeRealPath, pathExists, sameTree } from './filesystem.js';
@@ -131,14 +131,5 @@ export async function syncProjectSkills({ target, sourceDir, skillNames, distrib
       } catch {}
     }
   }
-  try {
-    const piSettings = path.join(target, '.pi/settings.json');
-    if (await pathExists(piSettings)) {
-      const txt = await readFile(piSettings, 'utf8');
-      if (txt.includes('.opencode/skills') || txt.includes('../.opencode')) {
-        await writeFile(piSettings, '{}\n');
-      }
-    }
-  } catch {}
   return { installed, updated, cleanedLegacy, preservedRepoLocal };
 }

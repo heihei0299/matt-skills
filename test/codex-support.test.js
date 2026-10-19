@@ -205,3 +205,43 @@ test('smoke rejects agent messages after turn completion', () => {
     assert.match(result.stdout, /FAIL_ENV/);
   });
 });
+
+
+test('discovery sentinels alone cannot pass default composition smoke', () => {
+  withFakeCodex([
+    "if (process.argv.includes('--version')) console.log('codex-cli fake');",
+    "else {",
+    "  console.log(JSON.stringify({ type: 'item.completed', item: { type: 'agent_message', text: 'MATT_CODEX_AGENTS_SENTINEL=agents-loaded MATT_CODEX_SKILL_SENTINEL=skill-loaded' } }));",
+    "  console.log(JSON.stringify({ type: 'turn.completed' }));",
+    "}",
+  ].join('\n'), (pathValue) => {
+    const result = runSmoke({ CODEX_E2E: '1', PATH: pathValue });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stdout, /FAIL_CONTRACT/);
+    assert.match(result.stdout, /grilling|domain-modeling|codebase-design/);
+  });
+});
+
+test('composition smoke initializes real default skills under new and existing project policies', () => {
+  withFakeCodex([
+    "const fs = require('node:fs'); const path = require('node:path');",
+    "if (process.argv.includes('--version')) console.log('codex-cli fake');",
+    "else {",
+    "  const policy = fs.readFileSync('AGENTS.md', 'utf8');",
+    "  if (policy.includes('Existing project policy')) {",
+    "    if (policy !== '# Existing project policy\\nMATT_CODEX_AGENTS_SENTINEL=agents-loaded\\n') throw new Error('custom policy was overwritten');",
+    "  }",
+    "  const parents = ['grill-with-docs', 'tdd'].map(name => fs.readFileSync(path.join('.agents/skills', name, 'SKILL.md'), 'utf8'));",
+    "  if (!parents[0].includes('grilling') || !parents[1].includes('codebase-design')) throw new Error('missing actual parent instructions');",
+    "  const children = ['codex-probe', 'grilling', 'domain-modeling', 'codebase-design'].map(name => fs.readFileSync(path.join('.agents/skills', name, 'SKILL.md'), 'utf8'));",
+    "  const text = [policy, ...children].flatMap(value => value.match(/MATT_CODEX_[A-Z_]+=[a-z-]+/g) || []).join(' ');",
+    "  console.log(JSON.stringify({ type: 'item.completed', item: { type: 'agent_message', text } }));",
+    "  console.log(JSON.stringify({ type: 'turn.completed' }));",
+    "}",
+  ].join('\n'), (pathValue) => {
+    const result = runSmoke({ CODEX_E2E: '1', PATH: pathValue });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /PASS.*new project/);
+    assert.match(result.stdout, /PASS.*existing policy/);
+  });
+});

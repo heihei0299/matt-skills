@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { syncProjectSkills } from '../bin/project/skills.js';
 
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 const REPO_ROOT = path.resolve(path.dirname(CLI), '..');
@@ -135,4 +136,116 @@ test('sync --help 说明范围、刷新和 JSON 规则', () => {
   assert.match(stdout, /--json.*--dry-run/s);
   assert.doesNotMatch(stdout, /--force/);
   assert.doesNotMatch(stdout, /--upstream/);
+});
+
+
+test('skill distribution does not migrate harness configuration', async () => {
+  const dest = createTarget();
+  try {
+    const sourceDir = path.join(dest, 'source');
+    fs.mkdirSync(sourceDir);
+    fs.mkdirSync(path.join(dest, '.pi'));
+    const settingsFile = path.join(dest, '.pi/settings.json');
+    const original = JSON.stringify({ skills: ['../.opencode/skills'], defaultModel: 'user-model' });
+    fs.writeFileSync(settingsFile, original);
+    await syncProjectSkills({ target: dest, sourceDir, skillNames: [], distributableSkillNames: [], repoLocalSkills: new Set() });
+    assert.equal(fs.readFileSync(settingsFile, 'utf8'), original);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+for (const [label, original, expected, warning] of [
+  ['legacy references', JSON.stringify({ skills: ['../.opencode/skills', '.opencode/skills', './custom'], defaultModel: 'user-model', custom: true }), { skills: ['./custom'], defaultModel: 'user-model', custom: true }, false],
+  ['unrelated text', JSON.stringify({ note: '../.opencode', skills: ['./custom'] }), null, false],
+  ['malformed JSON', '{ "skills": ["../.opencode/skills"]', null, true],
+  ['unparseable contents', 'DO_NOT_ECHO', null, true],
+  ['ambiguous skills', JSON.stringify({ skills: '../.opencode/skills', custom: true }), null, true],
+]) {
+  test(`sync preserves project settings: ${label}`, () => {
+    const dest = createTarget();
+    try {
+      fs.mkdirSync(path.join(dest, '.pi'));
+      const settingsFile = path.join(dest, '.pi/settings.json');
+      fs.writeFileSync(settingsFile, original);
+      fs.chmodSync(settingsFile, 0o660);
+      const result = runCli(['sync', '--all', '--dest', dest]);
+      assert.equal(result.status, 0, result.stderr);
+      const actual = fs.readFileSync(settingsFile, 'utf8');
+      assert.equal(fs.statSync(settingsFile).mode & 0o777, 0o660);
+      if (expected) assert.deepEqual(JSON.parse(actual), expected);
+      else assert.equal(actual, original);
+      assert.doesNotMatch(result.stderr, /DO_NOT_ECHO/);
+      if (warning) assert.match(result.stderr, /settings\.json/);
+      else assert.equal(result.stderr, '');
+    } finally {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
+  });
+}
+
+test('sync does not follow a settings symlink when migrating legacy references', () => {
+  const dest = createTarget();
+  try {
+    fs.mkdirSync(path.join(dest, '.pi'));
+    const outside = path.join(dest, 'unrelated.json');
+    const original = JSON.stringify({ skills: ['../.opencode/skills'], custom: true });
+    fs.writeFileSync(outside, original);
+    fs.symlinkSync(outside, path.join(dest, '.pi/settings.json'));
+    const result = runCli(['sync', '--dest', dest]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.readFileSync(outside, 'utf8'), original);
+    assert.match(result.stderr, /settings\.json/);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('dry-run previews settings migration without writing project settings', () => {
+  const dest = createTarget();
+  try {
+    assert.equal(runCli(['init', '--dest', dest]).status, 0);
+    fs.mkdirSync(path.join(dest, '.pi'));
+    const settingsFile = path.join(dest, '.pi/settings.json');
+    const original = JSON.stringify({ skills: ['../.opencode/skills'], custom: true });
+    fs.writeFileSync(settingsFile, original);
+    const result = runCli(['sync', '--dry-run', '--json', '--dest', dest]);
+    assert.equal(result.status, 1, result.stderr);
+    assert.ok(JSON.parse(result.stdout).result.updated.includes('.pi'));
+    assert.equal(fs.readFileSync(settingsFile, 'utf8'), original);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+
+test('a failed settings write preserves the original settings and permissions', () => {
+  const dest = createTarget();
+  try {
+    fs.mkdirSync(path.join(dest, '.pi'));
+    const settingsFile = path.join(dest, '.pi/settings.json');
+    const original = JSON.stringify({ skills: ['../.opencode/skills'], custom: true });
+    fs.writeFileSync(settingsFile, original, { mode: 0o600 });
+    const preload = path.join(dest, 'fail-write.cjs');
+    fs.writeFileSync(preload, `
+      const fs = require('node:fs/promises');
+      const writeFile = fs.writeFile;
+      fs.writeFile = async (file, ...args) => {
+        if (require('node:path').basename(String(file)) === 'settings.json') {
+          await writeFile(file, 'partial');
+          throw new Error('injected settings write failure');
+        }
+        return writeFile(file, ...args);
+      };
+      require('node:module').syncBuiltinESMExports();
+    `);
+    const result = spawnSync(process.execPath, ['--require', preload, CLI, 'sync', '--dest', dest], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /injected settings write failure/);
+    assert.equal(fs.readFileSync(settingsFile, 'utf8'), original);
+    assert.equal(fs.statSync(settingsFile).mode & 0o777, 0o600);
+    assert.deepEqual(fs.readdirSync(path.join(dest, '.pi')), ['settings.json']);
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
 });

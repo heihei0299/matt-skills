@@ -36,7 +36,7 @@ Init options:
   --dest <path>   Target directory (default: current directory)
   --all           Include all distributable skills and .pi/.opencode; default workflow skills only
   --help, -h      Show this help
-提示：已有 AGENTS.md 时 init 始终跳过；需要更新已有项目请使用 sync。
+提示：已有 AGENTS.md 时保留项目规则，仍安装所选共享技能；模板更新请使用 sync。
 
 提示：matt-skills --help 查看全量
 `;

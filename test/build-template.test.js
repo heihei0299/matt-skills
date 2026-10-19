@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -91,6 +91,62 @@ test('committed template/ matches a fresh build', () => {
         `${relative} is stale; run npm run build:template`,
       );
     }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+
+for (const operation of ['cp', 'rename']) {
+  test(`failed template ${operation} preserves the previous snapshot and cleans staging`, () => {
+    const root = createBuilderFixture();
+    try {
+      mkdirSync(path.join(root, 'template'));
+      writeFileSync(path.join(root, 'template/sentinel'), 'previous snapshot\n');
+      const preload = path.join(root, 'fail.cjs');
+      writeFileSync(preload, `
+        const fs = require('node:fs/promises');
+        const original = fs.${operation};
+        fs.${operation} = async (...args) => {
+          if ('${operation}' === 'cp' || require('node:path').basename(String(args[0])) === 'snapshot') throw new Error('injected ${operation} failure');
+          return original(...args);
+        };
+        require('node:module').syncBuiltinESMExports();
+      `);
+      const result = spawnSync(process.execPath, ['--require', preload, path.join(root, 'scripts/build-template.js')], { cwd: root, encoding: 'utf8' });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /injected/);
+      assert.equal(readFileSync(path.join(root, 'template/sentinel'), 'utf8'), 'previous snapshot\n');
+      assert.equal(readdirSync(root).some((name) => name.startsWith('.matt-skills-template-')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+
+test('failed template rollback retains the recovery copy and reports its path', () => {
+  const root = createBuilderFixture();
+  try {
+    mkdirSync(path.join(root, 'template'));
+    writeFileSync(path.join(root, 'template/sentinel'), 'recoverable snapshot\n');
+    const preload = path.join(root, 'fail-rollback.cjs');
+    writeFileSync(preload, `
+      const fs = require('node:fs/promises');
+      const rename = fs.rename;
+      fs.rename = async (from, to) => {
+        if (require('node:path').basename(String(to)) === 'template') throw new Error('injected replacement/rollback failure');
+        return rename(from, to);
+      };
+      require('node:module').syncBuiltinESMExports();
+    `);
+    const result = spawnSync(process.execPath, ['--require', preload, path.join(root, 'scripts/build-template.js')], { cwd: root, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    const recovery = readdirSync(root).find((name) => name.startsWith('.matt-skills-template-'));
+    assert.ok(recovery);
+    const previous = path.join(root, recovery, 'previous');
+    assert.ok(result.stderr.includes(previous));
+    assert.equal(readFileSync(path.join(previous, 'sentinel'), 'utf8'), 'recoverable snapshot\n');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

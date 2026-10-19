@@ -7,6 +7,7 @@ import { resolveSkillNames } from '../bin/skills/selection.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EXPECTED_DEFAULTS = [
+  'codebase-design',
   'diagnosing-bugs',
   'domain-modeling',
   'grill-with-docs',

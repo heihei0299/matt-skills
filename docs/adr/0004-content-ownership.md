@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted on 2026-10-19. This records the intended ownership policy; it does not claim the implementation is complete. It supplements ADR 0002 without authorizing broader cleanup.
+Accepted on 2026-10-19; ownership protection and focused regression checks implemented on 2026-10-20. This supplements ADR 0002 without authorizing broader cleanup.
 
 ## Decision
 

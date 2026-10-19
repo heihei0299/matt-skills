@@ -1,6 +1,6 @@
 # Maintainability and low-coupling decisions
 
-Confirmed on 2026-10-19 through the grill-with-docs session. The policy decisions are settled; implementation and real cross-harness verification are pending. This is not a completed-fix report.
+Policy confirmed on 2026-10-19 through the grill-with-docs session; fixes implemented on 2026-10-20. Runtime verification is distinct from the implemented loading contract; see the evidence and limitations below.
 
 ## Accepted direction
 
@@ -11,19 +11,29 @@ Confirmed on 2026-10-19 through the grill-with-docs session. The policy decision
 - Default-workflow composition execution is guaranteed for Target Repositories configured through `init`/`sync`, as scoped in [ADR 0005](../adr/0005-project-scoped-skill-composition.md). Standalone/global `install` guarantees correct distribution and relies on host capabilities for composition; it does not modify user-global rules.
 - Keep the existing module structure and add focused failure/contract checks; do not introduce a generic manager, transaction framework, or runtime adapter layer without a demonstrated need.
 
-## Minimal implementation order and acceptance checks
+## Implemented changes and acceptance checks
 
-All items below are pending, not completed changes. Keep this order unless implementation evidence reveals a dependency.
+| Concern | Change | Regression checks |
+| --- | --- | --- |
+| Project settings | Pi migration now belongs to `bin/commands/sync.js`, not Skill distribution. It removes exact legacy references, stages replacement before renaming, preserves permissions and unrelated fields, and reports malformed/ambiguous/symlink inputs without echoing their contents. | `test/cli-sync-default.test.js`: distribution has no settings side effect; normal migration, malformed inputs, symlinks, dry-run, permissions, and failed writes. |
+| Proprietary ownership | `scripts/sync-upstream.js` rejects every upstream/proprietary name collision before applying changes, including conflicts outside the default bucket. | `test/sync-upstream-review-fixes.test.js`: comparison and forced apply both fail, temporary clones are removed, and unrelated local Skills remain unchanged. |
+| Retryable initialization | `init` validates configuration before writing, fills missing skeleton files without replacing existing ones, and installs the selected Managed Skills even when `AGENTS.md` already exists. | `test/cli-config-loading.test.js` and `test/cli-init.test.js`: invalid configuration, interrupted template/Skill copies, existing policies, and project-owned documents/Skills. |
+| Failure-safe snapshot build | The builder generates in a temporary sibling directory and restores the previous snapshot if replacement fails; if recovery itself fails, it retains and reports the recovery copy. | `test/build-template.test.js`: injected copy, replacement, and rollback failures. |
+| Default dependency set | `config/default.json` explicitly includes `codebase-design`; no automatic dependency parser was introduced. | Default distribution, CLI-list, and initialization tests cover the expanded set. |
+| Skill composition | The canonical `AGENTS.md` supplies native-loading/path-reading guidance. The existing Codex smoke initializes actual default parents and verifies markers held only in child instructions, under both new and preserved custom policies. | `test/codex-support.test.js`: discovery-only output cannot pass; fake CLI checks guard fixture construction and final-event handling. Real execution is recorded separately below. |
 
-1. **Preserve project settings.** Move legacy Pi-settings migration out of `bin/project/skills.js` into the existing sync orchestration path. Remove only precisely identified legacy references; check that unrelated JSON fields survive and malformed/ambiguous settings are reported without being reset.
-2. **Protect proprietary ownership.** In `scripts/sync-upstream.js`, detect upstream/proprietary name collisions before writing. A collision must block the entire apply operation; a temporary upstream fixture must verify that the live local tree remains unchanged.
-3. **Make initialization retryable.** In `bin/commands/init.js`, validate inputs before writing and stop treating existing `AGENTS.md` as completed Skill installation. Verify both a failed-then-retried initialization and installation into a repository with its own policy; preserve that policy and project-local Skills.
-4. **Preserve the previous snapshot on build failure.** In `scripts/build-template.js`, generate in a temporary sibling directory before replacing `template/`, with recovery if replacement fails. Inject a copy failure and verify that the old snapshot remains usable and temporary artifacts are cleaned up.
-5. **Complete the explicit default dependency set.** Add `codebase-design` to `config/default.json` and update directly affected distribution/documentation expectations. Verify that default initialization includes both `grill-with-docs` children and the conditional `tdd` child; do not introduce automatic dependency discovery.
-6. **Verify composition, not just discovery.** Define the project-level loading convention in the canonical execution-policy source and extend composition smoke coverage for default parent/child loading. Include new and pre-existing-policy Target Repositories, preserve existing rules, and report unsupported or unverified execution honestly. Do not silently narrow coverage to a synthetic one-Skill discovery fixture.
+## Runtime verification and limitations
 
-No further product-policy question is open in this analysis. The last item still needs execution evidence during implementation; these documents do not certify any harness as passing it.
+The loading-contract probe does not run a full design interview or write project files. This keeps its completion condition limited to instruction loading and avoids mistaking interview latency for compatibility evidence. Standalone/global installation still changes no user-global policy. Existing project policies remain byte-for-byte preserved, so the smoke includes this case rather than assuming the supplied policy always replaced it.
+
+Verified on 2026-10-20 with Node.js 26.5.1:
+
+- `npm test`: 253 tests, 252 passed, zero failed, one opt-in real-smoke test skipped by default.
+- `npm run build:template`: passed; the committed snapshot matches a fresh build.
+- `CODEX_E2E=1 npm run codex:smoke`: passed with `codex-cli 0.163.0` for both a new Target Repository and one with preserved custom `AGENTS.md`. All three child-instruction markers were required, not merely the discovery markers.
+
+An earlier interview-style probe timed out after 180 seconds and was not counted as a pass; the bounded loading-contract probe above passed. Real Pi, OpenCode, and Claude execution and the minimum supported Node.js 18 runtime were not exercised. This evidence does not certify those environments as passing.
 
 ## Evidence at acceptance
 
-Temporary fixtures reproduced unrelated Pi settings being erased, failed initialization becoming a skipped retry, a proprietary/upstream name collision entering the addition path, and template-copy failure leaving a partial snapshot. The existing targeted CLI, configuration, upstream-sync, and template checks passed; they do not establish that these gaps have been fixed. Real cross-harness composition execution remains unverified.
+Temporary fixtures reproduced unrelated Pi settings being erased, failed initialization becoming a skipped retry, a proprietary/upstream name collision entering the addition path, and template-copy failure leaving a partial snapshot. At acceptance, the existing targeted CLI, configuration, upstream-sync, and template checks passed, but did not establish that these gaps were fixed; real composition execution had not yet been verified.

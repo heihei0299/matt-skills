@@ -66,3 +66,28 @@ test('published package includes required skill config', () => {
   assert.ok(packageJson.files.includes('config/default.json'));
   assert.ok(packageJson.files.includes('config/required.json'));
 });
+
+
+for (const command of ['init', 'sync']) {
+  test(`${command} validates configuration before writing and can retry`, () => {
+    const source = createCliFixture();
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-config-dest-'));
+    try {
+      const configFile = path.join(source, 'config/default.json');
+      const validConfig = fs.readFileSync(configFile, 'utf8');
+      const run = () => spawnSync(process.execPath, [path.join(source, 'bin/cli.js'), command, '--dest', dest], { cwd: source, encoding: 'utf8' });
+      fs.writeFileSync(configFile, '{');
+      const failed = run();
+      assert.notEqual(failed.status, 0);
+      assert.match(failed.stderr, /invalid default skill config/);
+      assert.deepEqual(fs.readdirSync(dest), [], 'configuration failure must not leave an initialized marker');
+      fs.writeFileSync(configFile, validConfig);
+      const retried = run();
+      assert.equal(retried.status, 0, retried.stderr);
+      assert.ok(fs.existsSync(path.join(dest, '.agents/skills/tdd/SKILL.md')));
+    } finally {
+      fs.rmSync(source, { recursive: true, force: true });
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
+  });
+}

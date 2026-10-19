@@ -22,7 +22,7 @@ npx @heihei0299/matt-skills sync
 npx @heihei0299/matt-skills sync --dry-run --json
 ~~~
 
-`init` 会跳过已有的 `AGENTS.md`。`sync` 默认保留项目规则和自定义 Skills；`--all` 扩大同步范围，`--refresh-agents` 才会刷新 `AGENTS.md`。同步不会删除项目自有文件或 Skills。
+`init` 保留已有的 `AGENTS.md`，仍安装所选共享 Skills；失败后可以重试。`sync` 默认保留项目规则和自定义 Skills；`--all` 扩大同步范围，`--refresh-agents` 才会刷新 `AGENTS.md`。同步不会删除项目自有文件或 Skills。
 
 常用命令：`list`、`install`、`init`、`sync`、`check`。使用 `--dest <dir>` 指定目标目录，`--global` 安装到用户目录，`--tools` 选择 Codex、pi、opencode 或 Claude。
 
@@ -30,7 +30,7 @@ npx @heihei0299/matt-skills sync --dry-run --json
 
 - 共享 Skills 从 Workspace 的 canonical source 组装到项目的 `.agents/skills/`。
 - 模板提供 `AGENTS.md`、`PROJECT.md` 以及 pi / opencode 配置骨架。
-- 默认 workflow 包含 `initialize-project`、`setup-matt-pocock-skills`、`grill-with-docs`、`to-spec`、`to-tickets`、`grilling`、`domain-modeling`、`tdd` 和 `diagnosing-bugs`。
+- 默认 workflow 包含 `initialize-project`、`setup-matt-pocock-skills`、`grill-with-docs`、`to-spec`、`to-tickets`、`grilling`、`domain-modeling`、`tdd`、`codebase-design` 和 `diagnosing-bugs`。
 
 本仓库共维护 8 个独有 Skills，分为以下两类。默认独有 skills 是 `initialize-project`。
 
@@ -51,9 +51,15 @@ npm run codex:smoke
 CODEX_E2E=1 npm run codex:smoke
 ~~~
 
+组合执行保证覆盖通过 `init/sync` 配置的目标项目；独立或全局 `install` 保证分发正确，组合执行依赖宿主能力，不注入用户全局规则。技能加载遵循项目规则；缺少原生 Skill 调用工具时，受管规则要求读取项目内子技能指令。已有 `AGENTS.md` 不会为此被静默改写。
+
+Codex smoke 在新建项目和已有自定义 `AGENTS.md` 的项目中验证默认 `grill-with-docs → grilling/domain-modeling` 与 `tdd → codebase-design` 调用链。只发现单个技能不足以通过；其他 harness 的真实执行需另行验证。
+
 本项目不包含 Codex Cloud、Codex 专用 commands、plugins 或 MCP 配置。
 
 ## 开发与发布
+
+上游与 proprietary 技能同名时，检查和应用均报归属冲突，整次上游同步在写入前停止，需要维护者明确解决。
 
 上游 Skills 来自 [mattpocock/skills](https://github.com/mattpocock/skills)。发布由推送 `v*` 标签触发，需配置 `NPM_TOKEN`。
 

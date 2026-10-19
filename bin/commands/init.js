@@ -28,14 +28,17 @@ export async function runInit(args) {
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
   const marker = path.join(target, 'AGENTS.md');
   const onlyProgramming = !all;
-  if (await pathExists(marker)) {
-    process.stdout.write('模板已存在（AGENTS.md），跳过\n');
+  const selectedSkills = await listSkillNames({ onlyProgramming });
+  const allSkillsFull = await listSkills({ onlyProgramming: false });
+  const defaultSkills = await listSkills({ onlyProgramming: true });
+  const hasPolicy = await pathExists(marker);
+  await copyTemplate(target, { includeHarness: all });
+  if (hasPolicy) {
+    process.stdout.write('模板已存在（AGENTS.md），保留；继续安装共享技能\n');
   } else {
-    await copyTemplate(target, { includeHarness: all });
-    const selectedSkills = await listSkillNames({ onlyProgramming });
-    await distributeProjectSkills({ target, sourceDir: SKILLS_DIR, skillNames: selectedSkills });
     process.stdout.write(`模板：已复制（AGENTS.md、skills：${PROJECT_SKILLS_DIR}）\n`);
   }
+  await distributeProjectSkills({ target, sourceDir: SKILLS_DIR, skillNames: selectedSkills });
   // 统计（区分编程 vs 全量）
   const skillsDir = path.join(target, '.agents', 'skills');
   let installed = 0;
@@ -43,8 +46,6 @@ export async function runInit(args) {
     const entries = await readdir(skillsDir, { withFileTypes: true });
     installed = entries.filter((e) => e.isDirectory() && !e.name.endsWith('.bak') && e.name !== '.git' && e.name !== 'skill-creator' && !isRepoLocalSkill(e.name)).length;
   } catch {}
-  const allSkillsFull = await listSkills({ onlyProgramming: false });
-  const defaultSkills = await listSkills({ onlyProgramming: true });
   const defaultCount = defaultSkills.length;
   const upstreamFull = allSkillsFull.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;
   const upstreamDefault = defaultSkills.filter((s) => !PROPRIETARY_SKILLS.has(s.name)).length;

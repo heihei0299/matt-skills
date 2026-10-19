@@ -1,10 +1,11 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { chmod, lstat, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { REPO_LOCAL_SKILLS } from '../skills/boundaries.js';
 import { listSkillNames, SKILLS_DIR } from '../skills/discovery.js';
 import { copyDryRunInputs, compareDryRunTrees, formatTargetComparison, syncTemplate } from '../project/template.js';
 import { PROJECT_SKILLS_DIR, syncProjectSkills } from '../project/skills.js';
+import { isSafeRealPath } from '../project/filesystem.js';
 
 export function parseSyncArgs(args) {
   let dest;
@@ -28,6 +29,38 @@ export function parseSyncArgs(args) {
     else throw new Error(`unknown argument '${arg}' for command 'sync'`);
   }
   return { dest, all, dryRun, json, refreshAgents };
+}
+
+async function migrateLegacyPiSettings(target, quiet) {
+  const file = path.join(target, '.pi/settings.json');
+  try {
+    const info = await lstat(file);
+    if (!await isSafeRealPath(file)) throw new Error('symbolic-link paths are not migrated');
+    const text = await readFile(file, 'utf8');
+    let settings;
+    try {
+      settings = JSON.parse(text);
+    } catch {
+      throw new Error('invalid JSON; original file preserved');
+    }
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new Error('expected a settings object');
+    if (settings.skills === undefined) return;
+    if (!Array.isArray(settings.skills)) throw new Error('expected skills to be an array');
+    const skills = settings.skills.filter((value) => value !== '.opencode/skills' && value !== '../.opencode/skills');
+    if (skills.length === settings.skills.length) return;
+    settings.skills = skills;
+    const stage = await mkdtemp(path.join(path.dirname(file), '.matt-skills-settings-'));
+    try {
+      const replacement = path.join(stage, 'settings.json');
+      await writeFile(replacement, `${JSON.stringify(settings, null, 2)}\n`, { mode: info.mode & 0o777 });
+      await chmod(replacement, info.mode & 0o777);
+      await rename(replacement, file);
+    } finally {
+      await rm(stage, { recursive: true, force: true });
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT' && !quiet) process.stderr.write(`警告：未迁移 ${file}: ${error.message}\n`);
+  }
 }
 
 async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = false }) {
@@ -55,6 +88,8 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
   }
 
   const target = dest ? path.resolve(process.cwd(), dest) : process.cwd();
+  const allSkills = await listSkillNames({ onlyProgramming });
+  const distributableSkillNames = await listSkillNames({ onlyProgramming: false });
   const template = await syncTemplate({ target, refreshAgents, includeHarness: all });
   if (template.initialized) {
     output('未检测到现有项目（AGENTS.md 不存在），将执行全新初始化\n');
@@ -72,14 +107,14 @@ async function syncCommand({ dest, all, dryRun, json, refreshAgents, quiet = fal
     }
   }
   // --all 只扩大技能范围；同名覆盖、不存在新增，不删除目标中的额外技能。
-  const allSkills = await listSkillNames({ onlyProgramming });
   const result = await syncProjectSkills({
     target,
     sourceDir: SKILLS_DIR,
     skillNames: allSkills,
-    distributableSkillNames: (await listSkillNames({ onlyProgramming: false })).filter((name) => !REPO_LOCAL_SKILLS.has(name)),
+    distributableSkillNames,
     repoLocalSkills: REPO_LOCAL_SKILLS,
   });
+  await migrateLegacyPiSettings(target, quiet);
   if (result.cleanedLegacy.length) {
     output(`迁移清理：${result.cleanedLegacy.join(', ')} 旧共享副本已移除\n`);
   }
