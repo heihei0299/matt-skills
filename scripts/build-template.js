@@ -1,56 +1,65 @@
 #!/usr/bin/env node
-import { cp, readdir, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-async function copyDirRecursive(src, dest, filter = () => true) {
-  if (!filter(src)) return;
-  await mkdir(dest, { recursive: true });
-  for (const entry of await readdir(src, { withFileTypes: true })) {
-    const s = path.join(src, entry.name);
-    const d = path.join(dest, entry.name);
-    if (!filter(s)) continue;
-    if (entry.isDirectory()) await copyDirRecursive(s, d, filter);
-    else if (entry.isFile()) await cp(s, d);
+// Static template wording lives in config/template-src/; this script only maps
+// sources to their template destinations. Editing template text is a content
+// change there, never a change to this script.
+const TEMPLATE_FILES = [
+  ['config/template-src/PROJECT.md', 'template/PROJECT.md'],
+  ['config/template-src/pi-skills.README.md', 'template/.pi/skills/README.md'],
+  ['config/template-src/opencode-skills.README.md', 'template/.opencode/skills/README.md'],
+];
+
+// Shared workspace documents projected into each harness template. AGENTS.md is
+// the single policy source: the workspace file itself is what target projects get.
+const TEMPLATE_PROJECTIONS = [
+  ['AGENTS.md', 'template/AGENTS.md'],
+  ['CONTEXT.md', 'template/.opencode/CONTEXT.md'],
+  ['CONTEXT.md', 'template/.pi/CONTEXT.md'],
+  ['docs/agents', 'template/.opencode/docs/agents'],
+  ['docs/agents', 'template/.pi/docs/agents'],
+];
+
+// Harness skill dirs stay empty in the snapshot; skills are assembled by the CLI.
+const PLACEHOLDER_DIRS = ['template/.pi/skills', 'template/.opencode/skills'];
+
+async function exists(targetPath) {
+  try {
+    await stat(targetPath);
+    return true;
+  } catch {
+    return false;
   }
 }
 
-async function tryCopy(src, dest) {
-  try { await cp(src, dest); } catch {}
+async function assertSources() {
+  const sources = [...new Set([...TEMPLATE_FILES, ...TEMPLATE_PROJECTIONS].map(([source]) => source))];
+  const missing = [];
+  for (const source of sources) {
+    if (!await exists(path.join(ROOT, source))) missing.push(source);
+  }
+  if (missing.length) throw new Error(`missing template source(s): ${missing.join(', ')}`);
+}
+
+async function copySource(src, dest) {
+  const destination = path.join(ROOT, dest);
+  await mkdir(path.dirname(destination), { recursive: true });
+  await cp(path.join(ROOT, src), destination, { recursive: true });
 }
 
 async function main() {
+  await assertSources();
   await rm(path.join(ROOT, 'template'), { recursive: true, force: true });
-  await mkdir(path.join(ROOT, 'template'), { recursive: true });
-  await writeFile(
-    path.join(ROOT, 'template/PROJECT.md'),
-    '# Project Context\n\n<!-- 请在目标仓库中填写项目目标、范围、主要入口和关键约束。代理操作规则放在 AGENTS.md。 -->\n',
-  );
-  // Harness skill dirs are available when --all distributes the full skeleton.
-  await mkdir(path.join(ROOT, 'template/.pi/skills'), { recursive: true });
-  await mkdir(path.join(ROOT, 'template/.opencode/skills'), { recursive: true });
-  await writeFile(path.join(ROOT, 'template/.pi/skills/.gitkeep'), '');
-  await writeFile(path.join(ROOT, 'template/.opencode/skills/.gitkeep'), '');
-  await writeFile(
-    path.join(ROOT, 'template/.pi/skills/README.md'),
-    '# 项目技能（pi）\n\n此目录仅用于存放 pi 的项目自定义 skills。共享技能统一分发到 `.agents/skills/`；同步不会删除额外的项目自定义 skills。\n',
-  );
-  await writeFile(
-    path.join(ROOT, 'template/.opencode/skills/README.md'),
-    '# 项目技能（opencode）\n\n此目录仅用于存放 opencode 的项目自定义 skills。共享技能统一分发到 `.agents/skills/`；同步不会删除额外的项目自定义 skills。\n',
-  );
-
-  for (const name of ['.gitignore', 'package.json', 'package-lock.json']) {
-    await tryCopy(path.join(ROOT, '.opencode', name), path.join(ROOT, 'template/.opencode', name));
+  for (const dir of PLACEHOLDER_DIRS) {
+    await mkdir(path.join(ROOT, dir), { recursive: true });
+    await writeFile(path.join(ROOT, dir, '.gitkeep'), '');
   }
-  const templateAgents = await readFile(path.join(ROOT, 'config/template-AGENTS.md'), 'utf8');
-  await writeFile(path.join(ROOT, 'template/AGENTS.md'), templateAgents);
-  await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.opencode/CONTEXT.md'));
-  await cp(path.join(ROOT, 'CONTEXT.md'), path.join(ROOT, 'template/.pi/CONTEXT.md'));
-  await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.opencode/docs/agents'));
-  await copyDirRecursive(path.join(ROOT, 'docs/agents'), path.join(ROOT, 'template/.pi/docs/agents'));
+  for (const [src, dest] of TEMPLATE_FILES) await copySource(src, dest);
+  for (const [src, dest] of TEMPLATE_PROJECTIONS) await copySource(src, dest);
   console.log('template built: skeleton');
 }
 

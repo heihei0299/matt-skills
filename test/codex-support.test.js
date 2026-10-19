@@ -151,18 +151,13 @@ test('smoke classifies a completed contract failure separately from environment 
   });
 });
 
-test('Codex static contract includes skill metadata and template instructions', () => {
+test('Codex static contract includes skill metadata', () => {
   const skill = fs.readFileSync(path.join(REPO_ROOT, '.agents', 'skills', 'tdd-implement', 'SKILL.md'), 'utf8');
   const metadata = fs.readFileSync(path.join(REPO_ROOT, '.agents', 'skills', 'tdd-implement', 'agents', 'openai.yaml'), 'utf8');
-  const templateAgents = fs.readFileSync(path.join(REPO_ROOT, 'template', 'AGENTS.md'), 'utf8');
   assert.match(skill, /name: tdd-implement/);
   assert.match(metadata, /interface:/);
   assert.match(metadata, /display_name:/);
   assert.match(metadata, /short_description:/);
-  assert.match(templateAgents, /^本仓库继承全局 `AGENTS\.md`；以下规则仅具体化项目工作流，不放宽其边界。/m);
-  assert.match(templateAgents, /若无 `.codegraph\/`，先执行 `codegraph init`/);
-  assert.match(templateAgents, /报告修改、验证结果、未验证项、既有失败和剩余风险；有 commit 时附 hash。/);
-  assert.doesNotMatch(templateAgents, /行为修改 \/ 功能实现 \/ bug 修复 \/ 逻辑调整 → `tdd`/);
 });
 
 test('smoke classifies malformed JSONL as FAIL_ENV', () => {

@@ -21,7 +21,7 @@ The root-level canonical working area: `.agents/skills/` for shared Skills, `.op
 _Avoid_: working copy, source repo
 
 **Template Snapshot** (模板快照):
-Everything under `template/` that is generated or copied from Workspace sources for Target Repository initialization. The snapshot owns project skeleton/configuration, while shared Skills are assembled separately by the CLI from the Workspace canonical source. Skeleton sync is one-way: Workspace → Template Snapshot.
+Everything under `template/` that is generated or copied from Workspace sources for Target Repository initialization. `template/AGENTS.md` is a byte-for-byte copy of the Workspace root `AGENTS.md`, so execution policy has a single edit point: the Workspace file. Static skeleton wording lives in `config/template-src/`; the builder only maps sources to destinations. The snapshot owns project skeleton/configuration, while shared Skills are assembled separately by the CLI from the Workspace canonical source. Skeleton sync is one-way: Workspace → Template Snapshot.
 _Avoid_: release snapshot, published snapshot
 
 **Target Repository** (目标仓库):

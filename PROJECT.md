@@ -16,7 +16,7 @@
 
 ### 架构边界
 - `.agents/skills/` 是 Workspace 的 canonical skill source；`template/` 是由 Workspace 资料生成的 Target Repository skeleton，不是共享 skills 的持久镜像。
-- `scripts/build-template.js` 将 `config/template-AGENTS.md`、`CONTEXT.md`、`.opencode/`、`.pi/` 和 `docs/agents/` 等基础源资料投影到 `template/`；workspace 专用 commands、agents 和 prompts 保留在源仓库，不进入默认模板；共享 skills 由 CLI 从 `.agents/skills/` 按选择规则另行组装。
+- `scripts/build-template.js` 将根 `AGENTS.md`、`CONTEXT.md`、`docs/agents/` 与 `config/template-src/` 中的骨架文案投影到 `template/`；`template/AGENTS.md` 就是 Workspace 根 `AGENTS.md` 的副本，修改执行规则只需重跑构建，不需要改生成代码或测试；workspace 专用 commands、agents 和 prompts 保留在源仓库，不进入默认模板；共享 skills 由 CLI 从 `.agents/skills/` 按选择规则另行组装。
 - CLI 只分发可分发 skills；`config/proprietary.json` 是独有 skill 的成员、distributable/repo-local 分类和默认集合的约束来源。默认范围由 `config/default.json` 的工作流闭包明确给出，`--all` 扩大到全部可分发集合；`engineering.json` 与 `required.json` 继续服务于上游同步范围。
 - `scripts/sync-upstream.js` 只比较或更新本地非独有 skills 与上游 `mattpocock/skills`；默认覆盖 engineering 与 required 范围，`--all` 才包含 productivity 范围。上游同步不负责改写模板骨架。
 - `AGENTS.md` 承载执行规则，`PROJECT.md` 承载项目事实，`CONTEXT.md` 承载术语边界；不要把三者职责合并。
@@ -24,7 +24,7 @@
 ### 仓库地图
 - `bin/`：`cli.js` composition root；`commands/` 负责命令编排，`project/` 负责模板与项目分发机制，`skills/` 负责技能策略与发现。
 - `.agents/skills/`：Workspace canonical skills，包含可分发 skills 与仓库维护用的 repo-local skills。
-- `config/`：技能分类、默认/上游同步集合，以及模板 `AGENTS.md` 的独立源。
+- `config/`：技能分类、默认/上游同步集合，以及模板骨架文案源 `template-src/`。
 - `template/`：生成后的目标项目骨架，包含 `AGENTS.md`、`PROJECT.md`、pi / opencode 配置和文档副本。
 - `.opencode/`、`.pi/`：本仓库维护的 harness agents、commands、prompts 和设置源；`docs/` 保存 ADR、架构记录及 agent 资料。
 - `scripts/`：模板构建、上游同步和 Codex smoke 流程；`test/`：CLI、边界、模板分发、技能行为和配置的回归测试。

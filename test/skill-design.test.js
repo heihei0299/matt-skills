@@ -10,14 +10,12 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const specPath = path.join(dir, 'docs', 'agents', 'skill-design.md');
 const contextPath = path.join(dir, 'CONTEXT.md');
 const adrPath = path.join(dir, 'docs', 'adr', '0001-turn-continuity-rule.md');
-const agentsPath = path.join(dir, 'AGENTS.md');
 const runtimePath = path.join(dir, 'docs', 'agents', 'runtime-discipline.md');
 const diagnosisPath = path.join(dir, 'pi', 'DIAGNOSIS-tdd-implement-stuck.md');
 
 const spec = readFileSync(specPath, 'utf8');
 const context = readFileSync(contextPath, 'utf8');
 const adr = readFileSync(adrPath, 'utf8');
-const agents = readFileSync(agentsPath, 'utf8');
 const runtime = readFileSync(runtimePath, 'utf8');
 const diagnosis = readFileSync(diagnosisPath, 'utf8');
 
@@ -48,13 +46,6 @@ test('runtime-discipline.md delegates policy to its owners', () => {
   assert.match(runtime, /a skill owns only its own lifecycle/);
   assert.match(runtime, /TDD semantics belong/);
   assert.doesNotMatch(runtime, /BASE_HEAD|Turn Continuity|Chunking|Git History Preservation/);
-});
-
-test('AGENTS.md delegates to global policy and points at project workflow boundaries', () => {
-  assert.match(agents, /^本仓库遵循全局 `AGENTS\.md`；以下规则仅用于具体化本项目工作流/);
-  assert.match(agents, /## Context \/ CodeGraph|## Validation|## Git|## Completion/g);
-  assert.match(agents, /codegraph explore/);
-  assert.doesNotMatch(agents, /## 路由|## Workflow|150 行/);
 });
 
 test('diagnosis report is marked as landed', () => {

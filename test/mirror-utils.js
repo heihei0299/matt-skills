@@ -19,9 +19,4 @@ export const MAP_DOCS = [
   [/\.opencode\/CONTEXT\.md/g, 'CONTEXT.md'],
 ];
 
-export const MAP_AGENTS = [
-  [/\.opencode\/docs\/agents\//g, 'docs/agents/'],
-  [/\.opencode\/CONTEXT\.md/g, 'CONTEXT.md'],
-];
-
 export const normalize = (s, map) => map.reduce((acc, [re, to]) => acc.replace(re, to), s);

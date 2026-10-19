@@ -40,22 +40,16 @@ test('template harness directories contain only the basic framework', () => {
   }
 });
 
-test('template/AGENTS.md uses the independent template source', () => {
+test('template/AGENTS.md mirrors the workspace policy file', () => {
   assert.equal(
     readFileSync(root('template/AGENTS.md'), 'utf8'),
-    readFileSync(root('config/template-AGENTS.md'), 'utf8'),
+    readFileSync(root('AGENTS.md'), 'utf8'),
   );
 });
 
-test('template/AGENTS.md contains the global-policy delegation and project workflow', () => {
+test('template/AGENTS.md ships no managed sync markers', () => {
   const agents = readFileSync(root('template/AGENTS.md'), 'utf8');
-  assert.match(agents, /^本仓库继承全局 `AGENTS\.md`；以下规则仅具体化项目工作流，不放宽其边界。\n/);
-  assert.doesNotMatch(agents, /matt-skills:managed|^# AGENTS\.md$|^## Workflow|^## Security|## 路由/m);
-  assert.match(agents, /## CodeGraph|## Validation|## Git/g);
-  assert.match(agents, /需要理解或修改代码时，若无 `.codegraph\/`，先执行 `codegraph init`/);
-  assert.match(agents, /报告修改、验证结果、未验证项、既有失败和剩余风险；有 commit 时附 hash。/);
-  assert.doesNotMatch(agents, /## Completion/);
-  assert.doesNotMatch(agents, /其他 → `ask-matt`/);
+  assert.doesNotMatch(agents, /matt-skills:managed/);
 });
 
 
