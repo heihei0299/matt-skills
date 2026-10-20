@@ -28,8 +28,11 @@ spec/
 .pi/
 .opencode/
 # 只忽略 .agents 下的本地生成物；.agents/skills 是分发源的版本化内容
+# 先解除全局 .agents/ 对目录本身的排除，否则下方的 ! 规则没有机会生效
+!.agents/
 .agents/*
 !.agents/skills/
+!.agents/skills/**
 
 # === 提交内容治理：仅提交 README、源码与分发内容 ===
 # .agents/skills/（分发源）、template/、config/template-src/ 属于产品内容，照常提交；
