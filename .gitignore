@@ -37,8 +37,8 @@ spec/
 # === 提交内容治理：仅提交 README、源码与分发内容 ===
 # .agents/skills/（分发源）、template/、config/template-src/ 属于产品内容，照常提交；
 # 过程文档保留在本地磁盘，不纳入版本控制。
-/AGENTS.md
-/CONTEXT.md
 /PROJECT.md
-/docs/
+# AGENTS.md、CONTEXT.md、docs/agents/ 是 template/ 的构建源，必须保持提交
+/docs/*
+!/docs/agents/
 /pi/
