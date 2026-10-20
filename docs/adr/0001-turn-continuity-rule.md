@@ -1,0 +1,3 @@
+# Turn Continuity is a required skill rule, not a harness default
+
+A flash-class model running tdd-implement stopped its turn at "announce the next step" points four times in one session because the skill never told it to keep executing. We decided every long-horizon skill must carry its own positive Turn Continuity rule (consecutive actions serial in one turn until the stage exit condition is met), stated positively per the negation principle and self-contained — because the harness `/goal` line only exists when a goal is active, so the skill cannot depend on it. See `docs/agents/skill-design.md` and `CONTEXT.md`.

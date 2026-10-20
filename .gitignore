@@ -41,4 +41,9 @@ spec/
 # AGENTS.md、CONTEXT.md、docs/agents/ 是 template/ 的构建源，必须保持提交
 /docs/*
 !/docs/agents/
-/pi/
+/docs/adr/*
+!/docs/adr/0001-turn-continuity-rule.md
+!/docs/adr/0003-git-history-preservation.md
+# pi/ 只保留测试读取的迁移诊断记录
+/pi/*
+!/pi/DIAGNOSIS-tdd-implement-stuck.md
