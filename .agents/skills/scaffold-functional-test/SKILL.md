@@ -60,5 +60,5 @@ spec 不存在时可从 README 与 `--help` 建立候选清单，但必须把它
 
 - 实例 schema：[`references/schema.md`](references/schema.md)
 - 领域术语：`CONTEXT.md`
-- 技能设计规则：`docs/agents/skill-design.md`
+- 技能设计规则：`doc/agents/skill-design.md`
 - 示范产物：`.agents/skills/instance-test/`

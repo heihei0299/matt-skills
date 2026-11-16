@@ -67,21 +67,21 @@ test('template/.pi/CONTEXT.md mirrors the root CONTEXT.md', () => {
   );
 });
 
-test('template/.opencode/docs/agents mirrors the root docs/agents (path-mapped)', () => {
+test('template/.opencode/docs/agents mirrors the root doc/agents (path-mapped)', () => {
   for (const f of DOC_AGENTS) {
     assert.equal(
       normalize(readFileSync(root(path.join('template/.opencode/docs/agents', f)), 'utf8'), MAP_DOCS),
-      readFileSync(root(path.join('docs/agents', f)), 'utf8'),
+      readFileSync(root(path.join('doc/agents', f)), 'utf8'),
       `template/.opencode/docs/agents/${f} out of sync`,
     );
   }
 });
 
-test('template/.pi/docs/agents mirrors the root docs/agents (path-mapped)', () => {
+test('template/.pi/docs/agents mirrors the root doc/agents (path-mapped)', () => {
   for (const f of DOC_AGENTS) {
     assert.equal(
       normalize(readFileSync(root(path.join('template/.pi/docs/agents', f)), 'utf8'), MAP_DOCS),
-      readFileSync(root(path.join('docs/agents', f)), 'utf8'),
+      readFileSync(root(path.join('doc/agents', f)), 'utf8'),
       `template/.pi/docs/agents/${f} out of sync`,
     );
   }

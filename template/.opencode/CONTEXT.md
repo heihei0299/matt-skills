@@ -9,7 +9,7 @@ This repository's identity. It is the config repo for mattpocock/skills: it dist
 _Avoid_: skill distribution repo
 
 **Upstream Repository** (上游仓库):
-mattpocock/skills — the source of the upstream Skill bodies mirrored into this repo's Workspace canonical Skill source and then distributed by the CLI. This repo syncs them via `scripts/sync-upstream.js` and `matt-skills sync`.
+mattpocock/skills — the source of the upstream Skill bodies mirrored into this repo's Workspace canonical Skill source and then distributed by the CLI. This repo syncs them via `tool/sync-upstream.js` and `matt-skills sync`.
 _Avoid_: source repo, skill origin
 
 **Proprietary Skill** (独有技能):

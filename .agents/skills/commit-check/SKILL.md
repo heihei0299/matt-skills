@@ -48,11 +48,11 @@ bash .agents/skills/commit-check/scripts/scan-sensitive.sh --staged-only
 README.md
 AGENTS.md
 CONTEXT.md
-docs/agents/**
+doc/agents/**
 template/**
 .agents/skills/**
 config/**
-scripts/build-template.js
+tool/build-template.js
 .opencode/commands/**
 .pi/prompts/**
 ```
@@ -60,7 +60,7 @@ scripts/build-template.js
 相关路径变更时：
 
 - README、公开行为、命令、配置或流程描述变化 → 检查对应文档与实现一致；
-- `AGENTS.md`、`CONTEXT.md`、`docs/agents/`、`template/`、技能或镜像变化 → 运行相关模板/契约测试，至少覆盖 `test/template-sync.test.js`；
+- `AGENTS.md`、`CONTEXT.md`、`doc/agents/`、`template/`、技能或镜像变化 → 运行相关模板/契约测试，至少覆盖 `test/template-sync.test.js`；
 - `commit-check` 自身变化 → 运行 `test/commit-check.test.js` 和 `test/commit-check-scan.test.js`；
 - `tdd-implement` 变化 → 运行 `test/tdd-implement-stages.test.js`；
 - `config/`、构建脚本、opencode command 或 pi prompt 变化 → 运行对应 CLI、模板或命令测试；
@@ -70,7 +70,7 @@ scripts/build-template.js
 
 ## Git history pointer
 
-遵循 `CONTEXT.md` 和 `docs/agents/` 中的 Git History Preservation 规则。本技能只在当前会话存在 `BASE_HEAD` 时执行必要祖先校验：
+遵循 `CONTEXT.md` 和 `doc/agents/` 中的 Git History Preservation 规则。本技能只在当前会话存在 `BASE_HEAD` 时执行必要祖先校验：
 
 ```bash
 git merge-base --is-ancestor "$BASE_HEAD" HEAD

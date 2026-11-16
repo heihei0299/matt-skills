@@ -7,10 +7,10 @@ import { fileURLToPath } from 'node:url';
 // Guard the policy migration artifacts: deprecated compatibility docs must stay
 // non-normative while ADRs, routing, and the landed diagnosis remain intact.
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const specPath = path.join(dir, 'docs', 'agents', 'skill-design.md');
+const specPath = path.join(dir, 'doc', 'agents', 'skill-design.md');
 const contextPath = path.join(dir, 'CONTEXT.md');
-const adrPath = path.join(dir, 'docs', 'adr', '0001-turn-continuity-rule.md');
-const runtimePath = path.join(dir, 'docs', 'agents', 'runtime-discipline.md');
+const adrPath = path.join(dir, 'doc', 'adr', '0001-turn-continuity-rule.md');
+const runtimePath = path.join(dir, 'doc', 'agents', 'runtime-discipline.md');
 const diagnosisPath = path.join(dir, 'pi', 'DIAGNOSIS-tdd-implement-stuck.md');
 
 const spec = readFileSync(specPath, 'utf8');
@@ -54,7 +54,7 @@ test('diagnosis report is marked as landed', () => {
 });
 
 test('ADR 0003 records the git-history-preservation decision', () => {
-  const adr3 = readFileSync(path.join(dir, 'docs', 'adr', '0003-git-history-preservation.md'), 'utf8');
+  const adr3 = readFileSync(path.join(dir, 'doc', 'adr', '0003-git-history-preservation.md'), 'utf8');
   assert.match(adr3, /BASE_HEAD/);
   assert.match(adr3, /merge-base --is-ancestor/);
   assert.match(adr3, /git reset --hard|reset --hard/);

@@ -7,14 +7,14 @@
 // while the workspace copies point at the workspace layout.
 
 export const MAP_SKILL = [
-  [/\.\.\/\.\.\/\.\.\/\.opencode\/docs\/agents\//g, '../../docs/agents/'],
-  [/\.opencode\/docs\/agents\//g, 'docs/agents/'],
+  [/\.\.\/\.\.\/\.\.\/\.opencode\/docs\/agents\//g, '../../doc/agents/'],
+  [/\.opencode\/docs\/agents\//g, 'doc/agents/'],
   [/\.opencode\/CONTEXT\.md/g, 'CONTEXT.md'],
 ];
 
 export const MAP_DOCS = [
   [/\.\.\/\.\.\/skills\//g, '../../.agents/skills/'],
-  [/\.opencode\/docs\/agents\//g, 'docs/agents/'],
+  [/\.opencode\/docs\/agents\//g, 'doc/agents/'],
   [/\.opencode\/skills\//g, '.agents/skills/'],
   [/\.opencode\/CONTEXT\.md/g, 'CONTEXT.md'],
 ];

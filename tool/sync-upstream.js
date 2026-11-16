@@ -378,8 +378,8 @@ async function main() {
     process.stdout.write(`sync-upstream — 对比/同步 mattpocock/skills 上游技能
 
 Usage:
-  node scripts/sync-upstream.js --check [--all] [--json] [--upstream <url>] [--ref <ref>]
-  node scripts/sync-upstream.js --apply [--all] [--dry-run] [--force] [--upstream <url>] [--ref <ref>]
+  node tool/sync-upstream.js --check [--all] [--json] [--upstream <url>] [--ref <ref>]
+  node tool/sync-upstream.js --apply [--all] [--dry-run] [--force] [--upstream <url>] [--ref <ref>]
 
 Options:
   --check     只对比，不改动文件（默认）

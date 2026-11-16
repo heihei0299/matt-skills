@@ -4,7 +4,7 @@ import fs, { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-import { applySync } from '../scripts/sync-upstream.js';
+import { applySync } from '../tool/sync-upstream.js';
 
 function createFakeUpstream() {
   const root = fsTemp('matt-skills-upstream-');

@@ -7,7 +7,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SMOKE = path.join(REPO_ROOT, 'scripts', 'codex-smoke.js');
+const SMOKE = path.join(REPO_ROOT, 'tool', 'codex-smoke.js');
 const CLI = path.join(REPO_ROOT, 'bin', 'cli.js');
 const PACKAGE = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
 const README = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
@@ -48,8 +48,8 @@ test('codex smoke without opt-in reports SKIP and exits 0', () => {
 });
 
 test('package exposes and publishes the Codex smoke entrypoint', () => {
-  assert.equal(PACKAGE.scripts['codex:smoke'], 'node scripts/codex-smoke.js');
-  assert.ok(PACKAGE.files.includes('scripts/codex-smoke.js'));
+  assert.equal(PACKAGE.scripts['codex:smoke'], 'node tool/codex-smoke.js');
+  assert.ok(PACKAGE.files.includes('tool/codex-smoke.js'));
 });
 
 test('README defines the Codex CLI support boundary and smoke command', () => {

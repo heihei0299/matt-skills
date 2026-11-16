@@ -10,8 +10,8 @@
     "bin/",
     "template/",
     ".agents/skills/",
-    "scripts/sync-upstream.js",
-    "scripts/codex-smoke.js",
+    "tool/sync-upstream.js",
+    "tool/codex-smoke.js",
     "config/proprietary.json",
     "config/default.json",
     "config/engineering.json",
@@ -21,8 +21,8 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "prepublishOnly": "node --test test/*.test.js",
-    "codex:smoke": "node scripts/codex-smoke.js",
-    "build:template": "node scripts/build-template.js"
+    "codex:smoke": "node tool/codex-smoke.js",
+    "build:template": "node tool/build-template.js"
   },
   "dependencies": {
     "prompts": "^2.4.2"

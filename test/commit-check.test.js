@@ -66,11 +66,11 @@ test('matt-skills adapter is conditional on relevant staged paths', () => {
     'README.md',
     'AGENTS.md',
     'CONTEXT.md',
-    'docs/agents/',
+    'doc/agents/',
     'template/',
     '.agents/skills/',
     'config/',
-    'scripts/build-template.js',
+    'tool/build-template.js',
     '.opencode/commands/',
     '.pi/prompts/',
   ]) {

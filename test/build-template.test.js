@@ -10,7 +10,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 
 // The builder reads only these repository sources. Copying them wholesale keeps
 // the fixture correct when a source file is added, renamed, or reworded.
-const BUILDER_SOURCES = ['scripts', 'config', 'docs/agents', 'AGENTS.md', 'CONTEXT.md'];
+const BUILDER_SOURCES = ['tool', 'config', 'doc/agents', 'AGENTS.md', 'CONTEXT.md'];
 
 function createBuilderFixture() {
   const root = mkdtempSync(path.join(os.tmpdir(), 'matt-skills-template-'));
@@ -21,7 +21,7 @@ function createBuilderFixture() {
 }
 
 function runBuilder(root) {
-  return spawnSync(process.execPath, [path.join(root, 'scripts/build-template.js')], {
+  return spawnSync(process.execPath, [path.join(root, 'tool/build-template.js')], {
     cwd: root,
     encoding: 'utf8',
   });
@@ -113,7 +113,7 @@ for (const operation of ['cp', 'rename']) {
         };
         require('node:module').syncBuiltinESMExports();
       `);
-      const result = spawnSync(process.execPath, ['--require', preload, path.join(root, 'scripts/build-template.js')], { cwd: root, encoding: 'utf8' });
+      const result = spawnSync(process.execPath, ['--require', preload, path.join(root, 'tool/build-template.js')], { cwd: root, encoding: 'utf8' });
       assert.notEqual(result.status, 0);
       assert.match(result.stderr, /injected/);
       assert.equal(readFileSync(path.join(root, 'template/sentinel'), 'utf8'), 'previous snapshot\n');
@@ -140,7 +140,7 @@ test('failed template rollback retains the recovery copy and reports its path', 
       };
       require('node:module').syncBuiltinESMExports();
     `);
-    const result = spawnSync(process.execPath, ['--require', preload, path.join(root, 'scripts/build-template.js')], { cwd: root, encoding: 'utf8' });
+    const result = spawnSync(process.execPath, ['--require', preload, path.join(root, 'tool/build-template.js')], { cwd: root, encoding: 'utf8' });
     assert.notEqual(result.status, 0);
     const recovery = readdirSync(root).find((name) => name.startsWith('.matt-skills-template-'));
     assert.ok(recovery);

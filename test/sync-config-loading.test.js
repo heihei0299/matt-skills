@@ -11,10 +11,10 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'matt-skills-sync-config-'));
   fs.mkdirSync(path.join(root, 'bin', 'skills'), { recursive: true });
-  fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'tool'), { recursive: true });
   fs.cpSync(path.join(REPO_ROOT, 'bin/skills/boundaries.js'), path.join(root, 'bin/skills/boundaries.js'));
   fs.cpSync(path.join(REPO_ROOT, 'bin/skills/config.js'), path.join(root, 'bin/skills/config.js'));
-  fs.cpSync(path.join(REPO_ROOT, 'scripts/sync-upstream.js'), path.join(root, 'scripts/sync-upstream.js'));
+  fs.cpSync(path.join(REPO_ROOT, 'tool/sync-upstream.js'), path.join(root, 'tool/sync-upstream.js'));
   fs.cpSync(path.join(REPO_ROOT, 'config'), path.join(root, 'config'), { recursive: true });
   fs.cpSync(path.join(REPO_ROOT, '.agents/skills/tdd'), path.join(root, '.agents/skills/tdd'), { recursive: true });
   return root;
@@ -39,7 +39,7 @@ test('sync-upstream check fails when required config is missing', () => {
     fs.rmSync(path.join(root, 'config/required.json'));
     const tmpDir = path.join(root, 'upstream-tmp');
     const result = spawnSync(process.execPath, [
-      path.join(root, 'scripts/sync-upstream.js'),
+      path.join(root, 'tool/sync-upstream.js'),
       '--check',
       '--upstream',
       upstream,

@@ -27,7 +27,7 @@ export async function runCheck(args) {
     return;
   }
 
-  const { compare, formatComparison } = await import('../../scripts/sync-upstream.js');
+  const { compare, formatComparison } = await import('../../tool/sync-upstream.js');
   const json = args.includes('--json');
   const onlyProgramming = !args.includes('--all');
   const upstreamIdx = args.indexOf('--upstream');

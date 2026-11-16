@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-import { applySync, compare } from '../scripts/sync-upstream.js';
+import { applySync, compare } from '../tool/sync-upstream.js';
 
 function tempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));

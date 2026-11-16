@@ -20,8 +20,8 @@ const TEMPLATE_PROJECTIONS = [
   ['AGENTS.md', 'template/AGENTS.md'],
   ['CONTEXT.md', 'template/.opencode/CONTEXT.md'],
   ['CONTEXT.md', 'template/.pi/CONTEXT.md'],
-  ['docs/agents', 'template/.opencode/docs/agents'],
-  ['docs/agents', 'template/.pi/docs/agents'],
+  ['doc/agents', 'template/.opencode/docs/agents'],
+  ['doc/agents', 'template/.pi/docs/agents'],
 ];
 
 // Harness skill dirs stay empty in the snapshot; skills are assembled by the CLI.

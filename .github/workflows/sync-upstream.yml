@@ -44,9 +44,9 @@ jobs:
           # --check 在存在上游差异时以 exit 1 退出，属于正常信号而非失败
           set +e
           if [ "$UPSTREAM_REF" = "HEAD" ]; then
-            node scripts/sync-upstream.js --check --json > /tmp/sync-check.json
+            node tool/sync-upstream.js --check --json > /tmp/sync-check.json
           else
-            node scripts/sync-upstream.js --check --json --ref "$UPSTREAM_REF" > /tmp/sync-check.json
+            node tool/sync-upstream.js --check --json --ref "$UPSTREAM_REF" > /tmp/sync-check.json
           fi
           STATUS=$?
           set -e
@@ -74,9 +74,9 @@ jobs:
         if: steps.check.outputs.has_diff == 'true' && steps.check.outputs.dry_run != 'true'
         run: |
           if [ "$UPSTREAM_REF" = "HEAD" ]; then
-            node scripts/sync-upstream.js --apply
+            node tool/sync-upstream.js --apply
           else
-            node scripts/sync-upstream.js --apply --ref "$UPSTREAM_REF"
+            node tool/sync-upstream.js --apply --ref "$UPSTREAM_REF"
           fi
           echo "=== 应用后状态 ==="
 
